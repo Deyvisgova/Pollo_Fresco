@@ -1,11 +1,11 @@
 import { Component, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { InicioComponent } from './diseno-publico/paginas/inicio/inicio.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
-  templateUrl: './app.html',
-  styleUrl: './app.css'
+  standalone: true,
+  imports: [InicioComponent],
+  template: '<app-inicio></app-inicio>'
 })
 export class App {
   protected readonly title = signal('front-pollo-fresco');
