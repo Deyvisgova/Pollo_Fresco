@@ -1,0 +1,149 @@
+<app-barra-navegacion></app-barra-navegacion>
+
+<main>
+  <section id="inicio" class="hero py-5">
+    <div class="container">
+      <div class="row align-items-center g-4">
+        <div class="col-12 col-lg-6">
+          <p class="hero__etiqueta text-uppercase">Pollo Fresco</p>
+          <h1 class="display-5 fw-bold">
+            Tradición avícola con sabor irresistible en cada pedido
+          </h1>
+          <p class="lead">
+            Somos especialistas en pollo fresco, marinados artesanales y combos familiares listos
+            para compartir.
+          </p>
+          <div class="d-flex flex-wrap gap-3">
+            <button mat-raised-button color="primary" type="button">Ordena en línea</button>
+            <button mat-stroked-button color="accent" type="button">Ver promociones</button>
+          </div>
+          <div class="hero__datos mt-4">
+            <div>
+              <h3>+25 años</h3>
+              <span>sirviendo calidad</span>
+            </div>
+            <div>
+              <h3>50+ puntos</h3>
+              <span>en todo el país</span>
+            </div>
+            <div>
+              <h3>Entrega rápida</h3>
+              <span>en menos de 40 min</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-lg-6">
+          <div class="hero__imagen p-4">
+            <h2 class="h4">Pollo Fresco Signature</h2>
+            <p>
+              Pollo horneado al punto justo con hierbas frescas, acompañado de papas doradas y
+              ensalada de la casa.
+            </p>
+            <div class="d-flex align-items-center gap-3">
+              <span class="hero__precio">S/ 39.90</span>
+              <button mat-raised-button color="accent" type="button">Agregar al carrito</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <app-carrusel></app-carrusel>
+
+  <section id="menu" class="py-5">
+    <div class="container">
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3 mb-4">
+        <div>
+          <h2 class="fw-bold">Nuestro menú estrella</h2>
+          <p class="text-muted">Opciones frescas, saludables y listas para compartir.</p>
+        </div>
+        <button mat-raised-button color="primary" type="button">Explorar menú</button>
+      </div>
+      <div class="row g-4">
+        <div class="col-12 col-md-6 col-lg-4">
+          <mat-card class="h-100 menu-card">
+            <mat-card-title>Parrilla Suprema</mat-card-title>
+            <mat-card-content>
+              Pollo a la brasa con maíz dulce, papas doradas y salsa especial.
+            </mat-card-content>
+            <div class="menu-card__precio">S/ 32.90</div>
+          </mat-card>
+        </div>
+        <div class="col-12 col-md-6 col-lg-4">
+          <mat-card class="h-100 menu-card">
+            <mat-card-title>Pack Ejecutivo</mat-card-title>
+            <mat-card-content>
+              Pechuga marinada, arroz integral y ensalada fresca.
+            </mat-card-content>
+            <div class="menu-card__precio">S/ 24.90</div>
+          </mat-card>
+        </div>
+        <div class="col-12 col-md-6 col-lg-4">
+          <mat-card class="h-100 menu-card">
+            <mat-card-title>Combo Familiar</mat-card-title>
+            <mat-card-content>
+              8 piezas crocantes, gaseosa grande y acompañamientos.
+            </mat-card-content>
+            <div class="menu-card__precio">S/ 54.90</div>
+          </mat-card>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="promociones" class="promos py-5">
+    <div class="container">
+      <div class="row g-4 align-items-center">
+        <div class="col-12 col-lg-7">
+          <h2 class="fw-bold">Promociones para toda la familia</h2>
+          <p>
+            Combos especiales, cupones digitales y descuentos por temporadas. ¡Aprovecha hoy!
+          </p>
+        </div>
+        <div class="col-12 col-lg-5">
+          <div class="promos__card p-4">
+            <h3 class="h5">Miércoles de sabor</h3>
+            <p>2x1 en combos seleccionados para delivery y recojo.</p>
+            <button mat-stroked-button color="primary" type="button">Solicitar cupón</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="contacto" class="py-5">
+    <div class="container">
+      <div class="row g-4">
+        <div class="col-12 col-lg-6">
+          <h2 class="fw-bold">Visítanos o pide a domicilio</h2>
+          <p class="text-muted">
+            Encuentra tu tienda más cercana y disfruta de la frescura en minutos.
+          </p>
+          <ul class="list-unstyled contacto__lista">
+            <li>Central de pedidos: +51 01 456 789</li>
+            <li>Delivery: Lunes a Domingo 11:00 - 22:00</li>
+            <li>Dirección: Av. Principal 123, Lima</li>
+          </ul>
+        </div>
+        <div class="col-12 col-lg-6">
+          <div class="contacto__card p-4">
+            <h3 class="h5">Suscríbete a novedades</h3>
+            <p>Recibe nuevas recetas, lanzamientos y promociones cada semana.</p>
+            <div class="d-flex flex-column flex-sm-row gap-2">
+              <input
+                class="form-control"
+                type="email"
+                placeholder="Tu correo"
+                aria-label="Correo electrónico"
+              />
+              <button mat-raised-button color="accent" type="button">Suscribirme</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<app-pie-pagina></app-pie-pagina>
