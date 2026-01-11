@@ -1,0 +1,32 @@
+.barra-navegacion {
+  border-bottom: 2px solid rgba(255, 255, 255, 0.25);
+}
+
+.barra-navegacion__logo {
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.barra-navegacion__slogan {
+  font-size: 0.95rem;
+  opacity: 0.9;
+}
+
+.barra-navegacion__enlaces {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.barra-navegacion__enlaces a {
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.barra-navegacion__enlaces a:hover {
+  color: #ffe0c3;
+}
+
+.barra-navegacion__accion {
+  white-space: nowrap;
+}
