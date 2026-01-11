@@ -1,5 +1,13 @@
+@import 'bootstrap/dist/css/bootstrap.min.css';
+@import 'bootstrap-icons/font/bootstrap-icons.css';
 @import '@angular/material/prebuilt-themes/indigo-pink.css';
 
 body {
   background-color: #fffaf5;
+  color: #4b2d1a;
+  font-family: 'Roboto', 'Helvetica Neue', sans-serif;
+}
+
+a {
+  text-decoration: none;
 }
