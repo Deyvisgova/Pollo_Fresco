@@ -13,6 +13,12 @@
   margin: 0.25rem 0;
 }
 
+.pie-pagina__divisor {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.3);
+  margin: 0;
+}
+
 .pie-pagina__redes {
   display: flex;
   gap: 1rem;

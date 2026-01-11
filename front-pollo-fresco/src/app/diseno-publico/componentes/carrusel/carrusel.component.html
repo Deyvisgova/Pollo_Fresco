@@ -1,43 +1,39 @@
 <section class="carrusel container my-4" aria-label="Promociones destacadas">
   <div class="row g-4 align-items-center">
     <div class="col-12 col-lg-6">
-      <mat-chip-set class="mb-3">
-        <mat-chip color="accent" selected>Nuevo</mat-chip>
-      </mat-chip-set>
+      <div class="carrusel__chip-set mb-3">
+        <span class="carrusel__chip">Nuevo</span>
+      </div>
       <h2 class="display-6 fw-bold">Combos familiares con pollo crujiente</h2>
       <p class="lead">
         Disfruta porciones generosas, acompañamientos frescos y bebidas para todos.
       </p>
       <div class="d-flex flex-wrap gap-2">
-        <button mat-raised-button color="primary" type="button">Ver menú</button>
-        <button mat-stroked-button color="accent" type="button">Personalizar</button>
+        <button class="carrusel__boton carrusel__boton--primario" type="button">Ver menú</button>
+        <button class="carrusel__boton carrusel__boton--secundario" type="button">
+          Personalizar
+        </button>
       </div>
     </div>
     <div class="col-12 col-lg-6">
       <div class="row g-3">
         <div class="col-12 col-md-6">
-          <mat-card class="h-100 carrusel__tarjeta">
-            <mat-card-title>Combo Parrilla</mat-card-title>
-            <mat-card-content>
-              Pollo a la brasa, papas rústicas y ensalada.
-            </mat-card-content>
-          </mat-card>
+          <article class="h-100 carrusel__tarjeta">
+            <h3 class="carrusel__titulo-tarjeta">Combo Parrilla</h3>
+            <p>Pollo a la brasa, papas rústicas y ensalada.</p>
+          </article>
         </div>
         <div class="col-12 col-md-6">
-          <mat-card class="h-100 carrusel__tarjeta">
-            <mat-card-title>Combo Urbano</mat-card-title>
-            <mat-card-content>
-              Tiras crocantes, pan artesanal y salsa especial.
-            </mat-card-content>
-          </mat-card>
+          <article class="h-100 carrusel__tarjeta">
+            <h3 class="carrusel__titulo-tarjeta">Combo Urbano</h3>
+            <p>Tiras crocantes, pan artesanal y salsa especial.</p>
+          </article>
         </div>
         <div class="col-12">
-          <mat-card class="h-100 carrusel__tarjeta">
-            <mat-card-title>Combo Ligero</mat-card-title>
-            <mat-card-content>
-              Pollo al horno, vegetales salteados y jugo natural.
-            </mat-card-content>
-          </mat-card>
+          <article class="h-100 carrusel__tarjeta">
+            <h3 class="carrusel__titulo-tarjeta">Combo Ligero</h3>
+            <p>Pollo al horno, vegetales salteados y jugo natural.</p>
+          </article>
         </div>
       </div>
     </div>

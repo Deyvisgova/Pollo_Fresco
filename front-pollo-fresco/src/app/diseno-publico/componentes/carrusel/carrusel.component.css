@@ -5,14 +5,47 @@
 }
 
 .carrusel__tarjeta {
+  background: #ffffff;
   border-radius: 16px;
   box-shadow: 0 8px 20px rgba(122, 46, 13, 0.08);
+  padding: 1.25rem;
 }
 
-.carrusel :is(h2, mat-card-title) {
+.carrusel :is(h2, .carrusel__titulo-tarjeta) {
   color: #7a2e0d;
 }
 
-.carrusel :is(p, mat-card-content) {
+.carrusel :is(p, .carrusel__tarjeta p) {
   color: #8d4a1a;
+}
+
+.carrusel__chip-set {
+  display: inline-flex;
+}
+
+.carrusel__chip {
+  background: #ff9f4c;
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+}
+
+.carrusel__boton {
+  border-radius: 999px;
+  border: 2px solid transparent;
+  font-weight: 600;
+  padding: 0.55rem 1.4rem;
+}
+
+.carrusel__boton--primario {
+  background: #7a2e0d;
+  color: #ffffff;
+}
+
+.carrusel__boton--secundario {
+  background: transparent;
+  border-color: #7a2e0d;
+  color: #7a2e0d;
 }
