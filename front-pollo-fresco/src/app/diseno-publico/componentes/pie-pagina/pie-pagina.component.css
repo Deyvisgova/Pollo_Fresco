@@ -1,0 +1,32 @@
+.pie-pagina {
+  background: #3d1b08;
+  color: #fff1e6;
+}
+
+.pie-pagina h3,
+.pie-pagina h4 {
+  color: #ffd5b5;
+  margin: 0 0 0.5rem;
+}
+
+.pie-pagina p {
+  margin: 0.25rem 0;
+}
+
+.pie-pagina__redes {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.pie-pagina__redes a {
+  color: #ffd5b5;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.pie-pagina__redes a:hover {
+  color: #ffffff;
+}
