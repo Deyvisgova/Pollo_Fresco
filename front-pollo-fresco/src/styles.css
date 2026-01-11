@@ -2,4 +2,16 @@
 
 body {
   background-color: #fffaf5;
+  color: #4b2d1a;
+  font-family: 'Roboto', 'Helvetica Neue', sans-serif;
+}
+
+a {
+  text-decoration: none;
+}
+
+app-root,
+app-inicio {
+  display: block;
+  min-height: 100vh;
 }
