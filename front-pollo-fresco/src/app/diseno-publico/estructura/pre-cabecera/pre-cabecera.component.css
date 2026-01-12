@@ -1,0 +1,10 @@
+.pre-cabecera {
+  background: #fff7e6;
+  color: #5f3b1d;
+  font-size: 0.95rem;
+  border-bottom: 1px solid rgba(95, 59, 29, 0.1);
+}
+
+.pre-cabecera mat-icon {
+  font-size: 1.1rem;
+}

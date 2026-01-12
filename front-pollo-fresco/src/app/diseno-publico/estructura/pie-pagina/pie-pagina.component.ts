@@ -8,4 +8,4 @@ import { MatDividerModule } from '@angular/material/divider';
   templateUrl: './pie-pagina.component.html',
   styleUrl: './pie-pagina.component.css'
 })
-export class PiePaginaComponent {}
+export class PiePagina {}
