@@ -19,6 +19,12 @@
   flex-wrap: wrap;
 }
 
+.pie-pagina__base {
+  border-top: 1px solid rgba(255, 213, 181, 0.35);
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+}
+
 .pie-pagina__redes a {
   color: #ffd5b5;
   text-decoration: none;
@@ -27,6 +33,17 @@
   gap: 0.35rem;
 }
 
+.pie-pagina__redes i {
+  font-size: 1.1rem;
+}
+
 .pie-pagina__redes a:hover {
   color: #ffffff;
+}
+
+@media (max-width: 767.98px) {
+  .pie-pagina__base {
+    text-align: center;
+    align-items: center;
+  }
 }

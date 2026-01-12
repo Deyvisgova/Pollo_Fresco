@@ -6,7 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
   selector: 'app-clientes',
   standalone: true,
   imports: [MatCardModule, MatIconModule],
-  templateUrl: './clientes.component.html',
-  styleUrl: './clientes.component.css'
+  templateUrl: './clientes.html',
+  styleUrl: './clientes.css'
 })
 export class Clientes {}

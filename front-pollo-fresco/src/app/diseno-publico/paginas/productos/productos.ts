@@ -6,7 +6,7 @@ import { MatCardModule } from '@angular/material/card';
   selector: 'app-productos',
   standalone: true,
   imports: [MatButtonModule, MatCardModule],
-  templateUrl: './productos.component.html',
-  styleUrl: './productos.component.css'
+  templateUrl: './productos.html',
+  styleUrl: './productos.css'
 })
 export class Productos {}

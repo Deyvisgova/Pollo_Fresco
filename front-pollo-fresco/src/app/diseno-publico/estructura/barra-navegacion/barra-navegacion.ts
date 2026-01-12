@@ -6,7 +6,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
   selector: 'app-barra-navegacion',
   standalone: true,
   imports: [MatButtonModule, MatToolbarModule],
-  templateUrl: './barra-navegacion.component.html',
-  styleUrl: './barra-navegacion.component.css'
+  templateUrl: './barra-navegacion.html',
+  styleUrl: './barra-navegacion.css'
 })
 export class BarraNavegacion {}
