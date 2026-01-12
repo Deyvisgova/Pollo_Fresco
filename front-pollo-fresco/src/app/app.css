@@ -1,0 +1,179 @@
+.app {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #3d1b08;
+  display: flex;
+  flex-direction: column;
+  gap: 4rem;
+  padding: 0 24px 4rem;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  align-items: center;
+  margin-top: 2rem;
+}
+
+.hero h1 {
+  font-size: clamp(2.4rem, 4vw, 3.5rem);
+  margin: 0 0 1rem;
+  color: #7a2e0d;
+  letter-spacing: 1px;
+}
+
+.hero p {
+  font-size: 1.1rem;
+  color: #5a2b12;
+  line-height: 1.6;
+}
+
+.hero__etiqueta {
+  display: inline-block;
+  background: #ffe1c2;
+  color: #7a2e0d;
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.hero__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 1.5rem 0 2rem;
+}
+
+.boton {
+  border-radius: 999px;
+  border: 2px solid transparent;
+  font-weight: 600;
+  padding: 0.65rem 1.6rem;
+  cursor: pointer;
+}
+
+.boton--primario {
+  background: #7a2e0d;
+  color: #ffffff;
+}
+
+.boton--secundario {
+  background: transparent;
+  border-color: #7a2e0d;
+  color: #7a2e0d;
+}
+
+.hero__datos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+}
+
+.hero__datos strong {
+  display: block;
+  font-size: 1.4rem;
+  color: #7a2e0d;
+}
+
+.hero__datos span {
+  font-size: 0.95rem;
+  color: #6b3516;
+}
+
+.hero__imagen {
+  display: flex;
+  justify-content: center;
+}
+
+.hero__tarjeta {
+  background: #ffffff;
+  border-radius: 24px;
+  box-shadow: 0 16px 30px rgba(122, 46, 13, 0.15);
+  padding: 2rem;
+  max-width: 360px;
+}
+
+.seccion {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.seccion--clara {
+  background: #fff4e8;
+  border-radius: 24px;
+  padding: 2.5rem;
+}
+
+.seccion__encabezado h2 {
+  margin: 0 0 0.5rem;
+  color: #7a2e0d;
+}
+
+.tarjetas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+}
+
+.tarjeta {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 1.5rem;
+  box-shadow: 0 10px 22px rgba(122, 46, 13, 0.08);
+}
+
+.tarjeta__detalle {
+  display: inline-block;
+  margin-top: 0.75rem;
+  font-weight: 600;
+  color: #d14b2c;
+}
+
+.promos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+}
+
+.promo {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 1.5rem;
+  border: 1px solid rgba(122, 46, 13, 0.12);
+}
+
+.contacto__contenido {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 2rem;
+}
+
+.contacto__info ul {
+  padding-left: 1.1rem;
+  margin: 1rem 0 0;
+}
+
+.contacto__formulario {
+  display: grid;
+  gap: 1rem;
+  background: #fff4e8;
+  padding: 1.5rem;
+  border-radius: 20px;
+}
+
+.contacto__formulario label {
+  display: grid;
+  gap: 0.4rem;
+  font-weight: 600;
+  color: #7a2e0d;
+}
+
+.contacto__formulario input,
+.contacto__formulario textarea {
+  border-radius: 12px;
+  border: 1px solid #e1c4a6;
+  padding: 0.7rem 0.9rem;
+  font-family: inherit;
+}

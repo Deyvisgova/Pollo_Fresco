@@ -1,5 +1,7 @@
 .barra-navegacion {
+  background: #7a2e0d;
   border-bottom: 2px solid rgba(255, 255, 255, 0.25);
+  color: #ffffff;
 }
 
 .barra-navegacion__logo {
@@ -28,5 +30,11 @@
 }
 
 .barra-navegacion__accion {
+  background: #ffe0c3;
+  border: none;
+  border-radius: 999px;
+  color: #7a2e0d;
+  font-weight: 600;
+  padding: 0.6rem 1.4rem;
   white-space: nowrap;
 }

@@ -1,12 +1,12 @@
-import { Component, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Component } from '@angular/core';
+import { BarraNavegacionComponent } from './diseno-publico/componentes/barra-navegacion/barra-navegacion.component';
+import { CarruselComponent } from './diseno-publico/componentes/carrusel/carrusel.component';
+import { PiePaginaComponent } from './diseno-publico/componentes/pie-pagina/pie-pagina.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
+  imports: [BarraNavegacionComponent, CarruselComponent, PiePaginaComponent],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
-export class App {
-  protected readonly title = signal('front-pollo-fresco');
-}
+export class App {}

@@ -1,0 +1,120 @@
+<app-barra-navegacion></app-barra-navegacion>
+
+<main class="app">
+  <section id="inicio" class="hero">
+    <div class="hero__contenido">
+      <span class="hero__etiqueta">Avícola premium</span>
+      <h1>POLLO FRESCO</h1>
+      <p>
+        En Pollo Fresco criamos y vendemos pollo fresco todos los días. Calidad, sabor y
+        trazabilidad para hogares y negocios.
+      </p>
+      <div class="hero__acciones">
+        <button class="boton boton--primario" type="button">Solicitar pedido</button>
+        <button class="boton boton--secundario" type="button">Conocer la granja</button>
+      </div>
+      <div class="hero__datos">
+        <div>
+          <strong>+25</strong>
+          <span>años de experiencia</span>
+        </div>
+        <div>
+          <strong>100%</strong>
+          <span>pollo fresco certificado</span>
+        </div>
+        <div>
+          <strong>24h</strong>
+          <span>entrega rápida local</span>
+        </div>
+      </div>
+    </div>
+    <div class="hero__imagen" aria-hidden="true">
+      <div class="hero__tarjeta">
+        <h2>Selección diaria</h2>
+        <p>Procesos higiénicos, alimentación balanceada y frescura garantizada.</p>
+      </div>
+    </div>
+  </section>
+
+  <app-carrusel></app-carrusel>
+
+  <section id="menu" class="seccion">
+    <header class="seccion__encabezado">
+      <h2>Catálogo de productos</h2>
+      <p>Lo mejor de nuestra avícola, listo para tu mesa o negocio.</p>
+    </header>
+    <div class="tarjetas">
+      <article class="tarjeta">
+        <h3>Pollo entero fresco</h3>
+        <p>Seleccionado y preparado el mismo día para máximo sabor.</p>
+        <span class="tarjeta__detalle">Disponible por kilo</span>
+      </article>
+      <article class="tarjeta">
+        <h3>Presas porcionadas</h3>
+        <p>Pechugas, piernas y alas con corte limpio y uniforme.</p>
+        <span class="tarjeta__detalle">Empaque al vacío</span>
+      </article>
+      <article class="tarjeta">
+        <h3>Marinados especiales</h3>
+        <p>Recetas listas para parrilla, horno o fritura.</p>
+        <span class="tarjeta__detalle">Sabores exclusivos</span>
+      </article>
+    </div>
+  </section>
+
+  <section id="promociones" class="seccion seccion--clara">
+    <header class="seccion__encabezado">
+      <h2>Promociones para mayoristas</h2>
+      <p>Atendemos restaurantes, mercados y emprendimientos con precios especiales.</p>
+    </header>
+    <div class="promos">
+      <div class="promo">
+        <h3>Combo Negocio</h3>
+        <p>10 pollos enteros + cortes mixtos + delivery sin costo.</p>
+      </div>
+      <div class="promo">
+        <h3>Plan Semana Fresca</h3>
+        <p>Abastecimiento diario con seguimiento de calidad y stock.</p>
+      </div>
+      <div class="promo">
+        <h3>Pack Parrillero</h3>
+        <p>Pollo marinado, brochetas y acompañamientos listos.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="contacto" class="seccion contacto">
+    <header class="seccion__encabezado">
+      <h2>Contáctanos</h2>
+      <p>Estamos listos para atender pedidos y consultas en minutos.</p>
+    </header>
+    <div class="contacto__contenido">
+      <div class="contacto__info">
+        <h3>POLLO FRESCO</h3>
+        <p>Avícola con distribución local y atención personalizada.</p>
+        <ul>
+          <li>WhatsApp: +51 999 123 456</li>
+          <li>Correo: hola@pollofresco.pe</li>
+          <li>Horario: Lunes a Domingo 06:00 - 20:00</li>
+        </ul>
+      </div>
+      <form class="contacto__formulario">
+        <label>
+          Nombre
+          <input type="text" placeholder="Tu nombre" />
+        </label>
+        <label>
+          Teléfono
+          <input type="tel" placeholder="+51 999 123 456" />
+        </label>
+        <label>
+          Mensaje
+          <textarea rows="4" placeholder="Cuéntanos tu pedido"></textarea>
+        </label>
+        <button class="boton boton--primario" type="button">Enviar solicitud</button>
+      </form>
+    </div>
+  </section>
+</main>
+
+<app-pie-pagina></app-pie-pagina>
