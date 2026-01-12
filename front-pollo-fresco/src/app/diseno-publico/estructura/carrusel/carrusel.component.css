@@ -2,6 +2,7 @@
   background: linear-gradient(120deg, #fff4e8, #ffe1c2);
   border-radius: 24px;
   padding: 2.5rem;
+  box-shadow: 0 20px 40px rgba(122, 46, 13, 0.12);
 }
 
 .carrusel__tarjeta {

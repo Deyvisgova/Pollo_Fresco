@@ -10,4 +10,4 @@ import { MatChipsModule } from '@angular/material/chips';
   templateUrl: './carrusel.component.html',
   styleUrl: './carrusel.component.css'
 })
-export class CarruselComponent {}
+export class Carrusel {}

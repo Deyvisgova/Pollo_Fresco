@@ -9,4 +9,4 @@ import { MatToolbarModule } from '@angular/material/toolbar';
   templateUrl: './barra-navegacion.component.html',
   styleUrl: './barra-navegacion.component.css'
 })
-export class BarraNavegacionComponent {}
+export class BarraNavegacion {}

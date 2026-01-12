@@ -1,0 +1,14 @@
+.productos {
+  background: #ffffff;
+}
+
+.productos__card {
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+}
+
+.productos__precio {
+  font-weight: 700;
+  color: #ff6f00;
+}
