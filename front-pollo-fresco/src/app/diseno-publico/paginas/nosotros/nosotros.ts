@@ -5,7 +5,7 @@ import { MatCardModule } from '@angular/material/card';
   selector: 'app-nosotros',
   standalone: true,
   imports: [MatCardModule],
-  templateUrl: './nosotros.component.html',
-  styleUrl: './nosotros.component.css'
+  templateUrl: './nosotros.html',
+  styleUrl: './nosotros.css'
 })
 export class Nosotros {}

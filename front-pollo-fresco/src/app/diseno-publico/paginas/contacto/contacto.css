@@ -11,4 +11,15 @@
 
 .contacto__datos mat-icon {
   color: #ff6f00;
+  font-size: 1.25rem;
+}
+
+@media (max-width: 575.98px) {
+  .contacto__formulario {
+    padding: 1.5rem;
+  }
+
+  .contacto__formulario button {
+    width: 100%;
+  }
 }

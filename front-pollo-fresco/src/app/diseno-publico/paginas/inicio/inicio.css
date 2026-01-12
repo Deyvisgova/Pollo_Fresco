@@ -9,8 +9,15 @@
 
 .inicio__icono {
   color: #ff6f00;
+  font-size: 2rem;
 }
 
 .inicio .lead {
   max-width: 520px;
+}
+
+@media (max-width: 767.98px) {
+  .inicio .lead {
+    max-width: 100%;
+  }
 }

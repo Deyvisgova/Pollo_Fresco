@@ -37,3 +37,20 @@
 .barra-navegacion__accion {
   white-space: nowrap;
 }
+
+@media (max-width: 991.98px) {
+  .barra-navegacion .container-fluid {
+    justify-content: center;
+    text-align: center;
+  }
+
+  .barra-navegacion__enlaces {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .barra-navegacion__accion {
+    width: 100%;
+  }
+}

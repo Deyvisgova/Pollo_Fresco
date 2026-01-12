@@ -5,7 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
   selector: 'app-pre-cabecera',
   standalone: true,
   imports: [MatIconModule],
-  templateUrl: './pre-cabecera.component.html',
-  styleUrl: './pre-cabecera.component.css'
+  templateUrl: './pre-cabecera.html',
+  styleUrl: './pre-cabecera.css'
 })
 export class PreCabecera {}

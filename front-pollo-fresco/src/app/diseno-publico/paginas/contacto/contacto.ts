@@ -8,7 +8,7 @@ import { MatInputModule } from '@angular/material/input';
   selector: 'app-contacto',
   standalone: true,
   imports: [MatButtonModule, MatFormFieldModule, MatIconModule, MatInputModule],
-  templateUrl: './contacto.component.html',
-  styleUrl: './contacto.component.css'
+  templateUrl: './contacto.html',
+  styleUrl: './contacto.css'
 })
 export class Contacto {}
