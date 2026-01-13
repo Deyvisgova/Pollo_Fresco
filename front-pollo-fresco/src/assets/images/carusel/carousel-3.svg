@@ -1,0 +1,13 @@
+<svg width="1200" height="720" viewBox="0 0 1200 720" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad-3" x1="0" y1="0" x2="1200" y2="720" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffecd2"/>
+      <stop offset="100%" stop-color="#fcb69f"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="720" rx="48" fill="url(#grad-3)"/>
+  <circle cx="980" cy="190" r="170" fill="#fff0e0" opacity="0.7"/>
+  <circle cx="220" cy="600" r="220" fill="#fff0e0" opacity="0.5"/>
+  <text x="90" y="320" font-family="Arial, sans-serif" font-size="72" font-weight="700" fill="#6b2b1a">Atención mayorista</text>
+  <text x="90" y="400" font-family="Arial, sans-serif" font-size="32" fill="#7a3a28">Entregas coordinadas y puntuales</text>
+</svg>
