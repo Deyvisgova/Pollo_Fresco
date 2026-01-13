@@ -1,0 +1,14 @@
+.ingresar__card {
+  border-radius: 18px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.12);
+}
+
+.ingresar__link {
+  color: #ff6f00;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.ingresar__link:hover {
+  text-decoration: underline;
+}

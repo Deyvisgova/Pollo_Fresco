@@ -6,12 +6,26 @@
     </div>
     <nav class="ms-lg-auto">
       <ul class="nav flex-wrap gap-2 barra-navegacion__enlaces">
-        <li class="nav-item"><a class="nav-link" href="#inicio">Inicio</a></li>
-        <li class="nav-item"><a class="nav-link" href="#nosotros">Nosotros</a></li>
-        <li class="nav-item"><a class="nav-link" href="#productos">Productos</a></li>
-        <li class="nav-item"><a class="nav-link" href="#clientes">Clientes</a></li>
-        <li class="nav-item"><a class="nav-link" href="#contacto">Contacto</a></li>
-        <li class="nav-item"><a class="nav-link" href="#ingresar">Ingresar</a></li>
+        <li class="nav-item">
+          <a class="nav-link" routerLink="/inicio" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+            Inicio
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" routerLink="/nosotros" routerLinkActive="active">Nosotros</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" routerLink="/productos" routerLinkActive="active">Productos</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" routerLink="/clientes" routerLinkActive="active">Clientes</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" routerLink="/contacto" routerLinkActive="active">Contacto</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" routerLink="/ingresar" routerLinkActive="active">Ingresar</a>
+        </li>
       </ul>
     </nav>
     <button mat-raised-button color="accent" type="button" class="barra-navegacion__accion">
