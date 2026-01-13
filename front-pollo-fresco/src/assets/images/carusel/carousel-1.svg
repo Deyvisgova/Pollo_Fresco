@@ -1,0 +1,13 @@
+<svg width="1200" height="720" viewBox="0 0 1200 720" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad-1" x1="0" y1="0" x2="1200" y2="720" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffe29f"/>
+      <stop offset="100%" stop-color="#ffa99f"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="720" rx="48" fill="url(#grad-1)"/>
+  <circle cx="980" cy="180" r="180" fill="#fff1dc" opacity="0.7"/>
+  <circle cx="240" cy="620" r="220" fill="#fff1dc" opacity="0.5"/>
+  <text x="90" y="320" font-family="Arial, sans-serif" font-size="72" font-weight="700" fill="#6b2b1a">Cortes premium</text>
+  <text x="90" y="400" font-family="Arial, sans-serif" font-size="32" fill="#7a3a28">Pechuga, muslo y pierna</text>
+</svg>

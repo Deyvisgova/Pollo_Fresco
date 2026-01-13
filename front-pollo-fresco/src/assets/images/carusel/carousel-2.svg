@@ -1,0 +1,13 @@
+<svg width="1200" height="720" viewBox="0 0 1200 720" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad-2" x1="0" y1="0" x2="1200" y2="720" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#fbd786"/>
+      <stop offset="100%" stop-color="#f7797d"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="720" rx="48" fill="url(#grad-2)"/>
+  <circle cx="1040" cy="160" r="160" fill="#fff3dd" opacity="0.65"/>
+  <circle cx="180" cy="580" r="210" fill="#fff3dd" opacity="0.45"/>
+  <text x="90" y="320" font-family="Arial, sans-serif" font-size="72" font-weight="700" fill="#6b2b1a">Pollo entero</text>
+  <text x="90" y="400" font-family="Arial, sans-serif" font-size="32" fill="#7a3a28">Frescura diaria para tu cocina</text>
+</svg>
