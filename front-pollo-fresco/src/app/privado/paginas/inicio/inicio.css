@@ -1,0 +1,58 @@
+/* Layout general del dashboard */
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.dashboard__tarjetas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.dashboard__tarjeta {
+  background: #f8fafc;
+  border-radius: 16px;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+}
+
+.dashboard__tarjeta h3 {
+  margin: 0;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.dashboard__valor {
+  margin: 10px 0 4px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.dashboard__detalle {
+  font-size: 13px;
+  color: #22c55e;
+}
+
+.dashboard__graficos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.dashboard__grafico {
+  background: #ffffff;
+  border: 1px dashed #cbd5f5;
+  border-radius: 16px;
+  padding: 24px;
+  text-align: center;
+  color: #475569;
+}
+
+@media (max-width: 600px) {
+  .dashboard__grafico {
+    padding: 16px;
+  }
+}
