@@ -58,10 +58,25 @@ class AuthController extends Controller
         // Buscar el usuario y verificar la contraseña.
         $user = User::where('email', $validated['email'])->first();
 
-        if (! $user || ! Hash::check($validated['password'], $user->password)) {
+        if (! $user) {
             return response()->json([
                 'message' => 'Credenciales inválidas.',
             ], 422);
+        }
+
+        $passwordMatches = Hash::check($validated['password'], $user->password);
+        $passwordEsPlano = $validated['password'] === $user->password;
+
+        if (! $passwordMatches && ! $passwordEsPlano) {
+            return response()->json([
+                'message' => 'Credenciales inválidas.',
+            ], 422);
+        }
+
+        if ($passwordEsPlano) {
+            $user->forceFill([
+                'password' => Hash::make($validated['password']),
+            ])->save();
         }
 
         // Emitir un nuevo token para la sesión.

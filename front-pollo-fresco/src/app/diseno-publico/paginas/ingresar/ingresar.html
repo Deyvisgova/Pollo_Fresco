@@ -10,11 +10,23 @@
               <p class="text-muted mb-0">Ingresa con tu cuenta para gestionar tus pedidos.</p>
             </div>
 
-            <form class="d-grid gap-3">
+            <form class="d-grid gap-3" [formGroup]="formulario" (ngSubmit)="enviarIngreso()">
               <mat-form-field appearance="outline" class="w-100">
                 <mat-label>Correo electrónico</mat-label>
-                <input matInput type="email" placeholder="tucorreo@ejemplo.com" autocomplete="email" />
+                <input
+                  matInput
+                  type="email"
+                  placeholder="tucorreo@ejemplo.com"
+                  autocomplete="email"
+                  formControlName="email"
+                />
                 <mat-icon matPrefix>mail</mat-icon>
+                <mat-error *ngIf="formulario.get('email')?.hasError('required')">
+                  El correo es obligatorio.
+                </mat-error>
+                <mat-error *ngIf="formulario.get('email')?.hasError('email')">
+                  Ingresa un correo válido.
+                </mat-error>
               </mat-form-field>
 
               <mat-form-field appearance="outline" class="w-100">
@@ -24,6 +36,7 @@
                   [type]="hidePassword ? 'password' : 'text'"
                   placeholder="Tu contraseña"
                   autocomplete="current-password"
+                  formControlName="password"
                 />
                 <button
                   mat-icon-button
@@ -34,11 +47,24 @@
                 >
                   <mat-icon>{{ hidePassword ? 'visibility' : 'visibility_off' }}</mat-icon>
                 </button>
+                <mat-error *ngIf="formulario.get('password')?.hasError('required')">
+                  La contraseña es obligatoria.
+                </mat-error>
               </mat-form-field>
+
+              <div
+                class="alert alert-danger py-2 mb-0"
+                role="alert"
+                *ngIf="mensajeError"
+              >
+                {{ mensajeError }}
+              </div>
 
               <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <a class="ingresar__link" routerLink="/contacto">Olvidé mi contraseña</a>
-                <button mat-raised-button color="primary" type="submit">Ingresar</button>
+                <button mat-raised-button color="primary" type="submit" [disabled]="estaCargando">
+                  {{ estaCargando ? 'Ingresando...' : 'Ingresar' }}
+                </button>
               </div>
             </form>
 
