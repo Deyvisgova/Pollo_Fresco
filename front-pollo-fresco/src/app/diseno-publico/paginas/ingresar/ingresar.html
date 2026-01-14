@@ -7,14 +7,25 @@
             <div class="text-center mb-4">
               <span class="badge text-bg-warning text-uppercase">Pollo Fresco</span>
               <h2 class="fw-bold mt-3">Bienvenido de vuelta</h2>
-              <p class="text-muted mb-0">Ingresa con tu cuenta para gestionar tus pedidos.</p>
+              <p class="text-muted mb-0">
+                Ingresa al sistema de ventas y facturación electrónica.
+              </p>
             </div>
 
-            <form class="d-grid gap-3">
+            <form class="d-grid gap-3" [formGroup]="formulario" (ngSubmit)="enviarIngreso()">
               <mat-form-field appearance="outline" class="w-100">
-                <mat-label>Correo electrónico</mat-label>
-                <input matInput type="email" placeholder="tucorreo@ejemplo.com" autocomplete="email" />
-                <mat-icon matPrefix>mail</mat-icon>
+                <mat-label>Usuario</mat-label>
+                <input
+                  matInput
+                  type="text"
+                  placeholder="Tu usuario"
+                  autocomplete="username"
+                  formControlName="usuario"
+                />
+                <mat-icon matPrefix>person</mat-icon>
+                <mat-error *ngIf="formulario.get('usuario')?.hasError('required')">
+                  El usuario es obligatorio.
+                </mat-error>
               </mat-form-field>
 
               <mat-form-field appearance="outline" class="w-100">
@@ -24,6 +35,7 @@
                   [type]="hidePassword ? 'password' : 'text'"
                   placeholder="Tu contraseña"
                   autocomplete="current-password"
+                  formControlName="password"
                 />
                 <button
                   mat-icon-button
@@ -34,19 +46,33 @@
                 >
                   <mat-icon>{{ hidePassword ? 'visibility' : 'visibility_off' }}</mat-icon>
                 </button>
+                <mat-error *ngIf="formulario.get('password')?.hasError('required')">
+                  La contraseña es obligatoria.
+                </mat-error>
               </mat-form-field>
+
+              <div
+                class="alert alert-danger py-2 mb-0"
+                role="alert"
+                *ngIf="mensajeError"
+              >
+                {{ mensajeError }}
+              </div>
 
               <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <a class="ingresar__link" routerLink="/contacto">Olvidé mi contraseña</a>
-                <button mat-raised-button color="primary" type="submit">Ingresar</button>
+                <button mat-raised-button color="primary" type="submit" [disabled]="estaCargando">
+                  {{ estaCargando ? 'Ingresando...' : 'Ingresar' }}
+                </button>
               </div>
             </form>
 
             <mat-divider class="my-4"></mat-divider>
 
             <div class="text-center">
-              <p class="text-muted mb-2">¿Aún no tienes cuenta?</p>
-              <button mat-stroked-button color="accent" type="button">Crear cuenta</button>
+              <p class="text-muted mb-0">
+                El acceso lo habilita el administrador del sistema.
+              </p>
             </div>
           </mat-card-content>
         </mat-card>
