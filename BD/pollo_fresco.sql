@@ -39,7 +39,7 @@ CREATE TABLE `clientes` (
   `referencias` varchar(250) DEFAULT NULL,
   `creado_en` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `actualizado_en` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -54,7 +54,7 @@ CREATE TABLE `compras_lote` (
   `fecha_ingreso` date NOT NULL,
   `costo_lote` decimal(10,2) NOT NULL,
   `creado_en` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -69,7 +69,7 @@ CREATE TABLE `compras_lote_detalle` (
   `cantidad` decimal(10,2) NOT NULL,
   `costo_unitario` decimal(10,2) NOT NULL,
   `subtotal` decimal(10,2) NOT NULL
-) ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -102,7 +102,7 @@ CREATE TABLE `entregas_proveedor` (
   `costo_total` decimal(10,2) NOT NULL,
   `observacion` varchar(250) DEFAULT NULL,
   `creado_en` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -116,7 +116,7 @@ CREATE TABLE `otros_productos_ventas` (
   `fecha_venta` date NOT NULL,
   `total` decimal(10,2) NOT NULL DEFAULT '0.00',
   `creado_en` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -131,7 +131,7 @@ CREATE TABLE `otros_productos_venta_detalle` (
   `cantidad` decimal(10,2) NOT NULL,
   `precio_unitario` decimal(10,2) NOT NULL,
   `subtotal` decimal(10,2) NOT NULL
-) ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -168,7 +168,7 @@ CREATE TABLE `pedido_detalle` (
   `peso_kg` decimal(10,2) DEFAULT NULL,
   `precio_unitario` decimal(10,2) NOT NULL,
   `subtotal` decimal(10,2) NOT NULL
-) ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -204,7 +204,7 @@ CREATE TABLE `pedido_pagos` (
   `estado_pago` enum('COMPLETO','PENDIENTE','PARCIAL') NOT NULL,
   `pago_parcial` decimal(10,2) DEFAULT NULL,
   `vuelto` decimal(10,2) NOT NULL DEFAULT '0.00'
-) ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -235,7 +235,7 @@ CREATE TABLE `proveedores` (
   `telefono` char(9) DEFAULT NULL,
   `creado_en` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `actualizado_en` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -268,13 +268,21 @@ CREATE TABLE `usuarios` (
   `rol_id` int NOT NULL,
   `nombres` varchar(80) NOT NULL,
   `apellidos` varchar(80) NOT NULL,
+  `usuario` varchar(60) NOT NULL,
   `email` varchar(120) NOT NULL,
   `telefono` char(9) DEFAULT NULL,
   `password_hash` varchar(255) NOT NULL,
   `activo` tinyint(1) NOT NULL DEFAULT '1',
   `creado_en` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `actualizado_en` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `usuarios`
+--
+
+INSERT INTO `usuarios` (`usuario_id`, `rol_id`, `nombres`, `apellidos`, `usuario`, `email`, `telefono`, `password_hash`, `activo`, `creado_en`, `actualizado_en`) VALUES
+(1, 1, 'Deyvis', 'Gova', 'deyvisgova', 'deyvisgova@gmail.com', NULL, '$2y$12$.z2qMYpMGgFxCoGSa16izu5RtZGeQrbiWjY2ZwXpY9YNLi9S1VDYO', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- --------------------------------------------------------
 
@@ -288,7 +296,7 @@ CREATE TABLE `ventas` (
   `usuario_id` int NOT NULL,
   `fecha_hora` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `total` decimal(10,2) NOT NULL DEFAULT '0.00'
-) ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -303,7 +311,7 @@ CREATE TABLE `venta_detalle` (
   `cantidad` decimal(10,2) NOT NULL,
   `precio_unitario` decimal(10,2) NOT NULL,
   `subtotal` decimal(10,2) NOT NULL
-) ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Indexes for dumped tables
@@ -424,6 +432,7 @@ ALTER TABLE `roles`
 ALTER TABLE `usuarios`
   ADD PRIMARY KEY (`usuario_id`),
   ADD UNIQUE KEY `email` (`email`),
+  ADD UNIQUE KEY `usuario` (`usuario`),
   ADD KEY `fk_usuarios_roles` (`rol_id`);
 
 --
