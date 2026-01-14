@@ -12,8 +12,12 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
+    public const ROLE_ADMIN = 'admin';
+    public const ROLE_MANAGER = 'manager';
+    public const ROLE_CASHIER = 'cashier';
+
     /**
-     * The attributes that are mass assignable.
+     * Atributos asignables en masa.
      *
      * @var array<int, string>
      */
@@ -21,10 +25,11 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
+     * Atributos ocultos en la serialización.
      *
      * @var array<int, string>
      */
@@ -34,7 +39,7 @@ class User extends Authenticatable
     ];
 
     /**
-     * The attributes that should be cast.
+     * Conversiones de atributos.
      *
      * @var array<string, string>
      */
@@ -42,4 +47,18 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    /**
+     * Obtener la lista de roles permitidos en el sistema.
+     *
+     * @return array<int, string>
+     */
+    public static function allowedRoles(): array
+    {
+        return [
+            self::ROLE_ADMIN,
+            self::ROLE_MANAGER,
+            self::ROLE_CASHIER,
+        ];
+    }
 }
