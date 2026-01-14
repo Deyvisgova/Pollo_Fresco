@@ -7,33 +7,84 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
-## About Laravel
+## Sobre Laravel
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Laravel es un framework web con una sintaxis expresiva y elegante. Creemos que el desarrollo debe ser una experiencia agradable y creativa. Laravel simplifica tareas comunes en proyectos web, como:
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- [Motor de rutas simple y rápido](https://laravel.com/docs/routing).
+- [Contenedor potente de inyección de dependencias](https://laravel.com/docs/container).
+- Múltiples backends para [sesiones](https://laravel.com/docs/session) y [cache](https://laravel.com/docs/cache).
+- [ORM de base de datos expresivo e intuitivo](https://laravel.com/docs/eloquent).
+- [Migraciones de esquema](https://laravel.com/docs/migrations) independientes de la base de datos.
+- [Procesamiento robusto de trabajos en segundo plano](https://laravel.com/docs/queues).
+- [Difusión de eventos en tiempo real](https://laravel.com/docs/broadcasting).
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Laravel es accesible, poderoso y proporciona herramientas para aplicaciones grandes y robustas.
 
-## Learning Laravel
+## Configuración de autenticación y base de datos
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+Laravel ya incluye las piezas necesarias para autenticación segura, cifrado de contraseñas, recuperación de contraseñas por correo y protección de endpoints API. La conexión a la base de datos se configura en `.env`, y Laravel la toma automáticamente desde `config/database.php`.
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+### Conexión a la base de datos
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Configura los datos de conexión dentro de tu archivo `.env`:
 
-## Laravel Sponsors
+```
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=pollo_fresco
+DB_USERNAME=tu_usuario
+DB_PASSWORD=tu_password
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### Correo para recuperación de contraseñas
 
-### Premium Partners
+Laravel usa el broker de contraseñas, que envía un email con el token de recuperación. Ajusta tu SMTP en `.env`:
+
+```
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.tu-proveedor.com
+MAIL_PORT=587
+MAIL_USERNAME=usuario_correo
+MAIL_PASSWORD=clave_correo
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=no-reply@pollofresco.com
+MAIL_FROM_NAME="Pollo Fresco"
+```
+
+### Roles disponibles
+
+El sistema contempla tres roles: `admin`, `manager` y `cashier`. Esta lista se usa para validar registros en los endpoints de autenticación.
+
+## Endpoints API de autenticación
+
+Todos los endpoints están bajo el prefijo `/api/auth` y están protegidos con Sanctum donde aplica:
+
+| Método | Endpoint | Descripción |
+| --- | --- | --- |
+| POST | `/api/auth/register` | Registra usuarios y retorna token. |
+| POST | `/api/auth/login` | Inicia sesión y retorna token. |
+| POST | `/api/auth/forgot-password` | Envía link de recuperación. |
+| POST | `/api/auth/reset-password` | Restablece la contraseña con token. |
+| GET | `/api/auth/me` | Devuelve el usuario autenticado. |
+| POST | `/api/auth/logout` | Revoca el token actual. |
+
+> Asegúrate de enviar el token en `Authorization: Bearer <token>` para las rutas protegidas.
+
+## Aprender Laravel
+
+Laravel tiene la [documentación](https://laravel.com/docs) y la librería de tutoriales en video más completa entre los frameworks modernos, facilitando el inicio con el framework.
+
+También puedes probar el [Laravel Bootcamp](https://bootcamp.laravel.com), donde se guía la construcción de una aplicación moderna desde cero.
+
+Si no quieres leer, [Laracasts](https://laracasts.com) puede ayudar. Laracasts contiene miles de tutoriales sobre Laravel, PHP moderno, pruebas unitarias y JavaScript.
+
+## Patrocinadores de Laravel
+
+Extendemos nuestro agradecimiento a los patrocinadores que financian el desarrollo de Laravel. Si quieres ser patrocinador, visita el [programa de socios de Laravel](https://partners.laravel.com).
+
+### Socios premium
 
 - **[Vehikl](https://vehikl.com/)**
 - **[Tighten Co.](https://tighten.co)**
@@ -49,18 +100,18 @@ We would like to extend our thanks to the following sponsors for funding Laravel
 - **[byte5](https://byte5.de)**
 - **[OP.GG](https://op.gg)**
 
-## Contributing
+## Contribuir
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Gracias por considerar contribuir al framework Laravel. La guía de contribución está en la [documentación de Laravel](https://laravel.com/docs/contributions).
 
-## Code of Conduct
+## Código de conducta
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Para asegurar que la comunidad de Laravel sea acogedora, revisa y respeta el [Código de conducta](https://laravel.com/docs/contributions#code-of-conduct).
 
-## Security Vulnerabilities
+## Vulnerabilidades de seguridad
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Si descubres una vulnerabilidad en Laravel, envía un correo a Taylor Otwell vía [taylor@laravel.com](mailto:taylor@laravel.com). Todas las vulnerabilidades se atienden con rapidez.
 
-## License
+## Licencia
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Laravel es software de código abierto licenciado bajo la [licencia MIT](https://opensource.org/licenses/MIT).
