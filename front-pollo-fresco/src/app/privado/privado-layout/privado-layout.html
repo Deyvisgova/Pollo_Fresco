@@ -1,0 +1,40 @@
+<!-- Contenedor general del panel administrativo -->
+<section class="panel">
+  <!-- Barra lateral con identidad de la empresa y navegación -->
+  <aside class="panel__sidebar">
+    <!-- Área de logo con un placeholder visual -->
+    <div class="panel__logo">
+      <div class="panel__logo-imagen">LOGO (imagen)</div>
+      <p class="panel__empresa">Nombre de la empresa</p>
+    </div>
+
+    <!-- Navegación principal del módulo privado -->
+    <nav class="panel__menu">
+      <a
+        *ngFor="let item of menu"
+        [routerLink]="item.ruta"
+        routerLinkActive="panel__link--activo"
+        class="panel__link"
+      >
+        {{ item.etiqueta }}
+      </a>
+    </nav>
+
+    <!-- Acciones secundarias, por ejemplo cerrar sesión -->
+    <button class="panel__salir" type="button">Cerrar sesión</button>
+  </aside>
+
+  <!-- Área principal en donde se renderizan las rutas hijas -->
+  <main class="panel__contenido">
+    <!-- Cabecera de contexto para el panel -->
+    <header class="panel__cabecera">
+      <h1>Panel Administrativo</h1>
+      <p>Vista general para la gestión de la operación.</p>
+    </header>
+
+    <!-- Aquí se pintan los componentes de las rutas hijas -->
+    <section class="panel__rutas">
+      <router-outlet></router-outlet>
+    </section>
+  </main>
+</section>
