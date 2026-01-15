@@ -8,7 +8,6 @@ use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class AuthController extends Controller
@@ -20,20 +19,32 @@ class AuthController extends Controller
     {
         // Validar datos de registro y limitar los roles permitidos.
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'usuario' => ['required', 'string', 'max:255', 'unique:users,usuario'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'name' => ['nullable', 'string', 'max:255'],
+            'nombres' => ['nullable', 'string', 'max:255'],
+            'apellidos' => ['nullable', 'string', 'max:255'],
+            'usuario' => ['required', 'string', 'max:255', 'unique:usuarios,usuario'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:usuarios,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'role' => ['required', Rule::in(User::allowedRoles())],
         ]);
 
+        $nombres = $validated['nombres'] ?? null;
+        $apellidos = $validated['apellidos'] ?? null;
+
+        if (! $nombres) {
+            $nameParts = preg_split('/\s+/', trim((string) ($validated['name'] ?? '')), 2);
+            $nombres = $nameParts[0] ?? 'Usuario';
+            $apellidos = $apellidos ?? ($nameParts[1] ?? '');
+        }
+
         // Crear el usuario con contraseña cifrada.
         $user = User::create([
-            'name' => $validated['name'],
+            'nombres' => $nombres,
+            'apellidos' => $apellidos ?? '',
             'usuario' => $validated['usuario'],
             'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'role' => $validated['role'],
+            'password_hash' => Hash::make($validated['password']),
+            'rol_id' => User::roleIdFromName($validated['role']),
         ]);
 
         // Emitir un token de Sanctum para autenticación API.
@@ -66,8 +77,9 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $passwordMatches = Hash::check($validated['password'], $user->password);
-        $passwordEsPlano = $validated['password'] === $user->password;
+        $storedPassword = $user->getAuthPassword();
+        $passwordMatches = Hash::check($validated['password'], $storedPassword);
+        $passwordEsPlano = hash_equals($validated['password'], $storedPassword);
 
         if (! $passwordMatches && ! $passwordEsPlano) {
             return response()->json([
@@ -77,7 +89,7 @@ class AuthController extends Controller
 
         if ($passwordEsPlano) {
             $user->forceFill([
-                'password' => Hash::make($validated['password']),
+                'password_hash' => Hash::make($validated['password']),
             ])->save();
         }
 
@@ -151,8 +163,7 @@ class AuthController extends Controller
             function (User $user, string $password) {
                 // Actualizar la contraseña y el remember token.
                 $user->forceFill([
-                    'password' => Hash::make($password),
-                    'remember_token' => Str::random(60),
+                    'password_hash' => Hash::make($password),
                 ])->save();
 
                 event(new PasswordReset($user));
