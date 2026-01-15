@@ -69,7 +69,10 @@ class AuthController extends Controller
         ]);
 
         // Buscar el usuario y verificar la contraseña.
-        $user = User::where('usuario', $validated['usuario'])->first();
+        $identifier = $validated['usuario'];
+        $user = User::where('usuario', $identifier)
+            ->orWhere('email', $identifier)
+            ->first();
 
         if (! $user) {
             return response()->json([
