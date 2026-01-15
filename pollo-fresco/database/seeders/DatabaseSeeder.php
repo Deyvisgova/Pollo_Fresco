@@ -15,12 +15,13 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         User::updateOrCreate(
-            ['usuario' => 'deyvis'],
+            ['usuario' => 'deyvisgova'],
             [
-                'name' => 'Deyvis',
+                'nombres' => 'Deyvis',
+                'apellidos' => 'Gova',
                 'email' => 'deyvisgova@gmail.com',
-                'password' => Hash::make('Deyvis260995##'),
-                'role' => User::ROLE_ADMIN,
+                'password_hash' => Hash::make('Deyvis260995##'),
+                'rol_id' => User::roleIdFromName(User::ROLE_ADMIN),
             ]
         );
     }
