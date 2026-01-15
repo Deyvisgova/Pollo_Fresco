@@ -1,14 +1,221 @@
-<!-- Contenido base para la vista de usuarios -->
 <section class="seccion">
   <div class="seccion__encabezado">
     <h2>Usuarios</h2>
-    <p>Gestión y seguimiento de usuarios en el panel privado.</p>
+    <p>Administración integral de usuarios con búsqueda rápida y edición segura.</p>
   </div>
 
-  <div class="seccion__tarjeta">
-    <p>
-      Aquí se mostrará el contenido principal de <strong>Usuarios</strong>.
-      Este bloque se diseñó como placeholder para agregar formularios, tablas o reportes.
-    </p>
+  <div class="barra">
+    <div class="barra__busqueda">
+      <label for="busqueda">Buscar usuario</label>
+      <input
+        id="busqueda"
+        type="search"
+        placeholder="Busca por nombre, usuario, correo, rol o estado..."
+        [(ngModel)]="terminoBusqueda"
+      />
+    </div>
+    <button class="boton boton--primario" type="button" (click)="iniciarNuevo()">
+      Nuevo usuario
+    </button>
+  </div>
+
+  <div class="alerta" *ngIf="mensajeError">{{ mensajeError }}</div>
+
+  <div class="contenido">
+    <div class="tarjeta tabla">
+      <div class="tabla__encabezado">
+        <h3>Listado de usuarios</h3>
+        <span>{{ usuariosFiltrados.length }} usuarios</span>
+      </div>
+      <div class="tabla__contenedor">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Rol</th>
+              <th>Nombre</th>
+              <th>Usuario</th>
+              <th>Email</th>
+              <th>Teléfono</th>
+              <th>Estado</th>
+              <th>Creado</th>
+              <th>Actualizado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="!cargando && usuariosFiltrados.length === 0">
+              <td colspan="10" class="tabla__vacia">
+                No hay usuarios que coincidan con tu búsqueda.
+              </td>
+            </tr>
+            <tr *ngFor="let usuario of usuariosFiltrados">
+              <td>#{{ usuario.usuario_id }}</td>
+              <td>{{ obtenerNombreRol(usuario.rol_id) }}</td>
+              <td>
+                <strong>{{ usuario.nombres }} {{ usuario.apellidos }}</strong>
+              </td>
+              <td>{{ usuario.usuario }}</td>
+              <td>{{ usuario.email }}</td>
+              <td>{{ usuario.telefono || 'No registrado' }}</td>
+              <td>
+                <span
+                  class="estado"
+                  [class.estado--activo]="usuario.activo"
+                  [class.estado--inactivo]="!usuario.activo"
+                >
+                  {{ usuario.activo ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td>{{ usuario.creado_en | date: 'short' }}</td>
+              <td>{{ usuario.actualizado_en | date: 'short' }}</td>
+              <td class="tabla__acciones">
+                <button
+                  class="boton boton--secundario"
+                  type="button"
+                  (click)="seleccionarUsuario(usuario)"
+                >
+                  Editar
+                </button>
+                <button
+                  class="boton boton--peligro"
+                  type="button"
+                  (click)="eliminarUsuario(usuario)"
+                >
+                  Eliminar
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="tarjeta formulario">
+      <h3>{{ modoEdicion ? 'Editar usuario' : 'Registrar nuevo usuario' }}</h3>
+      <p class="formulario__descripcion">
+        Completa todos los campos para asegurar una gestión clara de permisos,
+        credenciales y estado del usuario.
+      </p>
+
+      <form (ngSubmit)="guardarUsuario()" #usuarioForm="ngForm">
+        <div class="formulario__grid">
+          <div class="campo">
+            <label for="rol">Rol</label>
+            <select id="rol" name="rol" [(ngModel)]="formulario.rol_id" required>
+              <option *ngFor="let rol of roles" [value]="rol.id">
+                {{ rol.nombre }}
+              </option>
+            </select>
+          </div>
+          <div class="campo">
+            <label for="usuario">Usuario</label>
+            <input
+              id="usuario"
+              name="usuario"
+              type="text"
+              [(ngModel)]="formulario.usuario"
+              required
+              minlength="3"
+            />
+          </div>
+          <div class="campo">
+            <label for="nombres">Nombres</label>
+            <input
+              id="nombres"
+              name="nombres"
+              type="text"
+              [(ngModel)]="formulario.nombres"
+              required
+            />
+          </div>
+          <div class="campo">
+            <label for="apellidos">Apellidos</label>
+            <input
+              id="apellidos"
+              name="apellidos"
+              type="text"
+              [(ngModel)]="formulario.apellidos"
+              required
+            />
+          </div>
+          <div class="campo">
+            <label for="email">Correo electrónico</label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              [(ngModel)]="formulario.email"
+              required
+            />
+          </div>
+          <div class="campo">
+            <label for="telefono">Teléfono</label>
+            <input
+              id="telefono"
+              name="telefono"
+              type="text"
+              maxlength="9"
+              [(ngModel)]="formulario.telefono"
+            />
+          </div>
+          <div class="campo">
+            <label for="password">
+              {{ modoEdicion ? 'Nueva contraseña' : 'Contraseña' }}
+            </label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              [(ngModel)]="formulario.password"
+              [required]="!modoEdicion"
+              minlength="6"
+            />
+            <small>
+              {{
+                modoEdicion
+                  ? 'Dejar en blanco si no deseas cambiarla.'
+                  : 'Se guardará de forma segura como hash.'
+              }}
+            </small>
+          </div>
+          <div class="campo campo--switch">
+            <label for="activo">Estado activo</label>
+            <label class="switch">
+              <input
+                id="activo"
+                name="activo"
+                type="checkbox"
+                [(ngModel)]="formulario.activo"
+              />
+              <span class="switch__slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="formulario__acciones">
+          <button
+            class="boton boton--primario"
+            type="submit"
+            [disabled]="usuarioForm.invalid || cargando"
+          >
+            {{ modoEdicion ? 'Guardar cambios' : 'Crear usuario' }}
+          </button>
+          <button class="boton" type="button" (click)="iniciarNuevo()">
+            Limpiar
+          </button>
+        </div>
+
+        <div class="formulario__resumen" *ngIf="usuarioSeleccionado">
+          <h4>Resumen del usuario</h4>
+          <p><strong>ID:</strong> {{ usuarioSeleccionado.usuario_id }}</p>
+          <p><strong>Creado:</strong> {{ usuarioSeleccionado.creado_en | date: 'medium' }}</p>
+          <p>
+            <strong>Actualizado:</strong>
+            {{ usuarioSeleccionado.actualizado_en | date: 'medium' }}
+          </p>
+        </div>
+      </form>
+    </div>
   </div>
 </section>
