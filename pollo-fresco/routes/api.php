@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\UsuariosController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -46,3 +47,11 @@ Route::prefix('auth')->group(function () {
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
+
+/*
+|--------------------------------------------------------------------------
+| Gestión de usuarios
+|--------------------------------------------------------------------------
+| CRUD completo para administrar usuarios del sistema.
+*/
+Route::middleware('auth:sanctum')->apiResource('usuarios', UsuariosController::class);
