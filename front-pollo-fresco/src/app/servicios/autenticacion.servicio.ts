@@ -21,7 +21,7 @@ interface RespuestaLoginApi {
 @Injectable({ providedIn: 'root' })
 export class AutenticacionServicio {
   // URL base de la API. Ajustar si cambia el dominio o puerto.
-  private readonly apiBase = 'http://localhost:8000/api';
+  private readonly apiBase = '/api';
 
   constructor(
     private readonly http: HttpClient,
