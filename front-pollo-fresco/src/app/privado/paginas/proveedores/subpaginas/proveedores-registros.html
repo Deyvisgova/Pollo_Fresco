@@ -1,0 +1,88 @@
+<section class="tarjeta">
+  <header class="tarjeta__encabezado">
+    <h3>Registro de entregas</h3>
+    <p>Registra las entregas de pollos y costos asociados por proveedor.</p>
+  </header>
+
+  <form class="formulario" (ngSubmit)="guardarRegistro()">
+    <label class="campo">
+      <span>Proveedor</span>
+      <input [(ngModel)]="formulario.proveedor" name="proveedor" type="text" />
+    </label>
+    <label class="campo">
+      <span>Fecha de entrega</span>
+      <input [(ngModel)]="formulario.fechaEntrega" name="fechaEntrega" type="date" />
+    </label>
+    <label class="campo">
+      <span>Cantidad de pollos</span>
+      <input [(ngModel)]="formulario.cantidadPollos" name="cantidadPollos" type="number" min="0" />
+    </label>
+    <label class="campo">
+      <span>Peso total (kg)</span>
+      <input [(ngModel)]="formulario.pesoTotalKg" name="pesoTotalKg" type="number" min="0" step="0.01" />
+    </label>
+    <label class="campo">
+      <span>Merma (kg)</span>
+      <input [(ngModel)]="formulario.mermaKg" name="mermaKg" type="number" min="0" step="0.01" />
+    </label>
+    <label class="campo">
+      <span>Costo total (S/)</span>
+      <input [(ngModel)]="formulario.costoTotal" name="costoTotal" type="number" min="0" step="0.01" />
+    </label>
+    <label class="campo campo--completo">
+      <span>Observación</span>
+      <textarea [(ngModel)]="formulario.observacion" name="observacion" rows="3"></textarea>
+    </label>
+
+    <div class="acciones">
+      <button class="boton boton--primario" type="submit">
+        {{ indiceEdicion === null ? 'Guardar registro' : 'Actualizar registro' }}
+      </button>
+      <button class="boton boton--secundario" type="button" (click)="limpiarFormulario()">Limpiar</button>
+    </div>
+  </form>
+</section>
+
+<section class="tarjeta">
+  <header class="tarjeta__encabezado">
+    <h3>Historial de entregas</h3>
+    <p>Consulta los registros recientes y administra cada entrega.</p>
+  </header>
+
+  <div class="tabla-contenedor">
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th>Proveedor</th>
+          <th>Fecha</th>
+          <th>Pollos</th>
+          <th>Peso total</th>
+          <th>Merma</th>
+          <th>Costo</th>
+          <th>Observación</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let registro of registros; let i = index">
+          <td>{{ registro.proveedor }}</td>
+          <td>{{ registro.fechaEntrega }}</td>
+          <td>{{ registro.cantidadPollos ?? '-' }}</td>
+          <td>{{ registro.pesoTotalKg ?? '-' }} kg</td>
+          <td>{{ registro.mermaKg ?? '-' }} kg</td>
+          <td>S/ {{ registro.costoTotal ?? '-' }}</td>
+          <td>{{ registro.observacion || '-' }}</td>
+          <td class="acciones-tabla">
+            <button class="boton boton--link" type="button" (click)="editarRegistro(i)">Editar</button>
+            <button class="boton boton--link boton--peligro" type="button" (click)="eliminarRegistro(i)">
+              Eliminar
+            </button>
+          </td>
+        </tr>
+        <tr *ngIf="registros.length === 0">
+          <td colspan="8">No hay registros de entrega aún.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>

@@ -1,0 +1,118 @@
+<section class="tarjeta">
+  <header class="tarjeta__encabezado">
+    <h3>Consulta SUNAT / RENIEC</h3>
+    <p>Valida DNI o RUC y autocompleta la ficha del proveedor.</p>
+  </header>
+
+  <div class="consulta">
+    <form class="consulta__grupo" (ngSubmit)="consultarDni()">
+      <label class="campo">
+        <span>DNI</span>
+        <input [(ngModel)]="consultaDni" name="consultaDni" type="text" placeholder="8 dígitos" />
+      </label>
+      <button class="boton boton--primario" type="submit" [disabled]="consultaCargando">
+        {{ consultaCargando ? 'Consultando...' : 'Consultar DNI' }}
+      </button>
+    </form>
+
+    <form class="consulta__grupo" (ngSubmit)="consultarRuc()">
+      <label class="campo">
+        <span>RUC</span>
+        <input [(ngModel)]="consultaRuc" name="consultaRuc" type="text" placeholder="11 dígitos" />
+      </label>
+      <button class="boton boton--primario" type="submit" [disabled]="consultaCargando">
+        {{ consultaCargando ? 'Consultando...' : 'Consultar RUC' }}
+      </button>
+    </form>
+  </div>
+
+  <p class="mensaje mensaje--error" *ngIf="consultaError">{{ consultaError }}</p>
+
+  <div class="resultado" *ngIf="consultaResultado">
+    <h4>Respuesta de la consulta</h4>
+    <pre>{{ consultaResultado | json }}</pre>
+  </div>
+</section>
+
+<section class="tarjeta">
+  <header class="tarjeta__encabezado">
+    <h3>Ficha del proveedor</h3>
+    <p>Completa los datos para crear, actualizar o eliminar proveedores.</p>
+  </header>
+
+  <form class="formulario" (ngSubmit)="guardarProveedor()">
+    <label class="campo">
+      <span>DNI</span>
+      <input [(ngModel)]="formulario.dni" name="dni" type="text" placeholder="8 dígitos" />
+    </label>
+    <label class="campo">
+      <span>RUC</span>
+      <input [(ngModel)]="formulario.ruc" name="ruc" type="text" placeholder="11 dígitos" />
+    </label>
+    <label class="campo">
+      <span>Nombres / Razón social</span>
+      <input [(ngModel)]="formulario.nombres" name="nombres" type="text" />
+    </label>
+    <label class="campo">
+      <span>Apellidos</span>
+      <input [(ngModel)]="formulario.apellidos" name="apellidos" type="text" />
+    </label>
+    <label class="campo">
+      <span>Dirección</span>
+      <input [(ngModel)]="formulario.direccion" name="direccion" type="text" />
+    </label>
+    <label class="campo">
+      <span>Teléfono</span>
+      <input [(ngModel)]="formulario.telefono" name="telefono" type="text" />
+    </label>
+
+    <div class="acciones">
+      <button class="boton boton--primario" type="submit">
+        {{ indiceEdicion === null ? 'Guardar proveedor' : 'Actualizar proveedor' }}
+      </button>
+      <button class="boton boton--secundario" type="button" (click)="limpiarFormulario()">Limpiar</button>
+    </div>
+  </form>
+</section>
+
+<section class="tarjeta">
+  <header class="tarjeta__encabezado">
+    <h3>Listado de proveedores</h3>
+    <p>Administra tu cartera de proveedores con acciones rápidas.</p>
+  </header>
+
+  <div class="tabla-contenedor">
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th>DNI</th>
+          <th>RUC</th>
+          <th>Proveedor</th>
+          <th>Contacto</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let proveedor of proveedores; let i = index">
+          <td>{{ proveedor.dni || '-' }}</td>
+          <td>{{ proveedor.ruc || '-' }}</td>
+          <td>
+            <strong>{{ proveedor.nombres }}</strong>
+            <div class="nota">{{ proveedor.apellidos }}</div>
+            <div class="nota">{{ proveedor.direccion }}</div>
+          </td>
+          <td>{{ proveedor.telefono || '-' }}</td>
+          <td class="acciones-tabla">
+            <button class="boton boton--link" type="button" (click)="editarProveedor(i)">Editar</button>
+            <button class="boton boton--link boton--peligro" type="button" (click)="eliminarProveedor(i)">
+              Eliminar
+            </button>
+          </td>
+        </tr>
+        <tr *ngIf="proveedores.length === 0">
+          <td colspan="5">Todavía no hay proveedores registrados.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
