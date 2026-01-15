@@ -18,9 +18,12 @@
               </p>
             </div>
 
-            <form class="d-grid gap-3" [formGroup]="formulario" (ngSubmit)="enviarIngreso()">
+            <form
+              class="d-grid gap-3"
+              [formGroup]="formulario"
+              (ngSubmit)="enviarIngreso()"
+            >
               <mat-form-field appearance="outline" class="w-100">
-
                 <mat-label>Usuario</mat-label>
                 <input
                   matInput
@@ -33,16 +36,6 @@
                 <mat-error *ngIf="formulario.get('usuario')?.hasError('required')">
                   El usuario es obligatorio.
                 </mat-error>
-
-                <mat-label>Correo electrónico</mat-label>
-                <input
-                  matInput
-                  type="email"
-                  placeholder="tucorreo@ejemplo.com"
-                  autocomplete="email"
-                />
-                <mat-icon matPrefix>mail</mat-icon>
-
               </mat-form-field>
 
               <mat-form-field appearance="outline" class="w-100">
@@ -72,7 +65,6 @@
               </mat-form-field>
 
               <div
-
                 class="alert alert-danger py-2 mb-0"
                 role="alert"
                 *ngIf="mensajeError"
@@ -81,31 +73,26 @@
               </div>
 
               <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <a class="ingresar__link" routerLink="/contacto">Olvidé mi contraseña</a>
-                <button mat-raised-button color="primary" type="submit" [disabled]="estaCargando">
-                  {{ estaCargando ? 'Ingresando...' : 'Ingresar' }}
-
-                class="d-flex justify-content-between align-items-center flex-wrap gap-2"
-              >
                 <a class="ingresar__link" routerLink="/contacto"
                   >Olvidé mi contraseña</a
                 >
-                <button mat-raised-button color="primary" type="submit">
-                  Ingresar
-
+                <button
+                  mat-raised-button
+                  color="primary"
+                  type="submit"
+                  [disabled]="estaCargando"
+                >
+                  {{ estaCargando ? 'Ingresando...' : 'Ingresar' }}
                 </button>
               </div>
             </form>
 
             <mat-divider class="my-4"></mat-divider>
-
-
             <div class="text-center">
               <p class="text-muted mb-0">
                 El acceso lo habilita el administrador del sistema.
               </p>
             </div>
-
           </mat-card-content>
         </mat-card>
       </div>
