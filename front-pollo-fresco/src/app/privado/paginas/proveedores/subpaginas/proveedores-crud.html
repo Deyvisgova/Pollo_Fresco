@@ -1,0 +1,117 @@
+<section class="tarjeta">
+  <header class="tarjeta__encabezado">
+    <h3>Registro de proveedor</h3>
+    <p>
+      Ingresa DNI o RUC para autocompletar datos. Luego completa el celular y guarda el proveedor.
+    </p>
+  </header>
+
+  <div class="consulta">
+    <label class="campo">
+      <span>DNI</span>
+      <div class="campo__acciones">
+        <input [(ngModel)]="consultaDni" name="consultaDni" type="text" placeholder="8 dígitos" />
+        <button class="boton boton--primario" type="button" (click)="consultarDni()" [disabled]="consultaCargando">
+          {{ consultaCargando ? 'Consultando...' : 'Consultar DNI' }}
+        </button>
+      </div>
+    </label>
+    <label class="campo">
+      <span>RUC</span>
+      <div class="campo__acciones">
+        <input [(ngModel)]="consultaRuc" name="consultaRuc" type="text" placeholder="11 dígitos" />
+        <button class="boton boton--primario" type="button" (click)="consultarRuc()" [disabled]="consultaCargando">
+          {{ consultaCargando ? 'Consultando...' : 'Consultar RUC' }}
+        </button>
+      </div>
+    </label>
+  </div>
+
+  <p class="mensaje mensaje--error" *ngIf="consultaError">{{ consultaError }}</p>
+
+  <form class="formulario" (ngSubmit)="guardarProveedor()">
+    <label class="campo">
+      <span>DNI</span>
+      <input [(ngModel)]="formulario.dni" name="dni" type="text" placeholder="8 dígitos" />
+    </label>
+    <label class="campo">
+      <span>RUC</span>
+      <input [(ngModel)]="formulario.ruc" name="ruc" type="text" placeholder="11 dígitos" />
+    </label>
+    <label class="campo">
+      <span>Nombres / Razón social</span>
+      <input [(ngModel)]="formulario.nombres" name="nombres" type="text" />
+    </label>
+    <label class="campo">
+      <span>Nombre de la empresa</span>
+      <input [(ngModel)]="formulario.nombreEmpresa" name="nombreEmpresa" type="text" />
+    </label>
+    <label class="campo">
+      <span>Apellidos</span>
+      <input [(ngModel)]="formulario.apellidos" name="apellidos" type="text" />
+    </label>
+    <label class="campo">
+      <span>Dirección</span>
+      <input [(ngModel)]="formulario.direccion" name="direccion" type="text" />
+    </label>
+    <label class="campo">
+      <span>Teléfono</span>
+      <input [(ngModel)]="formulario.telefono" name="telefono" type="text" />
+    </label>
+
+    <div class="acciones">
+      <button class="boton boton--primario" type="submit" [disabled]="guardando">
+        {{ formulario.proveedor_id === null ? 'Guardar proveedor' : 'Actualizar proveedor' }}
+      </button>
+      <button class="boton boton--secundario" type="button" (click)="limpiarFormulario()">Limpiar</button>
+    </div>
+  </form>
+</section>
+
+<section class="tarjeta">
+  <header class="tarjeta__encabezado">
+    <h3>Listado de proveedores</h3>
+    <p>Administra tu cartera de proveedores con acciones rápidas.</p>
+  </header>
+
+  <div class="tabla-contenedor">
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th>DNI</th>
+          <th>RUC</th>
+          <th>Proveedor</th>
+          <th>Empresa</th>
+          <th>Contacto</th>
+          <th>Creado en</th>
+          <th>Actualizado en</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let proveedor of proveedores">
+          <td>{{ proveedor.dni || '-' }}</td>
+          <td>{{ proveedor.ruc || '-' }}</td>
+          <td>
+            <strong>{{ proveedor.nombres }}</strong>
+            <div class="nota">{{ proveedor.apellidos }}</div>
+            <div class="nota">{{ proveedor.direccion }}</div>
+          </td>
+          <td>{{ proveedor.nombre_empresa || '-' }}</td>
+          <td>{{ proveedor.telefono || '-' }}</td>
+          <td>{{ proveedor.creado_en | date: 'short' }}</td>
+          <td>{{ proveedor.actualizado_en | date: 'short' }}</td>
+          <td class="acciones-tabla">
+            <button class="boton boton--link" type="button" (click)="editarProveedor(proveedor)">Editar</button>
+            <button class="boton boton--link boton--peligro" type="button" (click)="eliminarProveedor(proveedor)">
+              Eliminar
+            </button>
+          </td>
+        </tr>
+        <tr *ngIf="proveedores.length === 0">
+          <td colspan="8">Todavía no hay proveedores registrados.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
