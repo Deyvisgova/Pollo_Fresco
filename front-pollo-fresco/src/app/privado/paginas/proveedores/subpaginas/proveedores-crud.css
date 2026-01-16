@@ -1,0 +1,152 @@
+* {
+  box-sizing: border-box;
+}
+
+.tarjeta {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tarjeta__encabezado h3 {
+  margin: 0;
+  color: #0f172a;
+}
+
+.tarjeta__encabezado p {
+  margin: 6px 0 0;
+  color: #64748b;
+}
+
+.consulta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.formulario {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: #334155;
+}
+
+.campo input,
+.campo select {
+  border-radius: 10px;
+  border: 1px solid #cbd5f5;
+  padding: 10px 12px;
+  font-size: 0.95rem;
+}
+
+.campo__acciones {
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.acciones {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.boton {
+  border: none;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.boton--primario {
+  background: #1d4ed8;
+  color: #ffffff;
+}
+
+.boton--secundario {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.boton--link {
+  background: transparent;
+  color: #1d4ed8;
+  padding: 0;
+}
+
+.boton--peligro {
+  color: #dc2626;
+}
+
+.mensaje {
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+}
+
+.mensaje--error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.resultado {
+  background: #f8fafc;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px dashed #cbd5f5;
+  color: #475569;
+}
+
+.resultado pre {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.tabla-contenedor {
+  overflow-x: auto;
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.tabla th,
+.tabla td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+}
+
+.tabla th {
+  color: #1e3a8a;
+  font-weight: 600;
+  background: #eff6ff;
+}
+
+.nota {
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.acciones-tabla {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}

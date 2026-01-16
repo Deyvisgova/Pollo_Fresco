@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, map, tap } from 'rxjs';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Observable, catchError, map, tap, throwError } from 'rxjs';
 import { SesionServicio, UsuarioSesion } from './sesion.servicio';
 
 export interface CredencialesIngreso {
@@ -39,6 +39,25 @@ export class AutenticacionServicio {
           this.sesionServicio.guardarSesion(respuesta.user, respuesta.token)
         ),
         map((respuesta) => respuesta.user)
+      );
+  }
+
+  /**
+   * Cierra la sesión actual en el backend y limpia la sesión local.
+   */
+  cerrarSesion(): Observable<void> {
+    const token = this.sesionServicio.obtenerToken();
+    const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
+
+    return this.http
+      .post<{ message: string }>(`${this.apiBase}/auth/logout`, {}, { headers })
+      .pipe(
+        tap(() => this.sesionServicio.limpiarSesion()),
+        map(() => undefined),
+        catchError((error) => {
+          this.sesionServicio.limpiarSesion();
+          return throwError(() => error);
+        })
       );
   }
 }

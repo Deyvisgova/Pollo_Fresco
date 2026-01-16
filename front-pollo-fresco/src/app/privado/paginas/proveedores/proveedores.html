@@ -2,13 +2,15 @@
 <section class="seccion">
   <div class="seccion__encabezado">
     <h2>Proveedores</h2>
-    <p>Gestión y seguimiento de proveedores en el panel privado.</p>
+    <p>Administra proveedores y registra entregas de pollos desde el panel privado.</p>
   </div>
 
-  <div class="seccion__tarjeta">
-    <p>
-      Aquí se mostrará el contenido principal de <strong>Proveedores</strong>.
-      Este bloque se diseñó como placeholder para agregar formularios, tablas o reportes.
-    </p>
+  <nav class="seccion__tabs">
+    <a routerLink="crud" routerLinkActive="tab--activa" class="tab">CRUD de proveedores</a>
+    <a routerLink="registros" routerLinkActive="tab--activa" class="tab">Registro de pollos</a>
+  </nav>
+
+  <div class="seccion__contenido">
+    <router-outlet></router-outlet>
   </div>
 </section>
