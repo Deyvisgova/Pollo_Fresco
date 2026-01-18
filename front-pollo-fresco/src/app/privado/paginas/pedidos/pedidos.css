@@ -1,24 +1,84 @@
-/* Estructura base para secciones internas */
 .seccion {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  padding: 24px;
 }
 
-.seccion__encabezado h2 {
-  margin: 0;
-  color: #0f172a;
-}
-
-.seccion__encabezado p {
-  margin: 4px 0 0;
-  color: #64748b;
+.seccion__encabezado {
+  margin-bottom: 20px;
 }
 
 .seccion__tarjeta {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
+.formulario {
+  display: grid;
+  gap: 16px;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.campo input,
+.campo select {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #d0d7e2;
+}
+
+.detalles,
+.pagos {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.detalle {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  align-items: end;
+  padding: 12px;
   background: #f8fafc;
-  border-radius: 16px;
-  padding: 18px;
-  border: 1px solid #e2e8f0;
-  color: #475569;
+  border-radius: 10px;
+}
+
+.boton {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 999px;
+  background: #e2e8f0;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.boton--primario {
+  background: #f97316;
+  color: #ffffff;
+}
+
+.boton--secundario {
+  background: #cbd5f5;
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.respuesta {
+  background: #0f172a;
+  color: #f8fafc;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  overflow-x: auto;
 }

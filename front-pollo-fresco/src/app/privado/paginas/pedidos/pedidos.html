@@ -1,14 +1,100 @@
-<!-- Contenido base para la vista de pedidos -->
 <section class="seccion">
   <div class="seccion__encabezado">
-    <h2>Pedidos</h2>
-    <p>Gestión y seguimiento de pedidos en el panel privado.</p>
+    <h2>Pedidos Delivery</h2>
+    <p>Registra pedidos con detalles, pagos y evidencia fotográfica desde el celular.</p>
   </div>
 
-  <div class="seccion__tarjeta">
-    <p>
-      Aquí se mostrará el contenido principal de <strong>Pedidos</strong>.
-      Este bloque se diseñó como placeholder para agregar formularios, tablas o reportes.
-    </p>
+  <div class="seccion__tarjeta formulario">
+    <div class="campo">
+      <label>Cliente (ID)</label>
+      <input type="number" [(ngModel)]="clienteId" placeholder="Cliente ID" />
+    </div>
+
+    <div class="campo">
+      <label>Vendedor (ID)</label>
+      <input type="number" [(ngModel)]="vendedorId" placeholder="Usuario vendedor" />
+    </div>
+
+    <div class="campo">
+      <label>Delivery (ID)</label>
+      <input type="number" [(ngModel)]="deliveryId" placeholder="Usuario delivery (opcional)" />
+    </div>
+
+    <div class="campo">
+      <label>Latitud</label>
+      <input type="number" [(ngModel)]="latitud" placeholder="GPS" />
+    </div>
+
+    <div class="campo">
+      <label>Longitud</label>
+      <input type="number" [(ngModel)]="longitud" placeholder="GPS" />
+    </div>
+
+    <div class="campo">
+      <label>Foto del frontis</label>
+      <input type="file" accept="image/*" capture="environment" (change)="onFotoSeleccionada($event)" />
+      <small>La foto se guarda en <strong>assets/delivery</strong>.</small>
+    </div>
+
+    <div class="detalles">
+      <h3>Detalle de productos</h3>
+      <div class="detalle" *ngFor="let detalle of detalles">
+        <div class="campo">
+          <label>Producto ID</label>
+          <input type="number" [(ngModel)]="detalle.producto_id" />
+        </div>
+        <div class="campo">
+          <label>Cantidad</label>
+          <input type="number" [(ngModel)]="detalle.cantidad" />
+        </div>
+        <div class="campo">
+          <label>Peso (kg)</label>
+          <input type="number" [(ngModel)]="detalle.peso_kg" />
+        </div>
+        <div class="campo">
+          <label>Precio unitario</label>
+          <input type="number" [(ngModel)]="detalle.precio_unitario" />
+        </div>
+        <button type="button" class="boton boton--secundario" (click)="eliminarDetalle(detalle.id)">
+          Quitar
+        </button>
+      </div>
+      <button type="button" class="boton" (click)="agregarDetalle()">Agregar producto</button>
+    </div>
+
+    <div class="pagos">
+      <label class="checkbox">
+        <input type="checkbox" [(ngModel)]="incluirPago" /> Registrar pago
+      </label>
+
+      <div class="pagos__detalle" *ngIf="incluirPago">
+        <div class="campo">
+          <label>Registrado por (ID)</label>
+          <input type="number" [(ngModel)]="pago.registrado_por" />
+        </div>
+        <div class="campo">
+          <label>Estado de pago</label>
+          <select [(ngModel)]="pago.estado_pago">
+            <option value="COMPLETO">Completo</option>
+            <option value="PENDIENTE">Pendiente</option>
+            <option value="PARCIAL">Parcial</option>
+          </select>
+        </div>
+        <div class="campo">
+          <label>Pago parcial</label>
+          <input type="number" [(ngModel)]="pago.pago_parcial" />
+        </div>
+        <div class="campo">
+          <label>Vuelto</label>
+          <input type="number" [(ngModel)]="pago.vuelto" />
+        </div>
+      </div>
+    </div>
+
+    <button type="button" class="boton boton--primario" [disabled]="cargando" (click)="registrarPedido()">
+      {{ cargando ? 'Guardando...' : 'Registrar pedido delivery' }}
+    </button>
+
+    <pre class="respuesta" *ngIf="respuesta">{{ respuesta }}</pre>
   </div>
 </section>

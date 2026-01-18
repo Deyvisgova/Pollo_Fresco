@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ClienteController;
 use App\Http\Controllers\Api\EntregaProveedorController;
+use App\Http\Controllers\Api\PedidoDeliveryController;
 use App\Http\Controllers\Api\ProveedorController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -65,4 +66,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('entregas-proveedor', [EntregaProveedorController::class, 'index']);
     Route::post('entregas-proveedor', [EntregaProveedorController::class, 'store']);
+
+    Route::get('pedidos-delivery', [PedidoDeliveryController::class, 'index']);
+    Route::post('pedidos-delivery', [PedidoDeliveryController::class, 'store']);
+    Route::get('pedidos-delivery/{pedido}', [PedidoDeliveryController::class, 'show']);
+    Route::put('pedidos-delivery/{pedido}', [PedidoDeliveryController::class, 'update']);
 });
