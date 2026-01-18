@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ClienteController;
 use App\Http\Controllers\Api\EntregaProveedorController;
 use App\Http\Controllers\Api\ProveedorController;
 use Illuminate\Http\Request;
@@ -57,6 +58,9 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 */
 Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('proveedores', ProveedorController::class)
+        ->only(['index', 'store', 'show', 'update', 'destroy']);
+
+    Route::apiResource('clientes', ClienteController::class)
         ->only(['index', 'store', 'show', 'update', 'destroy']);
 
     Route::get('entregas-proveedor', [EntregaProveedorController::class, 'index']);

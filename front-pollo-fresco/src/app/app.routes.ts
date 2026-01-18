@@ -7,6 +7,7 @@ import { Nosotros } from './diseno-publico/paginas/nosotros/nosotros';
 import { Productos } from './diseno-publico/paginas/productos/productos';
 import { PrivadoLayout } from './privado/privado-layout/privado-layout';
 import { PrivadoClientes } from './privado/paginas/clientes/clientes';
+import { PrivadoClientesCrud } from './privado/paginas/clientes/subpaginas/clientes-crud';
 import { PrivadoConfiguracion } from './privado/paginas/configuracion/configuracion';
 import { PrivadoGastos } from './privado/paginas/gastos/gastos';
 import { PrivadoInicio } from './privado/paginas/inicio/inicio';
@@ -84,7 +85,18 @@ export const routes: Routes = [
       },
       {
         path: 'clientes',
-        component: PrivadoClientes
+        component: PrivadoClientes,
+        children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            redirectTo: 'crud'
+          },
+          {
+            path: 'crud',
+            component: PrivadoClientesCrud
+          }
+        ]
       },
       {
         path: 'venta',
