@@ -1,0 +1,125 @@
+<section class="tarjeta">
+  <header class="tarjeta__encabezado">
+    <h3>Registro de clientes</h3>
+    <p>Consulta el DNI para completar datos y luego registra al cliente en el sistema.</p>
+  </header>
+
+  <div class="consulta">
+    <label class="campo">
+      <span>DNI</span>
+      <div class="campo__acciones">
+        <input [(ngModel)]="consultaDni" name="consultaDni" type="text" placeholder="8 dígitos" />
+        <button class="boton boton--primario" type="button" (click)="consultarDni()" [disabled]="consultaCargando">
+          {{ consultaCargando ? 'Consultando...' : 'Consultar DNI' }}
+        </button>
+      </div>
+    </label>
+  </div>
+
+  <p class="mensaje mensaje--error" *ngIf="mensajeError">{{ mensajeError }}</p>
+
+  <form class="formulario" (ngSubmit)="guardarCliente()">
+    <label class="campo">
+      <span>DNI</span>
+      <input [(ngModel)]="formulario.dni" name="dni" type="text" placeholder="8 dígitos" />
+    </label>
+    <label class="campo">
+      <span>RUC</span>
+      <input [(ngModel)]="formulario.ruc" name="ruc" type="text" placeholder="11 dígitos" />
+    </label>
+    <label class="campo">
+      <span>Nombres</span>
+      <input [(ngModel)]="formulario.nombres" name="nombres" type="text" />
+    </label>
+    <label class="campo">
+      <span>Apellidos</span>
+      <input [(ngModel)]="formulario.apellidos" name="apellidos" type="text" />
+    </label>
+    <label class="campo">
+      <span>Celular</span>
+      <input [(ngModel)]="formulario.celular" name="celular" type="text" placeholder="9 dígitos" />
+    </label>
+    <label class="campo">
+      <span>Dirección</span>
+      <input [(ngModel)]="formulario.direccion" name="direccion" type="text" />
+    </label>
+    <label class="campo">
+      <span>Dirección fiscal</span>
+      <input [(ngModel)]="formulario.direccionFiscal" name="direccionFiscal" type="text" />
+    </label>
+    <label class="campo">
+      <span>Referencias</span>
+      <input [(ngModel)]="formulario.referencias" name="referencias" type="text" />
+    </label>
+
+    <div class="acciones">
+      <button class="boton boton--primario" type="submit" [disabled]="guardando">
+        {{ formulario.cliente_id === null ? 'Guardar cliente' : 'Actualizar cliente' }}
+      </button>
+      <button class="boton boton--secundario" type="button" (click)="limpiarFormulario()">Limpiar</button>
+    </div>
+  </form>
+</section>
+
+<section class="tarjeta">
+  <header class="tarjeta__encabezado">
+    <h3>Listado de clientes</h3>
+    <p>Consulta rápidamente la cartera de clientes registrados.</p>
+  </header>
+
+  <div class="busqueda">
+    <label class="campo">
+      <span>Buscar</span>
+      <input [(ngModel)]="filtro" name="filtro" type="text" placeholder="Nombre, DNI, celular o RUC" />
+    </label>
+    <div class="acciones">
+      <button class="boton boton--secundario" type="button" (click)="buscarClientes()" [disabled]="cargando">
+        {{ cargando ? 'Buscando...' : 'Aplicar filtro' }}
+      </button>
+      <button class="boton boton--link" type="button" (click)="filtro = ''; buscarClientes()">Limpiar</button>
+    </div>
+  </div>
+
+  <div class="tabla-contenedor">
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th>DNI</th>
+          <th>RUC</th>
+          <th>Cliente</th>
+          <th>Contacto</th>
+          <th>Direcciones</th>
+          <th>Creado en</th>
+          <th>Actualizado en</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let cliente of clientes">
+          <td>{{ cliente.dni || '-' }}</td>
+          <td>{{ cliente.ruc || '-' }}</td>
+          <td>
+            <strong>{{ cliente.nombres }} {{ cliente.apellidos }}</strong>
+            <div class="nota">{{ cliente.referencias || 'Sin referencias' }}</div>
+          </td>
+          <td>{{ cliente.celular || '-' }}</td>
+          <td>
+            <div>{{ cliente.direccion || '-' }}</div>
+            <div class="nota">{{ cliente.direccion_fiscal || 'Sin dirección fiscal' }}</div>
+          </td>
+          <td>{{ cliente.creado_en | date: 'short' }}</td>
+          <td>{{ cliente.actualizado_en | date: 'short' }}</td>
+          <td class="acciones-tabla">
+            <button class="boton boton--link" type="button" (click)="editarCliente(cliente)">Editar</button>
+            <button class="boton boton--link boton--peligro" type="button" (click)="eliminarCliente(cliente)">
+              Eliminar
+            </button>
+          </td>
+        </tr>
+        <tr *ngIf="clientes.length === 0">
+          <td colspan="8">Todavía no hay clientes registrados.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>

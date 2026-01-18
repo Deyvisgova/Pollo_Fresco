@@ -2,13 +2,14 @@
 <section class="seccion">
   <div class="seccion__encabezado">
     <h2>Clientes</h2>
-    <p>Gestión y seguimiento de clientes en el panel privado.</p>
+    <p>Gestiona la cartera de clientes y actualiza sus datos desde el panel privado.</p>
   </div>
 
-  <div class="seccion__tarjeta">
-    <p>
-      Aquí se mostrará el contenido principal de <strong>Clientes</strong>.
-      Este bloque se diseñó como placeholder para agregar formularios, tablas o reportes.
-    </p>
+  <nav class="seccion__tabs">
+    <a routerLink="crud" routerLinkActive="tab--activa" class="tab">CRUD de clientes</a>
+  </nav>
+
+  <div class="seccion__contenido">
+    <router-outlet></router-outlet>
   </div>
 </section>
