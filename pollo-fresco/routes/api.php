@@ -1,7 +1,11 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\UsuariosController;
+
+use App\Http\Controllers\Api\ClienteController;
+use App\Http\Controllers\Api\EntregaProveedorController;
+use App\Http\Controllers\Api\ProveedorController;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -48,10 +52,21 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-/*
-|--------------------------------------------------------------------------
-| Gestión de usuarios
-|--------------------------------------------------------------------------
-| CRUD completo para administrar usuarios del sistema.
-*/
+
 Route::middleware('auth:sanctum')->apiResource('usuarios', UsuariosController::class);
+/*
+ Endpoints de Proveedores
+
+CRUD de proveedores y registro de entregas de pollos.
+*/
+Route::middleware('auth:sanctum')->group(function () {
+    Route::apiResource('proveedores', ProveedorController::class)
+        ->only(['index', 'store', 'show', 'update', 'destroy']);
+
+    Route::apiResource('clientes', ClienteController::class)
+        ->only(['index', 'store', 'show', 'update', 'destroy']);
+
+    Route::get('entregas-proveedor', [EntregaProveedorController::class, 'index']);
+    Route::post('entregas-proveedor', [EntregaProveedorController::class, 'store']);
+});
+
