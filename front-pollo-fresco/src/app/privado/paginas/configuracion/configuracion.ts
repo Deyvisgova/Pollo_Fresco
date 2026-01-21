@@ -7,4 +7,19 @@ import { Component } from '@angular/core';
   templateUrl: './configuracion.html',
   styleUrl: './configuracion.css'
 })
-export class PrivadoConfiguracion {}
+export class PrivadoConfiguracion {
+  logoPreviewUrl: string | null = null;
+  logoFileName = 'logo-pollo-fresco.png';
+
+  onLogoSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    this.logoFileName = file.name;
+    this.logoPreviewUrl = URL.createObjectURL(file);
+  }
+}
