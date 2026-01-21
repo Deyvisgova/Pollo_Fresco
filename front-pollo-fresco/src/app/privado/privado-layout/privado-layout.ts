@@ -26,15 +26,55 @@ export class PrivadoLayout {
     { etiqueta: 'Reportes', ruta: 'reportes' }
   ];
 
+  empresaNombre = 'Nombre de la empresa';
+  logoUrl: string | null = null;
+  logoFileName = 'logo.png';
+
+  private readonly logoStorageKey = 'polloFrescoLogoUrl';
+  private readonly logoNameStorageKey = 'polloFrescoLogoName';
+  private readonly empresaStorageKey = 'polloFrescoEmpresaNombre';
+
   constructor(
     private readonly autenticacionServicio: AutenticacionServicio,
     private readonly router: Router
-  ) {}
+  ) {
+    this.empresaNombre = localStorage.getItem(this.empresaStorageKey) ?? 'Pollo Fresco';
+    this.logoUrl = localStorage.getItem(this.logoStorageKey);
+    this.logoFileName = localStorage.getItem(this.logoNameStorageKey) ?? 'logo-pollo-fresco.png';
+  }
 
   cerrarSesion(): void {
     this.autenticacionServicio.cerrarSesion().subscribe({
       next: () => this.router.navigate(['/ingresar']),
       error: () => this.router.navigate(['/ingresar'])
     });
+  }
+
+  onEmpresaNombreChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.empresaNombre = input.value;
+    localStorage.setItem(this.empresaStorageKey, this.empresaNombre);
+  }
+
+  onLogoSidebarSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    this.logoFileName = file.name;
+    localStorage.setItem(this.logoNameStorageKey, this.logoFileName);
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result === 'string') {
+        this.logoUrl = result;
+        localStorage.setItem(this.logoStorageKey, result);
+      }
+    };
+    reader.readAsDataURL(file);
   }
 }
