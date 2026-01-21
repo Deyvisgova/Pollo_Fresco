@@ -26,10 +26,22 @@ export class PrivadoLayout {
     { etiqueta: 'Reportes', ruta: 'reportes' }
   ];
 
+  empresaNombre = 'Pollo Fresco';
+  logoUrl: string | null = null;
+  logoFileName = 'logo-pollo-fresco.png';
+
+  private readonly logoStorageKey = 'polloFrescoLogoUrl';
+  private readonly logoNameStorageKey = 'polloFrescoLogoName';
+  private readonly empresaStorageKey = 'polloFrescoEmpresaNombre';
+
   constructor(
     private readonly autenticacionServicio: AutenticacionServicio,
     private readonly router: Router
-  ) {}
+  ) {
+    this.empresaNombre = localStorage.getItem(this.empresaStorageKey) ?? 'Pollo Fresco';
+    this.logoUrl = localStorage.getItem(this.logoStorageKey);
+    this.logoFileName = localStorage.getItem(this.logoNameStorageKey) ?? 'logo-pollo-fresco.png';
+  }
 
   cerrarSesion(): void {
     this.autenticacionServicio.cerrarSesion().subscribe({

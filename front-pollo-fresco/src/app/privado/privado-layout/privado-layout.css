@@ -22,6 +22,9 @@
 /* Zona del logo */
 .panel__logo {
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .panel__logo-imagen {
@@ -31,10 +34,24 @@
   padding: 18px;
   border-radius: 16px;
   box-shadow: inset 0 2px 6px rgba(15, 23, 42, 0.2);
+  display: grid;
+  place-items: center;
+  min-height: 72px;
+  overflow: hidden;
+}
+
+.panel__logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.panel__logo-placeholder {
+  letter-spacing: 0.08em;
 }
 
 .panel__empresa {
-  margin-top: 12px;
+  margin: 0;
   font-weight: 600;
   color: #1f2937;
 }

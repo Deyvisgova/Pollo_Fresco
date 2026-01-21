@@ -2,10 +2,18 @@
 <section class="panel">
   <!-- Barra lateral con identidad de la empresa y navegación -->
   <aside class="panel__sidebar">
-    <!-- Área de logo con un placeholder visual -->
+    <!-- Área de logo -->
     <div class="panel__logo">
-      <div class="panel__logo-imagen">LOGO (imagen)</div>
-      <p class="panel__empresa">Nombre de la empresa</p>
+      <div class="panel__logo-imagen">
+        <img
+          class="panel__logo-img"
+          [src]="logoUrl"
+          [alt]="logoFileName"
+          [hidden]="!logoUrl"
+        />
+        <span class="panel__logo-placeholder" [hidden]="logoUrl">LOGO</span>
+      </div>
+      <p class="panel__empresa">{{ empresaNombre }}</p>
     </div>
 
     <!-- Navegación principal del módulo privado -->
