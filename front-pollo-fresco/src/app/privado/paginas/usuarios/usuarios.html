@@ -1,14 +1,330 @@
-<!-- Contenido base para la vista de usuarios -->
 <section class="seccion">
   <div class="seccion__encabezado">
     <h2>Usuarios</h2>
-    <p>Gestión y seguimiento de usuarios en el panel privado.</p>
+    <p>Administración integral de usuarios con búsqueda rápida y edición segura.</p>
   </div>
 
-  <div class="seccion__tarjeta">
-    <p>
-      Aquí se mostrará el contenido principal de <strong>Usuarios</strong>.
-      Este bloque se diseñó como placeholder para agregar formularios, tablas o reportes.
-    </p>
+  <div class="barra">
+    <div class="barra__busqueda">
+      <label for="busqueda">Buscar usuario</label>
+      <input
+        id="busqueda"
+        type="search"
+        placeholder="Busca por nombre, usuario, correo, rol o estado..."
+        [(ngModel)]="terminoBusqueda"
+      />
+    </div>
+    <button class="boton boton--primario" type="button" (click)="iniciarNuevo()">
+      Nuevo usuario
+    </button>
+  </div>
+
+  <div class="alerta" *ngIf="mensajeError">{{ mensajeError }}</div>
+
+  <div class="contenido">
+    <div class="tarjeta tabla">
+      <div class="tabla__encabezado">
+        <h3>Listado de usuarios</h3>
+        <span>{{ usuariosFiltrados.length }} usuarios</span>
+      </div>
+      <div class="tabla__contenedor">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Rol</th>
+              <th>Nombre</th>
+              <th>Usuario</th>
+              <th>Email</th>
+              <th>Teléfono</th>
+              <th>Estado</th>
+              <th>Creado</th>
+              <th>Actualizado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="!cargando && usuariosFiltrados.length === 0">
+              <td colspan="10" class="tabla__vacia">
+                No hay usuarios que coincidan con tu búsqueda.
+              </td>
+            </tr>
+            <tr *ngFor="let usuario of usuariosFiltrados">
+              <td>#{{ usuario.usuario_id }}</td>
+              <td>{{ obtenerNombreRol(usuario.rol_id) }}</td>
+              <td>
+                <strong>{{ usuario.nombres }} {{ usuario.apellidos }}</strong>
+              </td>
+              <td>{{ usuario.usuario }}</td>
+              <td>{{ usuario.email }}</td>
+              <td>{{ usuario.telefono || 'No registrado' }}</td>
+              <td>
+                <span
+                  class="estado"
+                  [class.estado--activo]="usuario.activo"
+                  [class.estado--inactivo]="!usuario.activo"
+                >
+                  {{ usuario.activo ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td>{{ usuario.creado_en | date: 'short' }}</td>
+              <td>{{ usuario.actualizado_en | date: 'short' }}</td>
+              <td class="tabla__acciones">
+                <label class="switch switch--tabla" title="Activar o desactivar usuario">
+                  <input
+                    type="checkbox"
+                    [checked]="usuario.activo"
+                    (change)="cambiarEstado(usuario)"
+                  />
+                  <span class="switch__slider"></span>
+                </label>
+                <button
+                  class="boton boton--secundario"
+                  type="button"
+                  (click)="seleccionarUsuario(usuario)"
+                >
+                  Editar
+                </button>
+                <button
+                  class="boton boton--peligro"
+                  type="button"
+                  (click)="eliminarUsuario(usuario)"
+                >
+                  Eliminar
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
   </div>
 </section>
+
+<div class="modal" *ngIf="mostrarModal">
+  <div class="modal__overlay" (click)="cerrarModal()"></div>
+  <div class="modal__contenedor">
+    <div class="modal__encabezado">
+      <div>
+        <h3>{{ modoEdicion ? 'Editar usuario' : 'Registrar nuevo usuario' }}</h3>
+        <p class="formulario__descripcion">
+          Completa todos los campos para asegurar una gestión clara de permisos,
+          credenciales y estado del usuario.
+        </p>
+      </div>
+      <button class="boton boton--cerrar" type="button" (click)="cerrarModal()">
+        ✕
+      </button>
+    </div>
+
+    <div class="alerta" *ngIf="mensajeError">{{ mensajeError }}</div>
+
+    <form (ngSubmit)="guardarUsuario()" #usuarioForm="ngForm">
+      <div class="formulario__grid">
+        <div class="campo">
+          <label for="rol">Rol</label>
+          <select id="rol" name="rol" [(ngModel)]="formulario.rol_id" required>
+            <option *ngFor="let rol of roles" [ngValue]="rol.id">
+              {{ rol.nombre }}
+            </option>
+          </select>
+        </div>
+        <div class="campo">
+          <label for="usuario">Usuario</label>
+          <input
+            id="usuario"
+            name="usuario"
+            type="text"
+            [(ngModel)]="formulario.usuario"
+            required
+            minlength="3"
+            #usuarioField="ngModel"
+          />
+          <small class="mensaje-error" *ngIf="usuarioField.invalid && usuarioField.touched">
+            El usuario es obligatorio (mínimo 3 caracteres).
+          </small>
+        </div>
+        <div class="campo">
+          <label for="nombres">Nombres</label>
+          <input
+            id="nombres"
+            name="nombres"
+            type="text"
+            [(ngModel)]="formulario.nombres"
+            required
+            #nombresField="ngModel"
+          />
+          <small class="mensaje-error" *ngIf="nombresField.invalid && nombresField.touched">
+            Los nombres son obligatorios.
+          </small>
+        </div>
+        <div class="campo">
+          <label for="apellidos">Apellidos</label>
+          <input
+            id="apellidos"
+            name="apellidos"
+            type="text"
+            [(ngModel)]="formulario.apellidos"
+            required
+            #apellidosField="ngModel"
+          />
+          <small class="mensaje-error" *ngIf="apellidosField.invalid && apellidosField.touched">
+            Los apellidos son obligatorios.
+          </small>
+        </div>
+        <div class="campo">
+          <label for="email">Correo electrónico</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            [(ngModel)]="formulario.email"
+            required
+            #emailField="ngModel"
+          />
+          <small class="mensaje-error" *ngIf="emailField.invalid && emailField.touched">
+            Ingresa un correo válido.
+          </small>
+        </div>
+        <div class="campo">
+          <label for="telefono">Teléfono</label>
+          <input
+            id="telefono"
+            name="telefono"
+            type="text"
+            maxlength="9"
+            inputmode="numeric"
+            [(ngModel)]="formulario.telefono"
+          />
+          <small>
+            Opcional: ingresa 9 dígitos o deja el campo vacío.
+          </small>
+        </div>
+        <div class="campo">
+          <label for="password">
+            {{ modoEdicion ? 'Nueva contraseña' : 'Contraseña' }}
+          </label>
+          <div class="campo__password">
+            <input
+              id="password"
+              name="password"
+              [type]="mostrarPassword ? 'text' : 'password'"
+              [(ngModel)]="formulario.password"
+              [required]="!modoEdicion"
+              minlength="6"
+              pattern="^(?=.*[A-Za-z])(?=.*\\d).{6,}$"
+              #passwordField="ngModel"
+            />
+            <button
+              class="boton boton--icono"
+              type="button"
+              (click)="mostrarPassword = !mostrarPassword"
+            >
+              {{ mostrarPassword ? '🙈' : '👁️' }}
+            </button>
+          </div>
+          <small>
+            {{
+              modoEdicion
+                ? 'Dejar en blanco si no deseas cambiarla.'
+                : 'Debe incluir letras y números.'
+            }}
+          </small>
+          <small class="mensaje-error" *ngIf="!passwordValida">
+            La contraseña debe incluir letras y números (mínimo 6 caracteres).
+          </small>
+          <small class="mensaje-error" *ngIf="passwordField.invalid && passwordField.touched">
+            La contraseña es obligatoria y debe cumplir el formato solicitado.
+          </small>
+        </div>
+        <div class="campo">
+          <label for="confirmacion">Confirmar contraseña</label>
+          <div class="campo__password">
+            <input
+              id="confirmacion"
+              name="confirmacion"
+              [type]="mostrarConfirmacion ? 'text' : 'password'"
+              [(ngModel)]="formulario.password_confirmation"
+              [required]="!modoEdicion || formulario.password"
+              minlength="6"
+              #confirmacionField="ngModel"
+            />
+            <button
+              class="boton boton--icono"
+              type="button"
+              (click)="mostrarConfirmacion = !mostrarConfirmacion"
+            >
+              {{ mostrarConfirmacion ? '🙈' : '👁️' }}
+            </button>
+          </div>
+          <small class="mensaje-error" *ngIf="!passwordsCoinciden">
+            Las contraseñas no coinciden.
+          </small>
+          <small
+            class="mensaje-error"
+            *ngIf="confirmacionField.invalid && confirmacionField.touched"
+          >
+            Confirma la contraseña (mínimo 6 caracteres).
+          </small>
+        </div>
+        <div class="campo campo--switch">
+          <label for="activo">Estado activo</label>
+          <label class="switch">
+            <input
+              id="activo"
+              name="activo"
+              type="checkbox"
+              [(ngModel)]="formulario.activo"
+            />
+            <span class="switch__slider"></span>
+          </label>
+          <small>
+            Actívalo para permitir que el usuario pueda iniciar sesión.
+          </small>
+        </div>
+      </div>
+
+      <div class="formulario__acciones">
+        <button
+          class="boton boton--primario"
+          type="submit"
+          [disabled]="
+            cargando ||
+            !passwordsCoinciden ||
+            !passwordValida ||
+            !formularioValido
+          "
+        >
+          {{ modoEdicion ? 'Guardar cambios' : 'Crear usuario' }}
+        </button>
+        <button class="boton" type="button" (click)="cerrarModal()">
+          Cancelar
+        </button>
+      </div>
+      <small class="formulario__ayuda">
+        Verifica que todos los campos estén completos y que la contraseña cumpla con
+        los requisitos antes de guardar.
+      </small>
+      <small class="formulario__ayuda" *ngIf="!formularioValido">
+        Asegúrate de completar todos los campos obligatorios.
+      </small>
+      <small class="formulario__ayuda" *ngIf="!passwordsCoinciden">
+        Las contraseñas deben coincidir para poder guardar.
+      </small>
+      <small class="formulario__ayuda" *ngIf="!passwordValida">
+        La contraseña debe contener letras y números.
+      </small>
+
+      <div class="formulario__resumen" *ngIf="usuarioSeleccionado">
+        <h4>Resumen del usuario</h4>
+        <p><strong>ID:</strong> {{ usuarioSeleccionado.usuario_id }}</p>
+        <p><strong>Creado:</strong> {{ usuarioSeleccionado.creado_en | date: 'medium' }}</p>
+        <p>
+          <strong>Actualizado:</strong>
+          {{ usuarioSeleccionado.actualizado_en | date: 'medium' }}
+        </p>
+      </div>
+    </form>
+  </div>
+</div>
