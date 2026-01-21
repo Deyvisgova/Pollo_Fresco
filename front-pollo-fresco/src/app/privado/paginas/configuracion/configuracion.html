@@ -1,14 +1,168 @@
-<!-- Contenido base para la vista de configuracion -->
 <section class="seccion">
   <div class="seccion__encabezado">
-    <h2>Configuracion</h2>
-    <p>Gestión y seguimiento de configuracion en el panel privado.</p>
+    <h2>Configuración general</h2>
+    <p>Administra los elementos clave del negocio y los recursos públicos del sitio.</p>
   </div>
 
-  <div class="seccion__tarjeta">
-    <p>
-      Aquí se mostrará el contenido principal de <strong>Configuracion</strong>.
-      Este bloque se diseñó como placeholder para agregar formularios, tablas o reportes.
-    </p>
+  <div class="config-grid">
+    <article class="config-card">
+      <header class="config-card__header">
+        <div>
+          <h3>Precio del pollo</h3>
+          <p>Controla el valor principal mostrado en el catálogo y promociones.</p>
+        </div>
+        <span class="config-card__tag">Configuración</span>
+      </header>
+      <div class="config-card__body">
+        <label class="campo">
+          <span>Precio por kilo</span>
+          <div class="campo__input">
+            <span class="campo__prefijo">S/</span>
+            <input type="number" placeholder="18.90" />
+            <span class="campo__sufijo">por kg</span>
+          </div>
+        </label>
+        <label class="campo">
+          <span>Mensaje promocional</span>
+          <input type="text" placeholder="Precio especial por temporada" />
+        </label>
+      </div>
+      <footer class="config-card__footer">
+        <button class="boton boton--primario">Guardar cambios</button>
+        <button class="boton boton--secundario">Restablecer</button>
+      </footer>
+    </article>
+
+    <article class="config-card">
+      <header class="config-card__header">
+        <div>
+          <h3>Imágenes del carrusel</h3>
+          <p>Contenido público visible en el home. Se guarda en <strong>assets/images</strong>.</p>
+        </div>
+        <span class="config-card__tag">Público</span>
+      </header>
+      <div class="config-card__body">
+        <div class="carga">
+          <div>
+            <h4>Agregar nuevas imágenes</h4>
+            <p>Recomendado 1600x700 px, formato JPG o PNG.</p>
+          </div>
+          <label class="boton boton--primario carga__accion">
+            Subir imágenes
+            <input type="file" accept="image/*" multiple />
+          </label>
+        </div>
+        <div class="lista">
+          <div class="lista__item">
+            <div>
+              <strong>banner-pollo-fresco.jpg</strong>
+              <p>Orden 1 · Activo · assets/images</p>
+            </div>
+            <button class="boton boton--ligero">Editar</button>
+          </div>
+          <div class="lista__item">
+            <div>
+              <strong>promocion-familiar.png</strong>
+              <p>Orden 2 · Activo · assets/images</p>
+            </div>
+            <button class="boton boton--ligero">Editar</button>
+          </div>
+          <div class="lista__item">
+            <div>
+              <strong>carrusel-03.jpg</strong>
+              <p>Orden 3 · Pendiente de subir</p>
+            </div>
+            <label class="boton boton--ligero carga__accion">
+              Subir
+              <input type="file" accept="image/*" />
+            </label>
+          </div>
+        </div>
+        <div class="nota">
+          <strong>Extra:</strong> Puedes subir más imágenes del carrusel para campañas temporales.
+        </div>
+      </div>
+    </article>
+
+    <article class="config-card">
+      <header class="config-card__header">
+        <div>
+          <h3>Imágenes por página</h3>
+          <p>Administra banners y recursos por sección del sitio público.</p>
+        </div>
+        <span class="config-card__tag">Público</span>
+      </header>
+      <div class="config-card__body">
+        <label class="campo">
+          <span>Página</span>
+          <select>
+            <option>Inicio</option>
+            <option>Productos</option>
+            <option>Promociones</option>
+            <option>Contacto</option>
+          </select>
+        </label>
+        <div class="carga carga--compacta">
+          <div>
+            <h4>Imagen principal</h4>
+            <p>Actualiza la imagen destacada para la página seleccionada.</p>
+          </div>
+          <label class="boton boton--primario carga__accion">
+            Subir imagen
+            <input type="file" accept="image/*" />
+          </label>
+        </div>
+        <div class="lista lista--column">
+          <div class="lista__item">
+            <div>
+              <strong>inicio-hero.jpg</strong>
+              <p>Publicado · 1280x720 px · assets/images</p>
+            </div>
+            <label class="boton boton--ligero carga__accion">
+              Reemplazar
+              <input type="file" accept="image/*" />
+            </label>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="config-card">
+      <header class="config-card__header">
+        <div>
+          <h3>Identidad corporativa</h3>
+          <p>Configura el logo y el nombre comercial del negocio.</p>
+        </div>
+        <span class="config-card__tag">Administrador</span>
+      </header>
+      <div class="config-card__body">
+        <label class="campo">
+          <span>Nombre de la empresa</span>
+          <input type="text" placeholder="Pollo Fresco" />
+        </label>
+        <div class="carga carga--compacta">
+          <div>
+            <h4>Logo de la empresa</h4>
+            <p>Preferencia PNG con fondo transparente.</p>
+          </div>
+          <label class="boton boton--primario carga__accion">
+            Subir logo
+            <input type="file" accept="image/*" />
+          </label>
+        </div>
+        <div class="preview-logo">
+          <div class="preview-logo__imagen">
+            <span>Logo</span>
+          </div>
+          <div>
+            <strong>logo-pollo-fresco.png</strong>
+            <p>Última actualización: hoy 10:30 am</p>
+          </div>
+        </div>
+      </div>
+      <footer class="config-card__footer">
+        <button class="boton boton--primario">Guardar identidad</button>
+      </footer>
+    </article>
   </div>
 </section>
