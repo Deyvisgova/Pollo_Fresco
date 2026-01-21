@@ -7,12 +7,15 @@ import { Nosotros } from './diseno-publico/paginas/nosotros/nosotros';
 import { Productos } from './diseno-publico/paginas/productos/productos';
 import { PrivadoLayout } from './privado/privado-layout/privado-layout';
 import { PrivadoClientes } from './privado/paginas/clientes/clientes';
+import { PrivadoClientesCrud } from './privado/paginas/clientes/subpaginas/clientes-crud';
 import { PrivadoConfiguracion } from './privado/paginas/configuracion/configuracion';
 import { PrivadoGastos } from './privado/paginas/gastos/gastos';
 import { PrivadoInicio } from './privado/paginas/inicio/inicio';
 import { PrivadoOtrosProductos } from './privado/paginas/otros-productos/otros-productos';
 import { PrivadoPedidos } from './privado/paginas/pedidos/pedidos';
 import { PrivadoProveedores } from './privado/paginas/proveedores/proveedores';
+import { PrivadoProveedoresCrud } from './privado/paginas/proveedores/subpaginas/proveedores-crud';
+import { PrivadoProveedoresRegistros } from './privado/paginas/proveedores/subpaginas/proveedores-registros';
 import { PrivadoReportes } from './privado/paginas/reportes/reportes';
 import { PrivadoUsuarios } from './privado/paginas/usuarios/usuarios';
 import { PrivadoVenta } from './privado/paginas/venta/venta';
@@ -63,11 +66,37 @@ export const routes: Routes = [
       },
       {
         path: 'proveedores',
-        component: PrivadoProveedores
+        component: PrivadoProveedores,
+        children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            redirectTo: 'crud'
+          },
+          {
+            path: 'crud',
+            component: PrivadoProveedoresCrud
+          },
+          {
+            path: 'registros',
+            component: PrivadoProveedoresRegistros
+          }
+        ]
       },
       {
         path: 'clientes',
-        component: PrivadoClientes
+        component: PrivadoClientes,
+        children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            redirectTo: 'crud'
+          },
+          {
+            path: 'crud',
+            component: PrivadoClientesCrud
+          }
+        ]
       },
       {
         path: 'venta',

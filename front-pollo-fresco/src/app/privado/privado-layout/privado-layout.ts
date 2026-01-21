@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
+import { AutenticacionServicio } from '../../servicios/autenticacion.servicio';
 
 @Component({
   selector: 'app-privado-layout',
@@ -24,4 +25,16 @@ export class PrivadoLayout {
     { etiqueta: 'Configuración', ruta: 'configuracion' },
     { etiqueta: 'Reportes', ruta: 'reportes' }
   ];
+
+  constructor(
+    private readonly autenticacionServicio: AutenticacionServicio,
+    private readonly router: Router
+  ) {}
+
+  cerrarSesion(): void {
+    this.autenticacionServicio.cerrarSesion().subscribe({
+      next: () => this.router.navigate(['/ingresar']),
+      error: () => this.router.navigate(['/ingresar'])
+    });
+  }
 }

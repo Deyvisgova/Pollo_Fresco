@@ -21,17 +21,11 @@
     </nav>
 
     <!-- Acciones secundarias, por ejemplo cerrar sesión -->
-    <button class="panel__salir" type="button">Cerrar sesión</button>
+    <button class="panel__salir" type="button" (click)="cerrarSesion()">Cerrar sesión</button>
   </aside>
 
   <!-- Área principal en donde se renderizan las rutas hijas -->
   <main class="panel__contenido">
-    <!-- Cabecera de contexto para el panel -->
-    <header class="panel__cabecera">
-      <h1>Panel Administrativo</h1>
-      <p>Vista general para la gestión de la operación.</p>
-    </header>
-
     <!-- Aquí se pintan los componentes de las rutas hijas -->
     <section class="panel__rutas">
       <router-outlet></router-outlet>
