@@ -140,6 +140,8 @@ CREATE TABLE `gasto_categorias` (
 CREATE TABLE `otros_productos_ventas` (
   `venta_op_id` int(11) NOT NULL,
   `usuario_id` int(11) NOT NULL,
+  `compra_lote_id` int(11) NOT NULL,
+  `tipo` enum('CONGELADO','HUEVO') NOT NULL,
   `fecha_venta` date NOT NULL,
   `total` decimal(10,2) NOT NULL DEFAULT 0.00,
   `creado_en` datetime NOT NULL DEFAULT current_timestamp()
@@ -396,6 +398,7 @@ ALTER TABLE `gasto_categorias`
 --
 ALTER TABLE `otros_productos_ventas`
   ADD PRIMARY KEY (`venta_op_id`),
+  ADD KEY `fk_opventa_lote` (`compra_lote_id`),
   ADD KEY `fk_opventa_usuario` (`usuario_id`);
 
 --
@@ -644,6 +647,7 @@ ALTER TABLE `gastos`
 -- Filtros para la tabla `otros_productos_ventas`
 --
 ALTER TABLE `otros_productos_ventas`
+  ADD CONSTRAINT `fk_opventa_lote` FOREIGN KEY (`compra_lote_id`) REFERENCES `compras_lote` (`compra_lote_id`),
   ADD CONSTRAINT `fk_opventa_usuario` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`usuario_id`);
 
 --
