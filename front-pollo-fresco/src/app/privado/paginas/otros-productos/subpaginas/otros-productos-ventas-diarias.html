@@ -1,0 +1,45 @@
+<section class="seccion__tarjeta">
+  <h3>Registro manual de ventas diarias</h3>
+  <p class="seccion__descripcion">
+    Ingresa manualmente lo vendido por fecha. La fecha se toma automáticamente y no se edita.
+  </p>
+
+  <form class="seccion__formulario">
+    <div class="seccion__campo">
+      <label for="tipo">Tipo de producto</label>
+      <select id="tipo" disabled>
+        <option selected>Selecciona: Congelados o Huevos</option>
+      </select>
+      <small>Se habilitará cuando se conecte la facturación electrónica.</small>
+    </div>
+
+    <div class="seccion__campo">
+      <label for="fecha">Fecha</label>
+      <input id="fecha" type="date" value="" disabled />
+      <small>Fecha automática (no editable).</small>
+    </div>
+
+    <div class="seccion__campo">
+      <label for="cantidad">Cantidad vendida</label>
+      <input id="cantidad" type="number" placeholder="0.00" />
+    </div>
+
+    <div class="seccion__campo">
+      <label for="total">Total vendido (S/)</label>
+      <input id="total" type="number" placeholder="0.00" />
+    </div>
+
+    <div class="seccion__acciones">
+      <button type="button" class="boton boton--primario">Guardar venta diaria</button>
+      <button type="button" class="boton boton--secundario">Limpiar</button>
+    </div>
+  </form>
+</section>
+
+<section class="seccion__tarjeta seccion__tarjeta--info">
+  <h3>Automatización con facturación electrónica</h3>
+  <p>
+    Cuando el sistema de facturación esté activo, al elegir “Congelados” o “Huevos”
+    se llenarán automáticamente las cantidades vendidas en el día.
+  </p>
+</section>

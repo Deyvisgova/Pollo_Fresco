@@ -140,6 +140,8 @@ CREATE TABLE `gasto_categorias` (
 CREATE TABLE `otros_productos_ventas` (
   `venta_op_id` int(11) NOT NULL,
   `usuario_id` int(11) NOT NULL,
+  `compra_lote_id` int(11) NOT NULL,
+  `tipo` enum('CONGELADO','HUEVO') NOT NULL,
   `fecha_venta` date NOT NULL,
   `total` decimal(10,2) NOT NULL DEFAULT 0.00,
   `creado_en` datetime NOT NULL DEFAULT current_timestamp()
@@ -154,6 +156,36 @@ CREATE TABLE `otros_productos_ventas` (
 CREATE TABLE `otros_productos_venta_detalle` (
   `venta_op_detalle_id` int(11) NOT NULL,
   `venta_op_id` int(11) NOT NULL,
+  `producto_id` int(11) NOT NULL,
+  `cantidad` decimal(10,2) NOT NULL,
+  `precio_unitario` decimal(10,2) NOT NULL,
+  `subtotal` decimal(10,2) NOT NULL
+) ;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `otros_productos_ventas_diarias`
+--
+
+CREATE TABLE `otros_productos_ventas_diarias` (
+  `venta_op_diaria_id` int(11) NOT NULL,
+  `usuario_id` int(11) NOT NULL,
+  `tipo` enum('CONGELADO','HUEVO') NOT NULL,
+  `fecha` date NOT NULL,
+  `total` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `creado_en` datetime NOT NULL DEFAULT current_timestamp()
+) ;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `otros_productos_ventas_diarias_detalle`
+--
+
+CREATE TABLE `otros_productos_ventas_diarias_detalle` (
+  `venta_op_diaria_detalle_id` int(11) NOT NULL,
+  `venta_op_diaria_id` int(11) NOT NULL,
   `producto_id` int(11) NOT NULL,
   `cantidad` decimal(10,2) NOT NULL,
   `precio_unitario` decimal(10,2) NOT NULL,
@@ -396,6 +428,7 @@ ALTER TABLE `gasto_categorias`
 --
 ALTER TABLE `otros_productos_ventas`
   ADD PRIMARY KEY (`venta_op_id`),
+  ADD KEY `fk_opventa_lote` (`compra_lote_id`),
   ADD KEY `fk_opventa_usuario` (`usuario_id`);
 
 --
@@ -405,6 +438,21 @@ ALTER TABLE `otros_productos_venta_detalle`
   ADD PRIMARY KEY (`venta_op_detalle_id`),
   ADD KEY `fk_opvdet_venta` (`venta_op_id`),
   ADD KEY `fk_opvdet_producto` (`producto_id`);
+
+--
+-- Indices de la tabla `otros_productos_ventas_diarias`
+--
+ALTER TABLE `otros_productos_ventas_diarias`
+  ADD PRIMARY KEY (`venta_op_diaria_id`),
+  ADD KEY `fk_opvd_usuario` (`usuario_id`);
+
+--
+-- Indices de la tabla `otros_productos_ventas_diarias_detalle`
+--
+ALTER TABLE `otros_productos_ventas_diarias_detalle`
+  ADD PRIMARY KEY (`venta_op_diaria_detalle_id`),
+  ADD KEY `fk_opvdd_venta` (`venta_op_diaria_id`),
+  ADD KEY `fk_opvdd_producto` (`producto_id`);
 
 --
 -- Indices de la tabla `pedidos`
@@ -544,6 +592,18 @@ ALTER TABLE `otros_productos_venta_detalle`
   MODIFY `venta_op_detalle_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT de la tabla `otros_productos_ventas_diarias`
+--
+ALTER TABLE `otros_productos_ventas_diarias`
+  MODIFY `venta_op_diaria_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `otros_productos_ventas_diarias_detalle`
+--
+ALTER TABLE `otros_productos_ventas_diarias_detalle`
+  MODIFY `venta_op_diaria_detalle_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT de la tabla `pedidos`
 --
 ALTER TABLE `pedidos`
@@ -644,6 +704,7 @@ ALTER TABLE `gastos`
 -- Filtros para la tabla `otros_productos_ventas`
 --
 ALTER TABLE `otros_productos_ventas`
+  ADD CONSTRAINT `fk_opventa_lote` FOREIGN KEY (`compra_lote_id`) REFERENCES `compras_lote` (`compra_lote_id`),
   ADD CONSTRAINT `fk_opventa_usuario` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`usuario_id`);
 
 --
@@ -652,6 +713,19 @@ ALTER TABLE `otros_productos_ventas`
 ALTER TABLE `otros_productos_venta_detalle`
   ADD CONSTRAINT `fk_opvdet_producto` FOREIGN KEY (`producto_id`) REFERENCES `productos` (`producto_id`),
   ADD CONSTRAINT `fk_opvdet_venta` FOREIGN KEY (`venta_op_id`) REFERENCES `otros_productos_ventas` (`venta_op_id`);
+
+--
+-- Filtros para la tabla `otros_productos_ventas_diarias`
+--
+ALTER TABLE `otros_productos_ventas_diarias`
+  ADD CONSTRAINT `fk_opvd_usuario` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`usuario_id`);
+
+--
+-- Filtros para la tabla `otros_productos_ventas_diarias_detalle`
+--
+ALTER TABLE `otros_productos_ventas_diarias_detalle`
+  ADD CONSTRAINT `fk_opvdd_producto` FOREIGN KEY (`producto_id`) REFERENCES `productos` (`producto_id`),
+  ADD CONSTRAINT `fk_opvdd_venta` FOREIGN KEY (`venta_op_diaria_id`) REFERENCES `otros_productos_ventas_diarias` (`venta_op_diaria_id`);
 
 --
 -- Filtros para la tabla `pedidos`
