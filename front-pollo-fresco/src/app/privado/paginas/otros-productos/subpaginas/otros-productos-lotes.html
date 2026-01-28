@@ -1,0 +1,170 @@
+<section class="seccion__tarjeta">
+  <header class="seccion__encabezado">
+    <div>
+      <h3>Lotes y ganancias</h3>
+      <p>Registra productos por lote, precio y estado. Aquí puedes editar o eliminar si el lote está abierto.</p>
+    </div>
+    <button class="boton boton--primario" (click)="abrirModal()">Nuevo lote</button>
+  </header>
+
+  <div class="seccion__acciones">
+    <input
+      type="search"
+      placeholder="Buscar por lote, tipo, producto o estado..."
+      [(ngModel)]="filtro"
+    />
+    <button class="boton boton--secundario">Buscar</button>
+  </div>
+
+  <div class="seccion__tabla">
+    <table>
+      <thead>
+        <tr>
+          <th>Lote</th>
+          <th>Tipo</th>
+          <th>Cantidad</th>
+          <th>Subtotal</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let lote of lotesFiltrados">
+          <td>{{ lote.id }}</td>
+          <td>{{ lote.tipo }}</td>
+          <td>{{ lote.cantidad | number : '1.0-2' }}</td>
+          <td>S/ {{ lote.subtotal | number : '1.2-2' }}</td>
+          <td>
+            <span class="etiqueta" [class.etiqueta--cerrada]="lote.estado === 'CERRADO'">
+              {{ lote.estado }}
+            </span>
+          </td>
+          <td class="tabla__acciones">
+            <button
+              class="boton boton--accion"
+              [disabled]="lote.estado === 'CERRADO'"
+              (click)="editarLote(lote)"
+            >
+              ✏️ Editar
+            </button>
+            <button
+              class="boton boton--accion boton--peligro"
+              [disabled]="lote.estado === 'CERRADO'"
+              (click)="eliminarLote(lote)"
+            >
+              🗑️ Eliminar
+            </button>
+          </td>
+        </tr>
+        <tr *ngIf="lotesFiltrados.length === 0">
+          <td colspan="6">No hay registros con ese filtro.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<div class="modal" *ngIf="mostrarModal">
+  <div class="modal__contenido">
+    <header class="modal__encabezado">
+      <div>
+        <h3>Nuevo lote</h3>
+        <p>Agrega productos y precios. Si no existe, registra un producto nuevo.</p>
+      </div>
+      <button class="boton boton--texto" (click)="cerrarModal()">Cerrar</button>
+    </header>
+
+    <div class="modal__grid">
+      <label>
+        Lote (correlativo por producto)
+        <input type="text" [value]="loteForm.productoId ? siguienteNumeroLote(loteForm.productoId) : 'Pendiente'" disabled />
+      </label>
+      <label>
+        Fecha ingreso
+        <input type="date" [(ngModel)]="loteForm.fechaIngreso" />
+      </label>
+      <label>
+        Costo del lote (S/)
+        <input type="number" [(ngModel)]="loteForm.costoLote" placeholder="0.00" />
+      </label>
+    </div>
+
+    <div class="modal__selector">
+      <label>
+        Producto (buscador)
+        <input
+          type="text"
+          list="productos-base"
+          placeholder="Busca y selecciona..."
+          [value]="obtenerNombreProducto()"
+          (input)="seleccionarProducto($any($event.target).value)"
+        />
+      </label>
+      <button class="boton boton--secundario" (click)="abrirModalProducto()">
+        + Nuevo producto
+      </button>
+    </div>
+
+    <div class="modal__grid">
+      <label>
+        Cantidad
+        <input type="number" [(ngModel)]="loteForm.cantidad" placeholder="0" />
+      </label>
+    </div>
+
+    <datalist id="productos-base">
+      <option *ngFor="let producto of productos" [value]="producto.nombre"></option>
+    </datalist>
+
+    <div class="modal__acciones">
+      <button class="boton boton--primario" (click)="guardarLote()">
+        Guardar lote
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" *ngIf="mostrarModalProducto">
+  <div class="modal__contenido">
+    <header class="modal__encabezado">
+      <div>
+        <h3>Nuevo producto</h3>
+        <p>Registra un producto nuevo y lo seleccionamos automáticamente.</p>
+      </div>
+      <button class="boton boton--texto" (click)="cerrarModalProducto()">Cerrar</button>
+    </header>
+
+    <div class="modal__grid">
+      <label>
+        Nombre del producto
+        <input type="text" [(ngModel)]="nuevoProducto" placeholder="Ej: Huevo jumbo" />
+      </label>
+    </div>
+
+    <div class="modal__acciones">
+      <button class="boton boton--primario" (click)="guardarProducto()">
+        Guardar producto
+      </button>
+    </div>
+  </div>
+</div>
+
+<section class="seccion__grid">
+  <article class="seccion__tarjeta seccion__tarjeta--info">
+    <h3>Flujo por lote</h3>
+    <ol>
+      <li>Registrar compra del lote (costo total y productos).</li>
+      <li>Vender todo el lote sin mezclarlo con la venta diaria de pollo.</li>
+      <li>Liquidar ganancias cuando se termina el stock.</li>
+    </ol>
+  </article>
+
+  <article class="seccion__tarjeta seccion__tarjeta--destacado">
+    <h3>Separación de cajas</h3>
+    <ul>
+      <li><strong>Congelados:</strong> ventas y ganancias independientes.</li>
+      <li><strong>Huevos:</strong> ventas y ganancias independientes.</li>
+      <li><strong>Pollo diario:</strong> no se mezcla con otros productos.</li>
+    </ul>
+  </article>
+</section>
