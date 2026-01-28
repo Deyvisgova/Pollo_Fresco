@@ -1,0 +1,116 @@
+<section class="seccion__tarjeta">
+  <header class="seccion__encabezado">
+    <div>
+      <h3>Registro manual de ventas diarias</h3>
+      <p class="seccion__descripcion">
+        Agrega líneas durante el día. El precio es obligatorio para registrar la venta.
+      </p>
+    </div>
+    <div class="seccion__acciones">
+      <button type="button" class="boton boton--secundario" (click)="agregarFila()" [disabled]="cerrado">
+        + Agregar línea
+      </button>
+      <button type="button" class="boton boton--primario" (click)="cerrarDia()" [disabled]="cerrado">
+        Cerrar día
+      </button>
+      <button type="button" class="boton boton--texto" (click)="reabrirDia()" [disabled]="!cerrado">
+        Reabrir
+      </button>
+    </div>
+  </header>
+
+  <form class="seccion__formulario">
+    <div class="seccion__campo">
+      <label for="tipo">Tipo de producto</label>
+      <select id="tipo" [(ngModel)]="tipoSeleccionado" name="tipo" [disabled]="cerrado">
+        <option value="">Selecciona: Congelados o Huevos</option>
+        <option value="CONGELADO">Congelados</option>
+        <option value="HUEVO">Huevos</option>
+      </select>
+      <small>Se usará para registrar automáticamente cuando se active la facturación electrónica.</small>
+    </div>
+
+    <div class="seccion__campo">
+      <label for="fecha">Fecha</label>
+      <input id="fecha" type="date" [value]="fechaHoy" disabled />
+      <small>Fecha automática (no editable).</small>
+    </div>
+  </form>
+
+  <div class="seccion__tabla">
+    <table>
+      <thead>
+        <tr>
+          <th>Detalle</th>
+          <th>Cantidad</th>
+          <th>Precio (S/)</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let venta of ventas; let i = index">
+          <td>
+            <input
+              type="text"
+              [(ngModel)]="venta.descripcion"
+              name="descripcion-{{ i }}"
+              [disabled]="cerrado"
+            />
+          </td>
+          <td>
+            <input
+              type="number"
+              placeholder="0.00"
+              [(ngModel)]="venta.cantidad"
+              name="cantidad-{{ i }}"
+              [disabled]="cerrado"
+            />
+          </td>
+          <td>
+            <input
+              type="number"
+              placeholder="0.00"
+              [(ngModel)]="venta.precio"
+              name="precio-{{ i }}"
+              required
+              [disabled]="cerrado"
+            />
+          </td>
+          <td>
+            <button
+              type="button"
+              class="boton boton--texto boton--peligro"
+              (click)="eliminarFila(i)"
+              [disabled]="cerrado"
+            >
+              Quitar
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="seccion__resumen">
+    <div>
+      <span>Total del día</span>
+      <strong>S/ {{ totalDia | number : '1.2-2' }}</strong>
+    </div>
+    <div class="seccion__acciones">
+      <button type="button" class="boton boton--secundario" (click)="limpiar()" [disabled]="cerrado">
+        Limpiar formulario
+      </button>
+    </div>
+  </div>
+</section>
+
+<section class="seccion__tarjeta seccion__tarjeta--info">
+  <h3>Automatización con facturación electrónica</h3>
+  <p>
+    Cuando el sistema de facturación esté activo, al elegir “Congelados” o “Huevos”
+    se registrarán automáticamente las cantidades vendidas en el día.
+  </p>
+  <p *ngIf="cerrado" class="seccion__estado">
+    Día cerrado: ya no se permite editar ni eliminar registros.
+  </p>
+</section>

@@ -1,14 +1,16 @@
 <!-- Contenido base para la vista de otros-productos -->
 <section class="seccion">
   <div class="seccion__encabezado">
-    <h2>OtrosProductos</h2>
-    <p>Gestión y seguimiento de otros productos en el panel privado.</p>
+    <h2>Otros productos</h2>
+    <p>Congelados y huevos con control independiente por lote y ventas diarias.</p>
   </div>
 
-  <div class="seccion__tarjeta">
-    <p>
-      Aquí se mostrará el contenido principal de <strong>OtrosProductos</strong>.
-      Este bloque se diseñó como placeholder para agregar formularios, tablas o reportes.
-    </p>
+  <nav class="seccion__tabs">
+    <a routerLink="lotes" routerLinkActive="tab--activa" class="tab">Lotes y ganancias</a>
+    <a routerLink="ventas-diarias" routerLinkActive="tab--activa" class="tab">Ventas diarias</a>
+  </nav>
+
+  <div class="seccion__contenido">
+    <router-outlet></router-outlet>
   </div>
 </section>
