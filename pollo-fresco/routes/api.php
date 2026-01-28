@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\UsuariosController;
 
 use App\Http\Controllers\Api\ClienteController;
 use App\Http\Controllers\Api\EntregaProveedorController;
+use App\Http\Controllers\Api\OtrosProductosController;
 use App\Http\Controllers\Api\ProveedorController;
 
 
@@ -79,6 +80,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('entregas-proveedor', [EntregaProveedorController::class, 'index']);
     Route::post('entregas-proveedor', [EntregaProveedorController::class, 'store']);
+
+    Route::get('otros-productos/productos', [OtrosProductosController::class, 'productosIndex']);
+    Route::post('otros-productos/productos', [OtrosProductosController::class, 'productosStore']);
+    Route::get('otros-productos/lotes', [OtrosProductosController::class, 'lotesIndex']);
+    Route::post('otros-productos/lotes', [OtrosProductosController::class, 'lotesStore']);
+    Route::put('otros-productos/lotes/{compraLoteId}', [OtrosProductosController::class, 'lotesUpdate']);
+    Route::delete('otros-productos/lotes/{compraLoteId}', [OtrosProductosController::class, 'lotesDestroy']);
 });
-
-

@@ -1,0 +1,145 @@
+.seccion__tarjeta {
+  background: #f8fafc;
+  border-radius: 16px;
+  padding: 18px;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.seccion__encabezado {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.seccion__tarjeta h3 {
+  margin: 0;
+  color: #0f172a;
+}
+
+.seccion__descripcion {
+  margin: 0;
+  color: #64748b;
+}
+
+.seccion__campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.seccion__campo input,
+.seccion__campo select,
+.seccion__tabla input {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #cbd5f5;
+  font-size: 14px;
+}
+
+.seccion__campo input:disabled,
+.seccion__campo select:disabled,
+.seccion__tabla input:disabled {
+  background: #e2e8f0;
+  color: #64748b;
+}
+
+.seccion__campo small {
+  color: #94a3b8;
+}
+
+.seccion__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.seccion__formulario {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.seccion__tabla {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.seccion__tabla table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.seccion__tabla th,
+.seccion__tabla td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+}
+
+.boton {
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.boton--primario {
+  background: #1d4ed8;
+  color: #fff;
+}
+
+.boton--secundario {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.boton--texto {
+  background: transparent;
+  color: #1d4ed8;
+}
+
+.boton--peligro {
+  color: #dc2626;
+}
+
+.boton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.seccion__resumen {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.seccion__resumen span {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.seccion__resumen strong {
+  font-size: 18px;
+  color: #0f172a;
+}
+
+.seccion__tarjeta--info {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+}
+
+.seccion__estado {
+  margin: 0;
+  font-weight: 600;
+  color: #1e3a8a;
+}
