@@ -14,14 +14,21 @@ class OtrosProductosController extends Controller
         $lotes = DB::table('compras_lote as cl')
             ->join('compras_lote_detalle as cld', 'cl.compra_lote_id', '=', 'cld.compra_lote_id')
             ->join('productos as p', 'cld.producto_id', '=', 'p.producto_id')
+            ->leftJoin('proveedores as pr', 'cl.proveedor_id', '=', 'pr.proveedor_id')
             ->select([
                 'cl.compra_lote_id',
+                'cl.proveedor_id',
                 'cl.fecha_ingreso',
                 'cl.costo_lote',
                 'cl.estado',
                 'p.producto_id',
                 'p.nombre as producto_nombre',
                 'cld.cantidad',
+                'pr.nombres as proveedor_nombres',
+                'pr.apellidos as proveedor_apellidos',
+                'pr.nombre_empresa as proveedor_nombre_empresa',
+                'pr.ruc as proveedor_ruc',
+                'pr.dni as proveedor_dni',
                 DB::raw('ROW_NUMBER() OVER (PARTITION BY p.producto_id ORDER BY cl.compra_lote_id) as numero_lote'),
             ])
             ->orderByDesc('cl.compra_lote_id')
@@ -70,6 +77,7 @@ class OtrosProductosController extends Controller
             'cantidad' => ['required', 'numeric', 'min:0.01'],
             'costo_lote' => ['required', 'numeric', 'min:0'],
             'fecha_ingreso' => ['required', 'date'],
+            'proveedor_id' => ['required', 'integer', 'exists:proveedores,proveedor_id'],
         ]);
 
         if ($validator->fails()) {
@@ -85,6 +93,7 @@ class OtrosProductosController extends Controller
         $cantidad = (float) $request->input('cantidad');
         $costo = (float) $request->input('costo_lote');
         $fecha = $request->input('fecha_ingreso');
+        $proveedorId = (int) $request->input('proveedor_id');
 
         $producto = DB::table('productos')->where('producto_id', $productoId)->first();
         if (!$producto) {
@@ -99,6 +108,7 @@ class OtrosProductosController extends Controller
         try {
             $compraLoteId = DB::table('compras_lote')->insertGetId([
                 'usuario_id' => $usuario->usuario_id,
+                'proveedor_id' => $proveedorId,
                 'fecha_ingreso' => $fecha,
                 'costo_lote' => $costo,
                 'estado' => 'ABIERTO',
@@ -126,6 +136,7 @@ class OtrosProductosController extends Controller
             'cantidad' => $cantidad,
             'costo_lote' => $costo,
             'estado' => 'ABIERTO',
+            'proveedor_id' => $proveedorId,
         ], 201);
     }
 
@@ -136,6 +147,7 @@ class OtrosProductosController extends Controller
             'cantidad' => ['required', 'numeric', 'min:0.01'],
             'costo_lote' => ['required', 'numeric', 'min:0'],
             'fecha_ingreso' => ['required', 'date'],
+            'proveedor_id' => ['required', 'integer', 'exists:proveedores,proveedor_id'],
         ]);
 
         if ($validator->fails()) {
@@ -155,6 +167,7 @@ class OtrosProductosController extends Controller
         $cantidad = (float) $request->input('cantidad');
         $costo = (float) $request->input('costo_lote');
         $fecha = $request->input('fecha_ingreso');
+        $proveedorId = (int) $request->input('proveedor_id');
 
         $producto = DB::table('productos')->where('producto_id', $productoId)->first();
         if (!$producto) {
@@ -168,6 +181,7 @@ class OtrosProductosController extends Controller
                 ->update([
                     'fecha_ingreso' => $fecha,
                     'costo_lote' => $costo,
+                    'proveedor_id' => $proveedorId,
                 ]);
 
             DB::table('compras_lote_detalle')
@@ -199,6 +213,7 @@ class OtrosProductosController extends Controller
             'cantidad' => $cantidad,
             'costo_lote' => $costo,
             'estado' => $lote->estado,
+            'proveedor_id' => $proveedorId,
         ]);
     }
 

@@ -22,6 +22,7 @@
         <tr>
           <th>Lote</th>
           <th>Nombre</th>
+          <th>Proveedor</th>
           <th>Cantidad</th>
           <th>Total</th>
           <th>Fecha</th>
@@ -33,6 +34,7 @@
         <tr *ngFor="let lote of lotesFiltrados">
           <td>{{ lote.numeroLote }}</td>
           <td>{{ lote.nombre }}</td>
+          <td>{{ lote.proveedorNombre }}</td>
           <td>{{ lote.cantidad | number : '1.0-2' }}</td>
           <td>S/ {{ lote.total | number : '1.2-2' }}</td>
           <td>{{ lote.fechaIngreso }}</td>
@@ -61,7 +63,7 @@
           </td>
         </tr>
         <tr *ngIf="lotesFiltrados.length === 0">
-          <td colspan="7">No hay registros con ese filtro.</td>
+          <td colspan="8">No hay registros con ese filtro.</td>
         </tr>
       </tbody>
     </table>
@@ -90,6 +92,15 @@
       <label>
         Costo del lote (S/)
         <input type="number" [(ngModel)]="loteForm.costoLote" placeholder="0.00" />
+      </label>
+      <label>
+        Proveedor
+        <select [(ngModel)]="loteForm.proveedorId">
+          <option [ngValue]="null">Selecciona proveedor</option>
+          <option *ngFor="let proveedor of proveedores" [ngValue]="proveedor.proveedor_id">
+            {{ formatearProveedor(proveedor) }}
+          </option>
+        </select>
       </label>
     </div>
 
