@@ -22,6 +22,7 @@
         <tr>
           <th>Lote</th>
           <th>Nombre</th>
+          <th>Proveedor</th>
           <th>Cantidad</th>
           <th>Total</th>
           <th>Fecha</th>
@@ -33,6 +34,7 @@
         <tr *ngFor="let lote of lotesFiltrados">
           <td>{{ lote.numeroLote }}</td>
           <td>{{ lote.nombre }}</td>
+          <td>{{ lote.proveedorNombre }}</td>
           <td>{{ lote.cantidad | number : '1.0-2' }}</td>
           <td>S/ {{ lote.total | number : '1.2-2' }}</td>
           <td>{{ lote.fechaIngreso }}</td>
@@ -61,7 +63,7 @@
           </td>
         </tr>
         <tr *ngIf="lotesFiltrados.length === 0">
-          <td colspan="7">No hay registros con ese filtro.</td>
+          <td colspan="8">No hay registros con ese filtro.</td>
         </tr>
       </tbody>
     </table>
@@ -91,6 +93,34 @@
         Costo del lote (S/)
         <input type="number" [(ngModel)]="loteForm.costoLote" placeholder="0.00" />
       </label>
+    </div>
+
+    <div class="modal__selector">
+      <div class="selector-proveedor">
+        <label>Proveedor</label>
+        <button type="button" class="selector-proveedor__boton" (click)="toggleDropdownProveedor()">
+          <span>{{ nombreProveedorSeleccionado || 'Buscar proveedor...' }}</span>
+          <span class="selector-proveedor__icono">▾</span>
+        </button>
+        <div class="selector-proveedor__menu" *ngIf="dropdownProveedorAbierto">
+          <input
+            type="text"
+            placeholder="Buscar proveedor..."
+            [(ngModel)]="filtroProveedor"
+          />
+          <div class="selector-proveedor__lista">
+            <button
+              type="button"
+              class="selector-proveedor__item"
+              *ngFor="let proveedor of proveedoresFiltrados"
+              (click)="seleccionarProveedor(proveedor)"
+            >
+              {{ formatearProveedor(proveedor) }}
+            </button>
+            <p *ngIf="proveedoresFiltrados.length === 0">No hay proveedores</p>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="modal__selector">

@@ -195,7 +195,8 @@ td {
   flex-wrap: wrap;
 }
 
-.selector-producto {
+.selector-producto,
+.selector-proveedor {
   flex: 1;
   position: relative;
   display: flex;
@@ -205,7 +206,8 @@ td {
   color: #334155;
 }
 
-.selector-producto__boton {
+.selector-producto__boton,
+.selector-proveedor__boton {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -216,12 +218,14 @@ td {
   cursor: pointer;
 }
 
-.selector-producto__icono {
+.selector-producto__icono,
+.selector-proveedor__icono {
   font-size: 12px;
   color: #475569;
 }
 
-.selector-producto__menu {
+.selector-producto__menu,
+.selector-proveedor__menu {
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
@@ -237,13 +241,15 @@ td {
   gap: 8px;
 }
 
-.selector-producto__menu input {
+.selector-producto__menu input,
+.selector-proveedor__menu input {
   padding: 10px 12px;
   border-radius: 12px;
   border: 1px solid #cbd5f5;
 }
 
-.selector-producto__lista {
+.selector-producto__lista,
+.selector-proveedor__lista {
   max-height: 200px;
   overflow-y: auto;
   display: flex;
@@ -251,7 +257,8 @@ td {
   gap: 4px;
 }
 
-.selector-producto__item {
+.selector-producto__item,
+.selector-proveedor__item {
   background: #f8fafc;
   border: none;
   padding: 8px 10px;
@@ -260,7 +267,8 @@ td {
   cursor: pointer;
 }
 
-.selector-producto__item:hover {
+.selector-producto__item:hover,
+.selector-proveedor__item:hover {
   background: #e2e8f0;
 }
 

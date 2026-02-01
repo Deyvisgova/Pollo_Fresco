@@ -13,6 +13,8 @@ interface LoteRegistro {
   total: number;
   fechaIngreso: string;
   estado: 'ABIERTO' | 'CERRADO';
+  proveedorId: number | null;
+  proveedorNombre: string;
 }
 
 interface Producto {
@@ -34,6 +36,12 @@ interface LoteApi {
   cantidad: number;
   costo_lote: number;
   estado: 'ABIERTO' | 'CERRADO';
+  proveedor_id: number | null;
+  proveedor_nombres: string | null;
+  proveedor_apellidos: string | null;
+  proveedor_nombre_empresa: string | null;
+  proveedor_ruc: string | null;
+  proveedor_dni: string | null;
 }
 
 interface LoteForm {
@@ -42,6 +50,16 @@ interface LoteForm {
   costoLote: number | null;
   productoId: number | null;
   cantidad: number | null;
+  proveedorId: number | null;
+}
+
+interface ProveedorApi {
+  proveedor_id: number;
+  nombres: string;
+  apellidos: string | null;
+  nombre_empresa: string | null;
+  ruc: string | null;
+  dni: string | null;
 }
 
 @Component({
@@ -58,8 +76,11 @@ export class PrivadoOtrosProductosLotes implements OnInit {
   nuevoProducto = '';
   filtroProducto = '';
   dropdownProductoAbierto = false;
+  filtroProveedor = '';
+  dropdownProveedorAbierto = false;
   mensajeError = '';
   productos: Producto[] = [];
+  proveedores: ProveedorApi[] = [];
   loteEnEdicion: LoteRegistro | null = null;
 
   loteForm: LoteForm = {
@@ -67,7 +88,8 @@ export class PrivadoOtrosProductosLotes implements OnInit {
     fechaIngreso: new Date().toISOString().slice(0, 10),
     costoLote: null,
     productoId: null,
-    cantidad: null
+    cantidad: null,
+    proveedorId: null
   };
 
   lotes: LoteRegistro[] = [];
@@ -79,6 +101,7 @@ export class PrivadoOtrosProductosLotes implements OnInit {
 
   ngOnInit(): void {
     this.cargarProductos();
+    this.cargarProveedores();
     this.cargarLotes();
   }
 
@@ -92,6 +115,7 @@ export class PrivadoOtrosProductosLotes implements OnInit {
       return (
         lote.numeroLote.toString().includes(valor) ||
         lote.nombre.toLowerCase().includes(valor) ||
+        lote.proveedorNombre.toLowerCase().includes(valor) ||
         lote.estado.toLowerCase().includes(valor) ||
         lote.fechaIngreso.toLowerCase().includes(valor)
       );
@@ -101,7 +125,9 @@ export class PrivadoOtrosProductosLotes implements OnInit {
   abrirModal(): void {
     this.mostrarModal = true;
     this.filtroProducto = '';
+    this.filtroProveedor = '';
     this.dropdownProductoAbierto = false;
+    this.dropdownProveedorAbierto = false;
     this.mensajeError = '';
     this.loteEnEdicion = null;
     this.loteForm = {
@@ -109,7 +135,8 @@ export class PrivadoOtrosProductosLotes implements OnInit {
       fechaIngreso: new Date().toISOString().slice(0, 10),
       costoLote: null,
       productoId: null,
-      cantidad: null
+      cantidad: null,
+      proveedorId: null
     };
   }
 
@@ -167,10 +194,20 @@ export class PrivadoOtrosProductosLotes implements OnInit {
     this.dropdownProductoAbierto = !this.dropdownProductoAbierto;
   }
 
+  toggleDropdownProveedor(): void {
+    this.dropdownProveedorAbierto = !this.dropdownProveedorAbierto;
+  }
+
   seleccionarProductoId(producto: Producto): void {
     this.loteForm.productoId = producto.id;
     this.filtroProducto = producto.nombre;
     this.dropdownProductoAbierto = false;
+  }
+
+  seleccionarProveedor(proveedor: ProveedorApi): void {
+    this.loteForm.proveedorId = proveedor.proveedor_id;
+    this.filtroProveedor = this.formatearProveedor(proveedor);
+    this.dropdownProveedorAbierto = false;
   }
 
   get nombreProductoSeleccionado(): string {
@@ -180,8 +217,27 @@ export class PrivadoOtrosProductosLotes implements OnInit {
     return this.productos.find((item) => item.id === this.loteForm.productoId)?.nombre ?? '';
   }
 
+  get nombreProveedorSeleccionado(): string {
+    if (!this.loteForm.proveedorId) {
+      return '';
+    }
+    const proveedor = this.proveedores.find((item) => item.proveedor_id === this.loteForm.proveedorId);
+    return proveedor ? this.formatearProveedor(proveedor) : '';
+  }
+
+  get proveedoresFiltrados(): ProveedorApi[] {
+    const valor = this.filtroProveedor.trim().toLowerCase();
+    if (!valor) {
+      return this.proveedores;
+    }
+    return this.proveedores.filter((proveedor) =>
+      this.formatearProveedor(proveedor).toLowerCase().includes(valor)
+    );
+  }
+
   guardarLote(): void {
-    if (!this.loteForm.productoId || !this.loteForm.cantidad) {
+    if (!this.loteForm.productoId || !this.loteForm.cantidad || !this.loteForm.proveedorId) {
+      this.mensajeError = 'Completa el producto, la cantidad y el proveedor.';
       return;
     }
 
@@ -190,7 +246,8 @@ export class PrivadoOtrosProductosLotes implements OnInit {
       producto_id: this.loteForm.productoId,
       cantidad: this.loteForm.cantidad,
       costo_lote: this.loteForm.costoLote ?? 0,
-      fecha_ingreso: this.loteForm.fechaIngreso
+      fecha_ingreso: this.loteForm.fechaIngreso,
+      proveedor_id: this.loteForm.proveedorId
     };
 
     const headers = this.obtenerHeaders();
@@ -208,7 +265,9 @@ export class PrivadoOtrosProductosLotes implements OnInit {
           cantidad: respuesta.cantidad,
           total: respuesta.costo_lote,
           fechaIngreso: respuesta.fecha_ingreso,
-          estado: respuesta.estado
+          estado: respuesta.estado,
+          proveedorId: respuesta.proveedor_id ?? null,
+          proveedorNombre: this.obtenerNombreProveedor(respuesta.proveedor_id)
         };
 
         if (this.loteEnEdicion) {
@@ -234,13 +293,16 @@ export class PrivadoOtrosProductosLotes implements OnInit {
     this.loteEnEdicion = lote;
     this.mostrarModal = true;
     this.filtroProducto = lote.nombre;
+    this.filtroProveedor = lote.proveedorNombre;
     this.dropdownProductoAbierto = false;
+    this.dropdownProveedorAbierto = false;
     this.loteForm = {
       id: lote.numeroLote,
       fechaIngreso: lote.fechaIngreso,
       costoLote: lote.total,
       productoId: lote.productoId,
-      cantidad: lote.cantidad
+      cantidad: lote.cantidad,
+      proveedorId: lote.proveedorId
     };
   }
 
@@ -321,6 +383,8 @@ export class PrivadoOtrosProductosLotes implements OnInit {
           total: lote.costo_lote,
           fechaIngreso: lote.fecha_ingreso,
           estado: lote.estado,
+          proveedorId: lote.proveedor_id ?? null,
+          proveedorNombre: this.formatearProveedorDesdeLote(lote),
         }));
       },
       error: () => {
@@ -329,11 +393,53 @@ export class PrivadoOtrosProductosLotes implements OnInit {
     });
   }
 
+  private cargarProveedores(): void {
+    const headers = this.obtenerHeaders();
+    this.http.get<ProveedorApi[]>('/api/proveedores', { headers }).subscribe({
+      next: (proveedores) => {
+        this.proveedores = proveedores;
+      },
+      error: () => {
+        this.mensajeError = 'No pudimos cargar los proveedores. Intenta nuevamente.';
+      }
+    });
+  }
+
+  formatearProveedor(proveedor: ProveedorApi): string {
+    const nombrePersona = [proveedor.nombres, proveedor.apellidos].filter(Boolean).join(' ').trim();
+    const nombreEmpresa = proveedor.nombre_empresa?.trim();
+    const base = nombreEmpresa ? `${nombreEmpresa} - ${nombrePersona}` : nombrePersona;
+    const documento = proveedor.ruc || proveedor.dni || '';
+    return documento ? `${base} (${documento})` : base;
+  }
+
+  private formatearProveedorDesdeLote(lote: LoteApi): string {
+    if (!lote.proveedor_id) {
+      return 'Sin proveedor';
+    }
+    const nombrePersona = [lote.proveedor_nombres, lote.proveedor_apellidos].filter(Boolean).join(' ').trim();
+    const nombreEmpresa = lote.proveedor_nombre_empresa?.trim();
+    const base = nombreEmpresa ? `${nombreEmpresa} - ${nombrePersona}` : nombrePersona;
+    const documento = lote.proveedor_ruc || lote.proveedor_dni || '';
+    return documento ? `${base} (${documento})` : base;
+  }
+
+  private obtenerNombreProveedor(proveedorId: number | null): string {
+    if (!proveedorId) {
+      return 'Sin proveedor';
+    }
+    const proveedor = this.proveedores.find((item) => item.proveedor_id === proveedorId);
+    return proveedor ? this.formatearProveedor(proveedor) : 'Proveedor pendiente';
+  }
+
   @HostListener('document:click', ['$event'])
   cerrarDropdownExterno(event: MouseEvent): void {
     const target = event.target as HTMLElement;
     if (!target.closest('.selector-producto')) {
       this.dropdownProductoAbierto = false;
+    }
+    if (!target.closest('.selector-proveedor')) {
+      this.dropdownProveedorAbierto = false;
     }
   }
 }

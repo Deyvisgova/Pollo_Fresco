@@ -50,6 +50,7 @@ CREATE TABLE `clientes` (
 CREATE TABLE `compras_lote` (
   `compra_lote_id` int(11) NOT NULL,
   `usuario_id` int(11) NOT NULL,
+  `proveedor_id` int(11) DEFAULT NULL,
   `fecha_ingreso` date NOT NULL,
   `costo_lote` decimal(10,2) NOT NULL,
   `estado` enum('ABIERTO','CERRADO') NOT NULL DEFAULT 'ABIERTO',
@@ -381,7 +382,8 @@ ALTER TABLE `clientes`
 --
 ALTER TABLE `compras_lote`
   ADD PRIMARY KEY (`compra_lote_id`),
-  ADD KEY `fk_clote_usuario` (`usuario_id`);
+  ADD KEY `fk_clote_usuario` (`usuario_id`),
+  ADD KEY `fk_clote_proveedor` (`proveedor_id`);
 
 --
 -- Indices de la tabla `compras_lote_detalle`
@@ -669,7 +671,8 @@ ALTER TABLE `venta_detalle`
 -- Filtros para la tabla `compras_lote`
 --
 ALTER TABLE `compras_lote`
-  ADD CONSTRAINT `fk_clote_usuario` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`usuario_id`);
+  ADD CONSTRAINT `fk_clote_usuario` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`usuario_id`),
+  ADD CONSTRAINT `fk_clote_proveedor` FOREIGN KEY (`proveedor_id`) REFERENCES `proveedores` (`proveedor_id`) ON DELETE SET NULL;
 
 --
 -- Filtros para la tabla `compras_lote_detalle`
