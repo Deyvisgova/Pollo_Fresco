@@ -1,14 +1,202 @@
-<!-- Contenido base para la vista de venta -->
 <section class="seccion">
   <div class="seccion__encabezado">
-    <h2>Venta</h2>
-    <p>Gestión y seguimiento de venta en el panel privado.</p>
+    <h2>Facturación electrónica</h2>
+    <p>Emite factura, boleta, nota de venta o nota de crédito con el formato peruano.</p>
   </div>
 
-  <div class="seccion__tarjeta">
-    <p>
-      Aquí se mostrará el contenido principal de <strong>Venta</strong>.
-      Este bloque se diseñó como placeholder para agregar formularios, tablas o reportes.
-    </p>
+  <div class="seccion__contenido">
+    <article class="tarjeta tarjeta--principal">
+      <header class="tarjeta__encabezado">
+        <div>
+          <span class="eyebrow">Pollo Fresco S.A.C.</span>
+          <h3>Comprobante electrónico</h3>
+          <p>Serie y numeración estándar para ventas en Perú.</p>
+        </div>
+        <div class="tipo-comprobante">
+          <label>Tipo de comprobante</label>
+          <div class="tipo-comprobante__opciones">
+            <button
+              type="button"
+              [class.activo]="tipoComprobante === 'factura'"
+              (click)="tipoComprobante = 'factura'"
+            >
+              Factura
+            </button>
+            <button
+              type="button"
+              [class.activo]="tipoComprobante === 'boleta'"
+              (click)="tipoComprobante = 'boleta'"
+            >
+              Boleta
+            </button>
+            <button
+              type="button"
+              [class.activo]="tipoComprobante === 'nota-venta'"
+              (click)="tipoComprobante = 'nota-venta'"
+            >
+              Nota de venta
+            </button>
+            <button
+              type="button"
+              [class.activo]="tipoComprobante === 'nota-credito'"
+              (click)="tipoComprobante = 'nota-credito'"
+            >
+              Nota de crédito
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div class="formulario-grid">
+        <div class="campo">
+          <label>Serie</label>
+          <input [(ngModel)]="serie" type="text" placeholder="F001" />
+        </div>
+        <div class="campo">
+          <label>Número</label>
+          <input [(ngModel)]="numero" type="text" placeholder="00012345" />
+        </div>
+        <div class="campo">
+          <label>Fecha de emisión</label>
+          <input [(ngModel)]="fechaEmision" type="date" />
+        </div>
+        <div class="campo">
+          <label>Moneda</label>
+          <select [(ngModel)]="moneda">
+            <option value="PEN">PEN - Soles</option>
+            <option value="USD">USD - Dólares</option>
+          </select>
+        </div>
+        <div class="campo">
+          <label>Forma de pago</label>
+          <select [(ngModel)]="formaPago">
+            <option>Contado</option>
+            <option>Crédito 7 días</option>
+            <option>Crédito 15 días</option>
+          </select>
+        </div>
+        <div class="campo campo--doble">
+          <label>Observaciones</label>
+          <input [(ngModel)]="observaciones" type="text" placeholder="Condición, referencia u otra nota." />
+        </div>
+      </div>
+
+      <div class="tarjeta__seccion">
+        <div class="tarjeta__titulo">
+          <h4>Datos del cliente</h4>
+          <span class="nota">Consulta con API Perú (RENIEC/SUNAT).</span>
+        </div>
+
+        <div class="busqueda-documento">
+          <div class="campo">
+            <label>Tipo de documento</label>
+            <select [(ngModel)]="tipoDocumentoCliente">
+              <option value="ruc">RUC</option>
+              <option value="dni">DNI</option>
+            </select>
+          </div>
+          <div class="campo">
+            <label>Número</label>
+            <input [(ngModel)]="consultaDocumento" type="text" placeholder="Ingresa DNI o RUC" />
+          </div>
+          <div class="campo">
+            <button type="button" class="boton boton--secundario" (click)="consultarDocumento()">
+              {{ consultaCargando ? 'Consultando...' : 'Buscar en SUNAT/RENIEC' }}
+            </button>
+            <small *ngIf="mensajeError" class="mensaje-error">{{ mensajeError }}</small>
+          </div>
+        </div>
+
+        <div class="formulario-grid">
+          <div class="campo">
+            <label>Documento</label>
+            <input [(ngModel)]="cliente.documento" type="text" placeholder="00000000000" />
+          </div>
+          <div class="campo campo--doble">
+            <label>Razón social / Nombre</label>
+            <input [(ngModel)]="cliente.nombre" type="text" placeholder="Cliente" />
+          </div>
+          <div class="campo campo--doble">
+            <label>Dirección fiscal</label>
+            <input [(ngModel)]="cliente.direccion" type="text" placeholder="Dirección completa" />
+          </div>
+          <div class="campo">
+            <label>Correo</label>
+            <input [(ngModel)]="cliente.correo" type="email" placeholder="correo@cliente.pe" />
+          </div>
+          <div class="campo">
+            <label>Teléfono</label>
+            <input [(ngModel)]="cliente.telefono" type="tel" placeholder="999 999 999" />
+          </div>
+        </div>
+      </div>
+
+      <div class="tarjeta__seccion" *ngIf="tipoComprobante === 'nota-credito'">
+        <div class="tarjeta__titulo">
+          <h4>Referencia de nota de crédito</h4>
+          <span class="nota">Documento original a modificar.</span>
+        </div>
+        <div class="formulario-grid">
+          <div class="campo">
+            <label>Serie</label>
+            <input [(ngModel)]="referenciaSerie" type="text" placeholder="F001" />
+          </div>
+          <div class="campo">
+            <label>Número</label>
+            <input [(ngModel)]="referenciaNumero" type="text" placeholder="00001234" />
+          </div>
+          <div class="campo campo--doble">
+            <label>Motivo</label>
+            <input [(ngModel)]="referenciaMotivo" type="text" placeholder="Devolución o descuento aplicado" />
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="tarjeta tarjeta--tabla">
+      <div class="tarjeta__titulo">
+        <h4>Detalle de la venta</h4>
+        <button type="button" class="boton boton--primario" (click)="agregarDetalle()">Agregar ítem</button>
+      </div>
+
+      <div class="tabla-detalle">
+        <div class="tabla-detalle__encabezado">
+          <span>Descripción</span>
+          <span>Unidad</span>
+          <span>Cantidad</span>
+          <span>P. Unitario</span>
+          <span>Total</span>
+          <span></span>
+        </div>
+        <div class="tabla-detalle__fila" *ngFor="let item of detalles; let i = index">
+          <input [(ngModel)]="item.descripcion" type="text" placeholder="Producto o servicio" />
+          <input [(ngModel)]="item.unidad" type="text" placeholder="UND" />
+          <input [(ngModel)]="item.cantidad" type="number" min="0" />
+          <input [(ngModel)]="item.precioUnitario" type="number" min="0" />
+          <span class="tabla-detalle__total">S/ {{ totalDetalle(item) | number: '1.2-2' }}</span>
+          <button type="button" class="boton-icono" (click)="eliminarDetalle(i)">✕</button>
+        </div>
+      </div>
+
+      <div class="resumen">
+        <div>
+          <span>Subtotal</span>
+          <strong>S/ {{ subtotal | number: '1.2-2' }}</strong>
+        </div>
+        <div>
+          <span>IGV (18%)</span>
+          <strong>{{ aplicaIgv ? ('S/ ' + (igv | number: '1.2-2')) : 'Exonerado' }}</strong>
+        </div>
+        <div class="resumen__total">
+          <span>Total a pagar</span>
+          <strong>S/ {{ total | number: '1.2-2' }}</strong>
+        </div>
+      </div>
+
+      <footer class="acciones">
+        <button class="boton boton--secundario" type="button">Guardar borrador</button>
+        <button class="boton boton--primario" type="button">Emitir comprobante</button>
+      </footer>
+    </article>
   </div>
 </section>
