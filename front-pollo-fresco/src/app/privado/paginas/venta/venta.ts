@@ -24,6 +24,12 @@ interface ProductoApi {
   nombre: string;
 }
 
+interface MetodoPago {
+  id: string;
+  etiqueta: string;
+  icono: string;
+}
+
 @Component({
   selector: 'app-privado-venta',
   // Componente informativo para la sección de venta.
@@ -58,24 +64,24 @@ export class PrivadoVenta implements OnInit {
     direccion: ''
   };
 
-  detalles: DetalleFactura[] = [
-    { descripcion: 'Pollo fresco entero', unidad: 'KG', cantidad: 10, precioUnitario: 11.5 },
-    { descripcion: 'Filete de pechuga', unidad: 'KG', cantidad: 6, precioUnitario: 18.9 }
-  ];
+  detalles: DetalleFactura[] = [];
 
-  productosDisponibles: string[] = [
-    'Pollo fresco entero',
-    'Filete de pechuga',
-    'Muslo de pollo',
-    'Alitas de pollo'
-  ];
+  productosDisponibles: string[] = [];
 
   productoSeleccionado = '';
-  productoFiltro = '';
   productosFiltrados: string[] = [];
-  mostrarListaProductos = false;
   mostrarModalProducto = false;
   nuevoProducto = '';
+  metodoPagoSeleccionado = 'efectivo';
+  montoRecibido: number | null = null;
+  metodosPago: MetodoPago[] = [
+    { id: 'efectivo', etiqueta: 'Efectivo', icono: '💵' },
+    { id: 'tarjeta', etiqueta: 'Tarjeta', icono: '💳' },
+    { id: 'transferencia', etiqueta: 'Transf.', icono: '🏦' },
+    { id: 'plin', etiqueta: 'Plin', icono: '🟢' },
+    { id: 'yape', etiqueta: 'Yape', icono: '🟣' },
+    { id: 'otro', etiqueta: 'Otro', icono: '⋯' }
+  ];
 
   constructor(private readonly http: HttpClient) {}
 
@@ -105,47 +111,36 @@ export class PrivadoVenta implements OnInit {
     return this.subtotal;
   }
 
+  get vuelto(): number {
+    if (this.montoRecibido === null || Number.isNaN(this.montoRecibido)) {
+      return 0;
+    }
+    return Math.max(this.montoRecibido - this.total, 0);
+  }
+
   totalDetalle(item: DetalleFactura): number {
     return item.cantidad * item.precioUnitario;
   }
 
   agregarDetalle(): void {
+    const descripcion = this.productoSeleccionado.trim();
     this.detalles = [
       ...this.detalles,
-      { descripcion: '', unidad: 'UND', cantidad: 1, precioUnitario: 0 }
+      { descripcion, unidad: 'KG', cantidad: 1, precioUnitario: 0 }
     ];
+    this.productoSeleccionado = '';
   }
 
   filtrarProductos(): void {
-    const fuente = this.productoFiltro.trim() || this.productoSeleccionado.trim();
-    const termino = fuente.toLowerCase();
+    const termino = this.productoSeleccionado.trim().toLowerCase();
     this.productosFiltrados = termino
       ? this.productosDisponibles.filter((producto) => producto.toLowerCase().includes(termino))
       : [...this.productosDisponibles];
   }
 
-  seleccionarProducto(producto: string): void {
-    this.productoSeleccionado = producto;
-    this.agregarProductoDesdeBusqueda();
-    this.productoFiltro = '';
-    this.mostrarListaProductos = false;
-  }
-
-  agregarProductoDesdeBusqueda(): void {
-    if (!this.productoSeleccionado) {
-      return;
-    }
-
-    this.detalles = [
-      ...this.detalles,
-      {
-        descripcion: this.productoSeleccionado,
-        unidad: 'KG',
-        cantidad: 1,
-        precioUnitario: 0
-      }
-    ];
-    this.productoSeleccionado = '';
+  actualizarBusquedaProductos(): void {
+    this.cargarProductos();
+    this.filtrarProductos();
   }
 
   abrirModalProducto(): void {
@@ -193,6 +188,13 @@ export class PrivadoVenta implements OnInit {
 
   eliminarDetalle(index: number): void {
     this.detalles = this.detalles.filter((_, i) => i !== index);
+  }
+
+  seleccionarMetodoPago(metodoId: string): void {
+    this.metodoPagoSeleccionado = metodoId;
+    if (metodoId !== 'efectivo') {
+      this.montoRecibido = null;
+    }
   }
 
   consultarDocumento(): void {
