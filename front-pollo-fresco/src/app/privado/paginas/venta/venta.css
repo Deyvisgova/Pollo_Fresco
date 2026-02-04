@@ -265,8 +265,8 @@
 .tabla-detalle__encabezado,
 .tabla-detalle__fila {
   display: grid;
-  grid-template-columns: 0.7fr 0.9fr 2.2fr 0.9fr 0.9fr 32px;
-  gap: 6px;
+  grid-template-columns: 0.7fr 0.9fr 2.2fr 0.9fr 0.7fr 32px;
+  gap: 4px;
   align-items: center;
 }
 
@@ -278,7 +278,8 @@
 }
 
 .tabla-detalle__encabezado span {
-  padding: 0 10px;
+  padding: 0 6px;
+  text-align: center;
 }
 
 .tabla-detalle__fila input,
@@ -291,12 +292,6 @@
   box-sizing: border-box;
 }
 
-.tabla-detalle__encabezado span:nth-child(1),
-.tabla-detalle__encabezado span:nth-child(4),
-.tabla-detalle__encabezado span:nth-child(5) {
-  text-align: right;
-}
-
 .tabla-detalle__fila input[type='number'] {
   text-align: right;
 }
@@ -304,7 +299,8 @@
 .tabla-detalle__total {
   font-weight: 600;
   color: #0f172a;
-  text-align: right;
+  text-align: center;
+  justify-self: center;
 }
 
 .boton-icono--neutral {
@@ -375,18 +371,24 @@
 }
 
 .metodos-pago__opciones {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(64px, 1fr));
+  gap: 12px;
+  justify-content: center;
+  justify-items: center;
 }
 
 .metodos-pago__opcion {
+  width: 64px;
+  min-height: 72px;
   border-radius: 12px;
   border: 1px solid #e2e8f0;
   background: #f8fafc;
-  padding: 8px 12px;
+  padding: 8px 6px;
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   font-size: 13px;
   cursor: pointer;
@@ -401,8 +403,8 @@
 }
 
 .metodos-pago__icono {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: 8px;
   background: #ffffff;
   display: inline-flex;
@@ -412,14 +414,18 @@
 }
 
 .metodos-pago__texto {
+  display: block;
   font-weight: 600;
+  font-size: 11px;
+  color: inherit;
 }
 
 .metodos-pago__efectivo {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(160px, 240px));
   gap: 16px;
   margin-top: 4px;
+  justify-content: start;
 }
 
 .metodos-pago__efectivo input[disabled] {
