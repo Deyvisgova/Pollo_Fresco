@@ -83,6 +83,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('otros-productos/productos', [OtrosProductosController::class, 'productosIndex']);
     Route::post('otros-productos/productos', [OtrosProductosController::class, 'productosStore']);
+    Route::put('otros-productos/productos/{productoId}', [OtrosProductosController::class, 'productosUpdate']);
+    Route::delete('otros-productos/productos/{productoId}', [OtrosProductosController::class, 'productosDestroy']);
     Route::get('otros-productos/lotes', [OtrosProductosController::class, 'lotesIndex']);
     Route::post('otros-productos/lotes', [OtrosProductosController::class, 'lotesStore']);
     Route::put('otros-productos/lotes/{compraLoteId}', [OtrosProductosController::class, 'lotesUpdate']);
