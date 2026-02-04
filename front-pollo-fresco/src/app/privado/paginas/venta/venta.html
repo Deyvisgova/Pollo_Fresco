@@ -138,6 +138,7 @@
                 id="productoBusqueda"
                 [(ngModel)]="productoSeleccionado"
                 (input)="actualizarBusquedaProductos()"
+                (change)="seleccionarProductoDesdeBuscador()"
                 type="text"
                 placeholder="Buscar producto..."
                 list="productosDisponibles"

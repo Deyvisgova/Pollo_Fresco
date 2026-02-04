@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { HttpClient, HttpClientModule, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { SesionServicio } from '../../../servicios/sesion.servicio';
 
 type TipoComprobante = 'factura' | 'boleta' | 'nota-venta' | 'nota-credito';
 type TipoDocumentoCliente = 'ruc' | 'dni';
@@ -83,7 +84,10 @@ export class PrivadoVenta implements OnInit {
     { id: 'otro', etiqueta: 'Otro', icono: '⋯' }
   ];
 
-  constructor(private readonly http: HttpClient) {}
+  constructor(
+    private readonly http: HttpClient,
+    private readonly sesionServicio: SesionServicio
+  ) {}
 
   ngOnInit(): void {
     this.actualizarSerieNumero();
@@ -124,6 +128,9 @@ export class PrivadoVenta implements OnInit {
 
   agregarDetalle(): void {
     const descripcion = this.productoSeleccionado.trim();
+    if (!descripcion) {
+      return;
+    }
     this.detalles = [
       ...this.detalles,
       { descripcion, unidad: 'KG', cantidad: 1, precioUnitario: 0 }
@@ -131,16 +138,32 @@ export class PrivadoVenta implements OnInit {
     this.productoSeleccionado = '';
   }
 
+  seleccionarProductoDesdeBuscador(): void {
+    const seleccionado = this.productoSeleccionado.trim().toLowerCase();
+    if (!seleccionado) {
+      return;
+    }
+    const existe = this.productosDisponibles.some(
+      (producto) => producto.toLowerCase() === seleccionado
+    );
+    if (existe) {
+      this.agregarDetalle();
+    }
+  }
+
   filtrarProductos(): void {
     const termino = this.productoSeleccionado.trim().toLowerCase();
-    this.productosFiltrados = termino
-      ? this.productosDisponibles.filter((producto) => producto.toLowerCase().includes(termino))
-      : [...this.productosDisponibles];
+    if (!termino) {
+      this.productosFiltrados = [];
+      return;
+    }
+    this.productosFiltrados = this.productosDisponibles.filter((producto) =>
+      producto.toLowerCase().includes(termino)
+    );
   }
 
   actualizarBusquedaProductos(): void {
-    this.cargarProductos();
-    this.filtrarProductos();
+    this.cargarProductos(this.productoSeleccionado);
   }
 
   abrirModalProducto(): void {
@@ -158,8 +181,9 @@ export class PrivadoVenta implements OnInit {
       return;
     }
 
+    const headers = this.obtenerHeaders();
     this.http
-      .post<ProductoApi>('/api/otros-productos/productos', { nombre })
+      .post<ProductoApi>('/api/otros-productos/productos', { nombre }, { headers })
       .subscribe({
         next: (producto) => {
           const nombreProducto = producto?.nombre ?? nombre;
@@ -174,8 +198,12 @@ export class PrivadoVenta implements OnInit {
       });
   }
 
-  private cargarProductos(): void {
-    this.http.get<ProductoApi[]>('/api/otros-productos/productos').subscribe({
+  private cargarProductos(termino: string = ''): void {
+    const limpio = termino.trim();
+    const params = limpio ? new HttpParams().set('buscar', limpio) : undefined;
+    const headers = this.obtenerHeaders();
+
+    this.http.get<ProductoApi[]>('/api/otros-productos/productos', { params, headers }).subscribe({
       next: (productos) => {
         this.productosDisponibles = productos.map((producto) => producto.nombre);
         this.filtrarProductos();
@@ -184,6 +212,11 @@ export class PrivadoVenta implements OnInit {
         this.filtrarProductos();
       }
     });
+  }
+
+  private obtenerHeaders(): HttpHeaders {
+    const token = this.sesionServicio.obtenerToken();
+    return token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : new HttpHeaders();
   }
 
   eliminarDetalle(index: number): void {
