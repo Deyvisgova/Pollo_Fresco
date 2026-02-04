@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { HttpClient, HttpClientModule, HttpParams } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
@@ -139,8 +139,7 @@ export class PrivadoVenta implements OnInit {
   }
 
   actualizarBusquedaProductos(): void {
-    this.cargarProductos();
-    this.filtrarProductos();
+    this.cargarProductos(this.productoSeleccionado);
   }
 
   abrirModalProducto(): void {
@@ -174,8 +173,11 @@ export class PrivadoVenta implements OnInit {
       });
   }
 
-  private cargarProductos(): void {
-    this.http.get<ProductoApi[]>('/api/otros-productos/productos').subscribe({
+  private cargarProductos(termino: string = ''): void {
+    const limpio = termino.trim();
+    const params = limpio ? new HttpParams().set('buscar', limpio) : undefined;
+
+    this.http.get<ProductoApi[]>('/api/otros-productos/productos', { params }).subscribe({
       next: (productos) => {
         this.productosDisponibles = productos.map((producto) => producto.nombre);
         this.filtrarProductos();
