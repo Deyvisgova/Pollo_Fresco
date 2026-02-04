@@ -39,9 +39,13 @@ class OtrosProductosController extends Controller
 
     public function productosIndex(Request $request)
     {
+        $termino = trim((string) $request->query('buscar', ''));
         $productos = DB::table('productos')
             ->select('producto_id as id', 'nombre')
             ->where('activo', 1)
+            ->when($termino !== '', function ($query) use ($termino) {
+                $query->where('nombre', 'like', '%' . $termino . '%');
+            })
             ->orderBy('nombre')
             ->get();
 
