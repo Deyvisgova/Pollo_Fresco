@@ -265,8 +265,8 @@
 .tabla-detalle__encabezado,
 .tabla-detalle__fila {
   display: grid;
-  grid-template-columns: 0.7fr 0.9fr 2.2fr 0.9fr 0.9fr 32px;
-  gap: 6px;
+  grid-template-columns: 0.7fr 0.9fr 2.2fr 0.9fr 0.7fr 32px;
+  gap: 4px;
   align-items: center;
 }
 
@@ -278,7 +278,8 @@
 }
 
 .tabla-detalle__encabezado span {
-  padding: 0 10px;
+  padding: 0 6px;
+  text-align: center;
 }
 
 .tabla-detalle__fila input,
@@ -289,12 +290,6 @@
   background: #f8fafc;
   width: 100%;
   box-sizing: border-box;
-}
-
-.tabla-detalle__encabezado span:nth-child(1),
-.tabla-detalle__encabezado span:nth-child(4),
-.tabla-detalle__encabezado span:nth-child(5) {
-  text-align: right;
 }
 
 .tabla-detalle__fila input[type='number'] {
@@ -375,18 +370,20 @@
 }
 
 .metodos-pago__opciones {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 
 .metodos-pago__opcion {
+  width: 100%;
   border-radius: 12px;
   border: 1px solid #e2e8f0;
   background: #f8fafc;
   padding: 8px 12px;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   font-size: 13px;
   cursor: pointer;
@@ -417,9 +414,10 @@
 
 .metodos-pago__efectivo {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(160px, 240px));
   gap: 16px;
   margin-top: 4px;
+  justify-content: start;
 }
 
 .metodos-pago__efectivo input[disabled] {
