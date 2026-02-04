@@ -219,6 +219,22 @@
         </div>
       </div>
 
+      <div class="metodos-pago">
+        <h5>Método de pago:</h5>
+        <div class="metodos-pago__opciones">
+          <button
+            type="button"
+            class="metodos-pago__opcion"
+            *ngFor="let metodo of metodosPago"
+            [class.metodos-pago__opcion--activa]="metodoPagoSeleccionado === metodo.id"
+            (click)="seleccionarMetodoPago(metodo.id)"
+          >
+            <span class="metodos-pago__icono" aria-hidden="true">{{ metodo.icono }}</span>
+            <span class="metodos-pago__texto">{{ metodo.etiqueta }}</span>
+          </button>
+        </div>
+      </div>
+
       <footer class="acciones">
         <button class="boton boton--primario" type="button">Emitir comprobante</button>
       </footer>
