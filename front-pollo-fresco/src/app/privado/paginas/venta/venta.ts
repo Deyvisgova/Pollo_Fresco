@@ -128,11 +128,27 @@ export class PrivadoVenta implements OnInit {
 
   agregarDetalle(): void {
     const descripcion = this.productoSeleccionado.trim();
+    if (!descripcion) {
+      return;
+    }
     this.detalles = [
       ...this.detalles,
       { descripcion, unidad: 'KG', cantidad: 1, precioUnitario: 0 }
     ];
     this.productoSeleccionado = '';
+  }
+
+  seleccionarProductoDesdeBuscador(): void {
+    const seleccionado = this.productoSeleccionado.trim().toLowerCase();
+    if (!seleccionado) {
+      return;
+    }
+    const existe = this.productosDisponibles.some(
+      (producto) => producto.toLowerCase() === seleccionado
+    );
+    if (existe) {
+      this.agregarDetalle();
+    }
   }
 
   filtrarProductos(): void {
