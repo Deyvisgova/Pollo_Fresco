@@ -24,6 +24,12 @@ interface ProductoApi {
   nombre: string;
 }
 
+interface MetodoPago {
+  id: string;
+  etiqueta: string;
+  icono: string;
+}
+
 @Component({
   selector: 'app-privado-venta',
   // Componente informativo para la sección de venta.
@@ -76,6 +82,15 @@ export class PrivadoVenta implements OnInit {
   mostrarListaProductos = false;
   mostrarModalProducto = false;
   nuevoProducto = '';
+  metodoPagoSeleccionado = 'efectivo';
+  metodosPago: MetodoPago[] = [
+    { id: 'efectivo', etiqueta: 'Efectivo', icono: '💵' },
+    { id: 'tarjeta', etiqueta: 'Tarjeta', icono: '💳' },
+    { id: 'transferencia', etiqueta: 'Transf.', icono: '🏦' },
+    { id: 'plin', etiqueta: 'Plin', icono: '🟢' },
+    { id: 'yape', etiqueta: 'Yape', icono: '🟣' },
+    { id: 'otro', etiqueta: 'Otro', icono: '⋯' }
+  ];
 
   constructor(private readonly http: HttpClient) {}
 
@@ -193,6 +208,10 @@ export class PrivadoVenta implements OnInit {
 
   eliminarDetalle(index: number): void {
     this.detalles = this.detalles.filter((_, i) => i !== index);
+  }
+
+  seleccionarMetodoPago(metodoId: string): void {
+    this.metodoPagoSeleccionado = metodoId;
   }
 
   consultarDocumento(): void {
