@@ -40,9 +40,12 @@ class OtrosProductosController extends Controller
     public function productosIndex(Request $request)
     {
         $termino = trim((string) $request->query('buscar', ''));
+        $incluirInactivos = filter_var($request->query('incluir_inactivos', false), FILTER_VALIDATE_BOOLEAN);
         $productos = DB::table('productos')
-            ->select('producto_id as id', 'nombre')
-            ->where('activo', 1)
+            ->select('producto_id as id', 'nombre', 'activo')
+            ->when(!$incluirInactivos, function ($query) {
+                $query->where('activo', 1);
+            })
             ->when($termino !== '', function ($query) use ($termino) {
                 $query->where('nombre', 'like', '%' . $termino . '%');
             })
@@ -71,7 +74,59 @@ class OtrosProductosController extends Controller
         return response()->json([
             'id' => $productoId,
             'nombre' => $nombre,
+            'activo' => 1,
         ], 201);
+    }
+
+    public function productosUpdate(Request $request, int $productoId)
+    {
+        $validator = Validator::make($request->all(), [
+            'nombre' => ['required', 'string', 'max:80'],
+            'activo' => ['nullable', 'boolean'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['message' => 'Datos inválidos', 'errors' => $validator->errors()], 422);
+        }
+
+        $producto = DB::table('productos')->where('producto_id', $productoId)->first();
+        if (!$producto) {
+            return response()->json(['message' => 'Producto no encontrado'], 404);
+        }
+
+        $nombre = trim($request->input('nombre'));
+        $activo = $request->has('activo') ? (int) $request->boolean('activo') : (int) $producto->activo;
+
+        DB::table('productos')
+            ->where('producto_id', $productoId)
+            ->update([
+                'nombre' => $nombre,
+                'activo' => $activo,
+            ]);
+
+        return response()->json([
+            'id' => $productoId,
+            'nombre' => $nombre,
+            'activo' => $activo,
+        ]);
+    }
+
+    public function productosDestroy(Request $request, int $productoId)
+    {
+        $producto = DB::table('productos')->where('producto_id', $productoId)->first();
+        if (!$producto) {
+            return response()->json(['message' => 'Producto no encontrado'], 404);
+        }
+
+        DB::table('productos')
+            ->where('producto_id', $productoId)
+            ->update(['activo' => 0]);
+
+        return response()->json([
+            'id' => $productoId,
+            'nombre' => $producto->nombre,
+            'activo' => 0,
+        ]);
     }
 
     public function lotesStore(Request $request)
