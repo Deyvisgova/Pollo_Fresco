@@ -137,44 +137,29 @@
               <input
                 id="productoBusqueda"
                 [(ngModel)]="productoSeleccionado"
-                (focus)="mostrarListaProductos = true"
-                (input)="filtrarProductos()"
+                (input)="actualizarBusquedaProductos()"
                 type="text"
                 placeholder="Buscar producto..."
+                list="productosDisponibles"
               />
               <button
                 type="button"
                 class="buscador-producto__toggle"
-                (click)="mostrarListaProductos = !mostrarListaProductos"
+                (click)="actualizarBusquedaProductos()"
                 aria-label="Mostrar productos"
               >
                 ▾
               </button>
             </div>
-            <div class="buscador-producto__lista" *ngIf="mostrarListaProductos">
-              <input
-                class="buscador-producto__filtro"
-                type="text"
-                placeholder="Buscar producto..."
-                [(ngModel)]="productoFiltro"
-                (input)="filtrarProductos()"
-              />
-              <div class="buscador-producto__items">
-                <button
-                  type="button"
-                  class="buscador-producto__item"
-                  *ngFor="let producto of productosFiltrados"
-                  (click)="seleccionarProducto(producto)"
-                >
-                  {{ producto }}
-                </button>
-                <div class="buscador-producto__empty" *ngIf="!productosFiltrados.length">
-                  Sin resultados
-                </div>
-              </div>
-            </div>
           </div>
-          <button type="button" class="boton boton--secundario boton-icono--neutral" (click)="abrirModalProducto()">
+          <datalist id="productosDisponibles">
+            <option *ngFor="let producto of productosFiltrados" [value]="producto"></option>
+          </datalist>
+          <button
+            type="button"
+            class="boton boton--secundario boton-icono--neutral acciones-detalle__nuevo"
+            (click)="abrirModalProducto()"
+          >
             <span aria-hidden="true">+</span>
             <span class="sr-only">Nuevo producto</span>
           </button>
@@ -204,18 +189,46 @@
         </div>
       </div>
 
-      <div class="resumen">
-        <div>
-          <span>Subtotal</span>
-          <strong>S/ {{ subtotal | number: '1.2-2' }}</strong>
+      <div class="detalle-resumen">
+        <div class="metodos-pago">
+          <h5>Método de pago:</h5>
+          <div class="metodos-pago__opciones">
+            <button
+              type="button"
+              class="metodos-pago__opcion"
+              *ngFor="let metodo of metodosPago"
+              [class.metodos-pago__opcion--activa]="metodoPagoSeleccionado === metodo.id"
+              (click)="seleccionarMetodoPago(metodo.id)"
+            >
+              <span class="metodos-pago__icono" aria-hidden="true">{{ metodo.icono }}</span>
+              <span class="metodos-pago__texto">{{ metodo.etiqueta }}</span>
+            </button>
+          </div>
+          <div class="metodos-pago__efectivo" *ngIf="metodoPagoSeleccionado === 'efectivo'">
+            <div class="campo">
+              <label>Pago con</label>
+              <input [(ngModel)]="montoRecibido" type="number" min="0" placeholder="S/ 0.00" />
+            </div>
+            <div class="campo">
+              <label>Vuelto</label>
+              <input [value]="vuelto | number: '1.2-2'" type="text" disabled />
+            </div>
+          </div>
         </div>
-        <div>
-          <span>IGV</span>
-          <strong>Exonerado</strong>
-        </div>
-        <div class="resumen__total">
-          <span>Total a pagar</span>
-          <strong>S/ {{ total | number: '1.2-2' }}</strong>
+
+        <div class="resumen">
+          <div>
+            <span>Subtotal</span>
+            <strong>S/ {{ subtotal | number: '1.2-2' }}</strong>
+          </div>
+          <div>
+            <span>IGV</span>
+            <strong>Exonerado</strong>
+          </div>
+          <div class="resumen__total">
+            <span>Total a pagar</span>
+            <strong>S/ {{ total | number: '1.2-2' }}</strong>
+          </div>
         </div>
       </div>
 
