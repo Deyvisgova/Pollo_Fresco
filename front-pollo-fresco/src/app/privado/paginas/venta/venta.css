@@ -145,10 +145,17 @@
 }
 
 .acciones-detalle {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: flex-end;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  justify-items: center;
+  width: 100%;
+}
+
+.acciones-detalle .boton--primario {
+  justify-self: end;
 }
 
 .buscador-producto {
@@ -156,77 +163,51 @@
   flex-direction: column;
   gap: 6px;
   position: relative;
+  width: 100%;
+  max-width: 460px;
+  justify-self: center;
 }
 
 .buscador-producto input {
   min-width: 220px;
 }
 
+.buscador-producto label {
+  text-align: center;
+  font-weight: 600;
+}
+
 .buscador-producto__control {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  padding: 10px 16px;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+  justify-content: space-between;
+  width: 100%;
 }
 
 .buscador-producto__control input {
   flex: 1;
+  border: none;
+  background: transparent;
+  padding: 8px 0;
+  outline: none;
+  font-size: 15px;
 }
 
-.buscador-producto__toggle {
-  border: 1px solid #cbd5f5;
-  background: #f8fafc;
-  border-radius: 10px;
+.buscador-producto__nuevo {
+  border: none;
+  background: #e2e8f0;
+  border-radius: 12px;
   height: 40px;
   width: 40px;
   cursor: pointer;
-}
-
-.buscador-producto__lista {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  right: 0;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
-  max-height: 260px;
-  overflow: hidden;
-  z-index: 10;
-}
-
-.buscador-producto__filtro {
-  width: 100%;
-  border: none;
-  border-bottom: 1px solid #e2e8f0;
-  padding: 10px 12px;
-  font-size: 14px;
-  outline: none;
-}
-
-.buscador-producto__items {
-  max-height: 200px;
-  overflow: auto;
-}
-
-.buscador-producto__item {
-  display: block;
-  width: 100%;
-  text-align: left;
-  padding: 10px 12px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-}
-
-.buscador-producto__item:hover {
-  background: #f8fafc;
-}
-
-.buscador-producto__empty {
-  padding: 10px 12px;
-  color: #94a3b8;
-  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
 }
 
 .tarjeta__titulo h4 {
@@ -284,8 +265,8 @@
 .tabla-detalle__encabezado,
 .tabla-detalle__fila {
   display: grid;
-  grid-template-columns: 0.7fr 0.9fr 2.2fr 1fr 1fr 32px;
-  gap: 8px;
+  grid-template-columns: 0.7fr 0.9fr 2.2fr 0.9fr 0.9fr 32px;
+  gap: 6px;
   align-items: center;
 }
 
@@ -355,16 +336,94 @@
   border-radius: 12px;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
+  min-width: 220px;
 }
 
 .resumen div {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 12px;
   color: #475569;
 }
 
 .resumen__total {
   font-size: 18px;
+  color: #0f172a;
+}
+
+.detalle-resumen {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: start;
+}
+
+.metodos-pago {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+}
+
+.metodos-pago h5 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.metodos-pago__opciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.metodos-pago__opcion {
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  padding: 8px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.metodos-pago__opcion--activa {
+  border-color: #22c55e;
+  background: #dcfce7;
+  color: #166534;
+  box-shadow: 0 6px 16px rgba(34, 197, 94, 0.2);
+}
+
+.metodos-pago__icono {
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  background: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.metodos-pago__texto {
+  font-weight: 600;
+}
+
+.metodos-pago__efectivo {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 4px;
+}
+
+.metodos-pago__efectivo input[disabled] {
+  background: #f1f5f9;
   color: #0f172a;
 }
 
@@ -412,6 +471,15 @@
   }
 
   .busqueda-documento {
+    grid-template-columns: 1fr;
+  }
+
+  .acciones-detalle {
+    grid-template-columns: 1fr;
+    justify-items: stretch;
+  }
+
+  .detalle-resumen {
     grid-template-columns: 1fr;
   }
 
