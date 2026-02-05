@@ -16,8 +16,8 @@ interface ClienteFactura {
 interface DetalleFactura {
   descripcion: string;
   unidad: string;
-  cantidad: number;
-  precioUnitario: number;
+  cantidad: number | null;
+  precioUnitario: number | null;
 }
 
 interface ProductoApi {
@@ -108,7 +108,11 @@ export class PrivadoVenta implements OnInit {
   }
 
   get subtotal(): number {
-    return this.detalles.reduce((acc, item) => acc + item.cantidad * item.precioUnitario, 0);
+    return this.detalles.reduce((acc, item) => {
+      const cantidad = item.cantidad ?? 0;
+      const precio = item.precioUnitario ?? 0;
+      return acc + cantidad * precio;
+    }, 0);
   }
 
   get total(): number {
@@ -123,19 +127,26 @@ export class PrivadoVenta implements OnInit {
   }
 
   totalDetalle(item: DetalleFactura): number {
-    return item.cantidad * item.precioUnitario;
+    const cantidad = item.cantidad ?? 0;
+    const precio = item.precioUnitario ?? 0;
+    return cantidad * precio;
   }
 
-  agregarDetalle(): void {
-    const descripcion = this.productoSeleccionado.trim();
-    if (!descripcion) {
-      return;
-    }
+  agregarDetalle(descripcion: string = ''): void {
+    const descripcionLimpia = descripcion.trim();
     this.detalles = [
       ...this.detalles,
-      { descripcion, unidad: 'KG', cantidad: 1, precioUnitario: 0 }
+      {
+        descripcion: descripcionLimpia,
+        unidad: 'KG',
+        cantidad: null,
+        precioUnitario: null
+      }
     ];
-    this.productoSeleccionado = '';
+  }
+
+  agregarDetalleVacio(): void {
+    this.agregarDetalle('');
   }
 
   seleccionarProductoDesdeBuscador(): void {
@@ -147,7 +158,8 @@ export class PrivadoVenta implements OnInit {
       (producto) => producto.toLowerCase() === seleccionado
     );
     if (existe) {
-      this.agregarDetalle();
+      this.agregarDetalle(this.productoSeleccionado);
+      this.productoSeleccionado = '';
     }
   }
 
