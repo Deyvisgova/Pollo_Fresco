@@ -30,30 +30,52 @@
             </div>
             <div class="campo">
               <label>Número</label>
-              <input [(ngModel)]="consultaDocumento" type="text" placeholder="Ingresa DNI o RUC" />
+              <input
+                [(ngModel)]="consultaDocumento"
+                type="text"
+                placeholder="Ingresa DNI o RUC"
+              />
             </div>
             <div class="campo">
-              <button type="button" class="boton boton--secundario" (click)="consultarDocumento()">
+              <button
+                type="button"
+                class="boton boton--secundario"
+                (click)="consultarDocumento()"
+              >
                 <span *ngIf="consultaCargando">...</span>
                 <span *ngIf="!consultaCargando" aria-hidden="true">🔍</span>
                 <span class="sr-only">Buscar</span>
               </button>
-              <small *ngIf="mensajeError" class="mensaje-error">{{ mensajeError }}</small>
+              <small *ngIf="mensajeError" class="mensaje-error"
+                >{{ mensajeError }}</small
+              >
             </div>
           </div>
 
           <div class="formulario-grid formulario-grid--cliente">
             <div class="campo">
               <label>Documento</label>
-              <input [(ngModel)]="cliente.documento" type="text" placeholder="00000000000" />
+              <input
+                [(ngModel)]="cliente.documento"
+                type="text"
+                placeholder="00000000000"
+              />
             </div>
             <div class="campo">
               <label>Razón social</label>
-              <input [(ngModel)]="cliente.nombre" type="text" placeholder="Cliente" />
+              <input
+                [(ngModel)]="cliente.nombre"
+                type="text"
+                placeholder="Cliente"
+              />
             </div>
             <div class="campo campo--doble">
               <label>Dirección</label>
-              <input [(ngModel)]="cliente.direccion" type="text" placeholder="Dirección completa" />
+              <input
+                [(ngModel)]="cliente.direccion"
+                type="text"
+                placeholder="Dirección completa"
+              />
             </div>
           </div>
         </div>
@@ -67,7 +89,10 @@
           <div class="formulario-grid formulario-grid--comprobante">
             <div class="campo">
               <label>Tipo</label>
-              <select [(ngModel)]="tipoComprobante" (ngModelChange)="actualizarSerieNumero()">
+              <select
+                [(ngModel)]="tipoComprobante"
+                (ngModelChange)="actualizarSerieNumero()"
+              >
                 <option value="factura">Factura</option>
                 <option value="boleta">Boleta</option>
                 <option value="nota-venta">Nota de venta</option>
@@ -113,15 +138,27 @@
         <div class="formulario-grid">
           <div class="campo">
             <label>Serie</label>
-            <input [(ngModel)]="referenciaSerie" type="text" placeholder="F001" />
+            <input
+              [(ngModel)]="referenciaSerie"
+              type="text"
+              placeholder="F001"
+            />
           </div>
           <div class="campo">
             <label>Número</label>
-            <input [(ngModel)]="referenciaNumero" type="text" placeholder="00001234" />
+            <input
+              [(ngModel)]="referenciaNumero"
+              type="text"
+              placeholder="00001234"
+            />
           </div>
           <div class="campo campo--doble">
             <label>Motivo</label>
-            <input [(ngModel)]="referenciaMotivo" type="text" placeholder="Devolución o descuento aplicado" />
+            <input
+              [(ngModel)]="referenciaMotivo"
+              type="text"
+              placeholder="Devolución o descuento aplicado"
+            />
           </div>
         </div>
       </div>
@@ -154,9 +191,18 @@
             </div>
           </div>
           <datalist id="productosDisponibles">
-            <option *ngFor="let producto of productosFiltrados" [value]="producto"></option>
+            <option
+              *ngFor="let producto of productosFiltrados"
+              [value]="producto"
+            ></option>
           </datalist>
-          <button type="button" class="boton boton--primario" (click)="agregarDetalleVacio()">Agregar</button>
+          <button
+            type="button"
+            class="boton boton--primario"
+            (click)="agregarDetalleVacio()"
+          >
+            Agregar
+          </button>
         </div>
       </div>
 
@@ -169,16 +215,31 @@
           <span>Total</span>
           <span></span>
         </div>
-        <div class="tabla-detalle__fila" *ngFor="let item of detalles; let i = index">
+        <div
+          class="tabla-detalle__fila"
+          *ngFor="let item of detalles; let i = index"
+        >
           <input [(ngModel)]="item.cantidad" type="number" min="0" />
           <select [(ngModel)]="item.unidad">
             <option value="KG">KG</option>
             <option value="UND">UND</option>
           </select>
-          <input [(ngModel)]="item.descripcion" type="text" placeholder="Busca o escribe el producto" />
+          <input
+            [(ngModel)]="item.descripcion"
+            type="text"
+            placeholder="Escribe nombre del el producto"
+          />
           <input [(ngModel)]="item.precioUnitario" type="number" min="0" />
-          <span class="tabla-detalle__total">S/ {{ totalDetalle(item) | number: '1.2-2' }}</span>
-          <button type="button" class="boton-icono" (click)="eliminarDetalle(i)">✕</button>
+          <span class="tabla-detalle__total"
+            >S/ {{ totalDetalle(item) | number: '1.2-2' }}</span
+          >
+          <button
+            type="button"
+            class="boton-icono"
+            (click)="eliminarDetalle(i)"
+          >
+            ✕
+          </button>
         </div>
       </div>
 
@@ -193,14 +254,24 @@
               [class.metodos-pago__opcion--activa]="metodoPagoSeleccionado === metodo.id"
               (click)="seleccionarMetodoPago(metodo.id)"
             >
-              <span class="metodos-pago__icono" aria-hidden="true">{{ metodo.icono }}</span>
+              <span class="metodos-pago__icono" aria-hidden="true"
+                >{{ metodo.icono }}</span
+              >
               <span class="metodos-pago__texto">{{ metodo.etiqueta }}</span>
             </button>
           </div>
-          <div class="metodos-pago__efectivo" *ngIf="metodoPagoSeleccionado === 'efectivo'">
+          <div
+            class="metodos-pago__efectivo"
+            *ngIf="metodoPagoSeleccionado === 'efectivo'"
+          >
             <div class="campo">
               <label>Pago con</label>
-              <input [(ngModel)]="montoRecibido" type="number" min="0" placeholder="S/ 0.00" />
+              <input
+                [(ngModel)]="montoRecibido"
+                type="number"
+                min="0"
+                placeholder="S/ 0.00"
+              />
             </div>
             <div class="campo">
               <label>Vuelto</label>
@@ -226,7 +297,9 @@
       </div>
 
       <footer class="acciones">
-        <button class="boton boton--primario" type="button">Emitir comprobante</button>
+        <button class="boton boton--primario" type="button">
+          Emitir comprobante
+        </button>
       </footer>
     </article>
   </div>
@@ -237,11 +310,27 @@
     <h4>Nuevo producto</h4>
     <div class="campo">
       <label>Nombre del producto</label>
-      <input [(ngModel)]="nuevoProducto" type="text" placeholder="Ej. Pollo fresco entero" />
+      <input
+        [(ngModel)]="nuevoProducto"
+        type="text"
+        placeholder="Ej. Pollo fresco entero"
+      />
     </div>
     <div class="modal__acciones">
-      <button type="button" class="boton boton--secundario" (click)="cerrarModalProducto()">Cancelar</button>
-      <button type="button" class="boton boton--primario" (click)="guardarProductoNuevo()">Guardar</button>
+      <button
+        type="button"
+        class="boton boton--secundario"
+        (click)="cerrarModalProducto()"
+      >
+        Cancelar
+      </button>
+      <button
+        type="button"
+        class="boton boton--primario"
+        (click)="guardarProductoNuevo()"
+      >
+        Guardar
+      </button>
     </div>
   </div>
 </div>
