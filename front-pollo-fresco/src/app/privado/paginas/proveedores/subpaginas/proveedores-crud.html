@@ -8,20 +8,16 @@
 
   <div class="consulta">
     <label class="campo">
-      <span>DNI</span>
+      <span>DNI o RUC</span>
       <div class="campo__acciones">
-        <input [(ngModel)]="consultaDni" name="consultaDni" type="text" placeholder="8 dígitos" />
-        <button class="boton boton--primario" type="button" (click)="consultarDni()" [disabled]="consultaCargando">
-          {{ consultaCargando ? 'Consultando...' : 'Consultar DNI' }}
-        </button>
-      </div>
-    </label>
-    <label class="campo">
-      <span>RUC</span>
-      <div class="campo__acciones">
-        <input [(ngModel)]="consultaRuc" name="consultaRuc" type="text" placeholder="11 dígitos" />
-        <button class="boton boton--primario" type="button" (click)="consultarRuc()" [disabled]="consultaCargando">
-          {{ consultaCargando ? 'Consultando...' : 'Consultar RUC' }}
+        <input
+          [(ngModel)]="consultaDocumento"
+          name="consultaDocumento"
+          type="text"
+          placeholder="8 dígitos (DNI) o 11 dígitos (RUC)"
+        />
+        <button class="boton boton--primario" type="button" (click)="consultarDocumentoApi()" [disabled]="consultaCargando">
+          {{ consultaCargando ? 'Consultando...' : 'Consultar' }}
         </button>
       </div>
     </label>
