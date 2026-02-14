@@ -38,8 +38,7 @@ interface ProveedorFormulario {
 export class PrivadoProveedoresCrud implements OnInit {
   private token = 'f3ba6fa1f3a2b2d1a6390dc06d831ebad2f218a9d3ba43e7f1f42b425dd03e26';
 
-  consultaDni = '';
-  consultaRuc = '';
+  consultaDocumento = '';
   consultaResultado: Record<string, unknown> | null = null;
   consultaError = '';
   consultaCargando = false;
@@ -72,17 +71,19 @@ export class PrivadoProveedoresCrud implements OnInit {
     this.consultaError = '';
     this.consultaResultado = null;
 
-    if (!this.consultaDni.trim()) {
+    const documento = this.consultaDocumento.trim();
+
+    if (!documento) {
       this.consultaError = 'Ingresa el DNI para consultar.';
       return;
     }
 
-    if (this.consultaDni.length !== 8) {
+    if (documento.length !== 8) {
       this.consultaError = 'El DNI debe tener 8 dígitos.';
       return;
     }
 
-    const url = `https://apiperu.dev/api/dni/${this.consultaDni}?api_token=${this.token}`;
+    const url = `https://apiperu.dev/api/dni/${documento}?api_token=${this.token}`;
 
     this.consultaCargando = true;
     this.http.get<Record<string, unknown>>(url).subscribe({
@@ -105,17 +106,19 @@ export class PrivadoProveedoresCrud implements OnInit {
     this.consultaError = '';
     this.consultaResultado = null;
 
-    if (!this.consultaRuc.trim()) {
+    const documento = this.consultaDocumento.trim();
+
+    if (!documento) {
       this.consultaError = 'Ingresa el RUC para consultar.';
       return;
     }
 
-    if (this.consultaRuc.length !== 11) {
+    if (documento.length !== 11) {
       this.consultaError = 'El RUC debe tener 11 dígitos.';
       return;
     }
 
-    const url = `https://apiperu.dev/api/ruc/${this.consultaRuc}?api_token=${this.token}`;
+    const url = `https://apiperu.dev/api/ruc/${documento}?api_token=${this.token}`;
 
     this.consultaCargando = true;
     this.http.get<Record<string, unknown>>(url).subscribe({
@@ -219,7 +222,7 @@ export class PrivadoProveedoresCrud implements OnInit {
 
     this.formulario = {
       ...this.formulario,
-      dni: ((datos['numero'] as string) ?? this.consultaDni).toString(),
+      dni: ((datos['numero'] as string) ?? this.consultaDocumento).toString(),
       nombres: nombres || (datos['nombre_completo'] as string) || this.formulario.nombres,
       apellidos:
         `${apellidoPaterno} ${apellidoMaterno}`.trim() ||
@@ -231,7 +234,7 @@ export class PrivadoProveedoresCrud implements OnInit {
   private autocompletarDesdeRuc(datos: Record<string, unknown>): void {
     this.formulario = {
       ...this.formulario,
-      ruc: ((datos['numero'] as string) ?? this.consultaRuc).toString(),
+      ruc: ((datos['numero'] as string) ?? this.consultaDocumento).toString(),
       nombres:
         (datos['nombre_o_razon_social'] as string) ??
         (datos['razon_social'] as string) ??
