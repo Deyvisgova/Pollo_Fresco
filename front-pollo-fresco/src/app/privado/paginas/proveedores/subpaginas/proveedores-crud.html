@@ -8,20 +8,16 @@
 
   <div class="consulta">
     <label class="campo">
-      <span>DNI</span>
+      <span>DNI o RUC</span>
       <div class="campo__acciones">
-        <input [(ngModel)]="consultaDni" name="consultaDni" type="text" placeholder="8 dígitos" />
-        <button class="boton boton--primario" type="button" (click)="consultarDni()" [disabled]="consultaCargando">
-          {{ consultaCargando ? 'Consultando...' : 'Consultar DNI' }}
-        </button>
-      </div>
-    </label>
-    <label class="campo">
-      <span>RUC</span>
-      <div class="campo__acciones">
-        <input [(ngModel)]="consultaRuc" name="consultaRuc" type="text" placeholder="11 dígitos" />
-        <button class="boton boton--primario" type="button" (click)="consultarRuc()" [disabled]="consultaCargando">
-          {{ consultaCargando ? 'Consultando...' : 'Consultar RUC' }}
+        <input
+          [(ngModel)]="consultaDocumento"
+          name="consultaDocumento"
+          type="text"
+          placeholder="8 dígitos (DNI) o 11 dígitos (RUC)"
+        />
+        <button class="boton boton--primario" type="button" (click)="consultarDocumentoApi()" [disabled]="consultaCargando">
+          {{ consultaCargando ? 'Consultando...' : 'Consultar' }}
         </button>
       </div>
     </label>
@@ -39,7 +35,7 @@
       <input [(ngModel)]="formulario.ruc" name="ruc" type="text" placeholder="11 dígitos" />
     </label>
     <label class="campo">
-      <span>Nombres / Razón social</span>
+      <span>Nombre</span>
       <input [(ngModel)]="formulario.nombres" name="nombres" type="text" />
     </label>
     <label class="campo">
@@ -80,7 +76,7 @@
         <tr>
           <th>DNI</th>
           <th>RUC</th>
-          <th>Proveedor</th>
+          <th>Nombres</th>
           <th>Empresa</th>
           <th>Contacto</th>
           <th>Creado en</th>
@@ -93,11 +89,13 @@
           <td>{{ proveedor.dni || '-' }}</td>
           <td>{{ proveedor.ruc || '-' }}</td>
           <td>
-            <strong>{{ proveedor.nombres }}</strong>
-            <div class="nota">{{ proveedor.apellidos }}</div>
-            <div class="nota">{{ proveedor.direccion }}</div>
+            <strong>{{ proveedor.nombres || '-' }}</strong>
+            <div class="nota" *ngIf="proveedor.apellidos">{{ proveedor.apellidos }}</div>
           </td>
-          <td>{{ proveedor.nombre_empresa || '-' }}</td>
+          <td>
+            <strong>{{ proveedor.nombre_empresa || '-' }}</strong>
+            <div class="nota" *ngIf="proveedor.nombre_empresa && proveedor.direccion">{{ proveedor.direccion }}</div>
+          </td>
           <td>{{ proveedor.telefono || '-' }}</td>
           <td>{{ proveedor.creado_en | date: 'short' }}</td>
           <td>{{ proveedor.actualizado_en | date: 'short' }}</td>
