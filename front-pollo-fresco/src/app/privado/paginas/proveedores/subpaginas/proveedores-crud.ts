@@ -38,8 +38,7 @@ interface ProveedorFormulario {
 export class PrivadoProveedoresCrud implements OnInit {
   private token = 'f3ba6fa1f3a2b2d1a6390dc06d831ebad2f218a9d3ba43e7f1f42b425dd03e26';
 
-  consultaDni = '';
-  consultaRuc = '';
+  consultaDocumento = '';
   consultaResultado: Record<string, unknown> | null = null;
   consultaError = '';
   consultaCargando = false;
@@ -68,75 +67,38 @@ export class PrivadoProveedoresCrud implements OnInit {
     this.cargarProveedores();
   }
 
-  consultarDni(): void {
+  consultarDocumentoApi(): void {
     this.consultaError = '';
     this.consultaResultado = null;
 
-    if (!this.consultaDni.trim()) {
-      this.consultaError = 'Ingresa el DNI para consultar.';
+    const documento = this.consultaDocumento.trim();
+
+    if (!documento) {
+      this.consultaError = 'Ingresa el DNI o RUC para consultar.';
       return;
     }
 
-    if (this.consultaDni.length !== 8) {
-      this.consultaError = 'El DNI debe tener 8 dígitos.';
+    if (!/^\d+$/.test(documento)) {
+      this.consultaError = 'El documento solo debe contener dígitos.';
       return;
     }
 
-    const url = `https://apiperu.dev/api/dni/${this.consultaDni}?api_token=${this.token}`;
-
-    this.consultaCargando = true;
-    this.http.get<Record<string, unknown>>(url).subscribe({
-      next: (respuesta) => {
-        const datos = (respuesta?.['data'] as Record<string, unknown>) ?? {};
-        this.consultaResultado = datos;
-        this.autocompletarDesdeDni(datos);
-      },
-      error: () => {
-        this.consultaError = 'No pudimos conectar con la SUNAT/RENIEC. Revisa el número e intenta nuevamente.';
-        this.consultaCargando = false;
-      },
-      complete: () => {
-        this.consultaCargando = false;
-      }
-    });
-  }
-
-  consultarRuc(): void {
-    this.consultaError = '';
-    this.consultaResultado = null;
-
-    if (!this.consultaRuc.trim()) {
-      this.consultaError = 'Ingresa el RUC para consultar.';
+    if (documento.length === 8) {
+      this.consultarApi(`dni/${documento}`, this.autocompletarDesdeDni.bind(this));
       return;
     }
 
-    if (this.consultaRuc.length !== 11) {
-      this.consultaError = 'El RUC debe tener 11 dígitos.';
+    if (documento.length === 11) {
+      this.consultarApi(`ruc/${documento}`, this.autocompletarDesdeRuc.bind(this));
       return;
     }
 
-    const url = `https://apiperu.dev/api/ruc/${this.consultaRuc}?api_token=${this.token}`;
-
-    this.consultaCargando = true;
-    this.http.get<Record<string, unknown>>(url).subscribe({
-      next: (respuesta) => {
-        const datos = (respuesta?.['data'] as Record<string, unknown>) ?? {};
-        this.consultaResultado = datos;
-        this.autocompletarDesdeRuc(datos);
-      },
-      error: () => {
-        this.consultaError = 'No pudimos conectar con la SUNAT/RENIEC. Revisa el número e intenta nuevamente.';
-        this.consultaCargando = false;
-      },
-      complete: () => {
-        this.consultaCargando = false;
-      }
-    });
+    this.consultaError = 'El documento debe tener 8 dígitos (DNI) o 11 dígitos (RUC).';
   }
 
   guardarProveedor(): void {
-    if (!this.formulario.nombres.trim()) {
-      this.consultaError = 'Completa al menos el nombre o razón social del proveedor.';
+    if (!this.formulario.nombres.trim() && !this.formulario.nombreEmpresa.trim()) {
+      this.consultaError = 'Completa al menos el nombre o el nombre de la empresa del proveedor.';
       return;
     }
 
@@ -212,6 +174,29 @@ export class PrivadoProveedoresCrud implements OnInit {
     };
   }
 
+  private consultarApi(
+    endpoint: string,
+    autocompletar: (datos: Record<string, unknown>) => void
+  ): void {
+    const url = `https://apiperu.dev/api/${endpoint}?api_token=${this.token}`;
+
+    this.consultaCargando = true;
+    this.http.get<Record<string, unknown>>(url).subscribe({
+      next: (respuesta) => {
+        const datos = (respuesta?.['data'] as Record<string, unknown>) ?? {};
+        this.consultaResultado = datos;
+        autocompletar(datos);
+      },
+      error: () => {
+        this.consultaError = 'No pudimos conectar con la SUNAT/RENIEC. Revisa el número e intenta nuevamente.';
+        this.consultaCargando = false;
+      },
+      complete: () => {
+        this.consultaCargando = false;
+      }
+    });
+  }
+
   private autocompletarDesdeDni(datos: Record<string, unknown>): void {
     const apellidoPaterno = (datos['apellido_paterno'] as string) ?? '';
     const apellidoMaterno = (datos['apellido_materno'] as string) ?? '';
@@ -219,7 +204,7 @@ export class PrivadoProveedoresCrud implements OnInit {
 
     this.formulario = {
       ...this.formulario,
-      dni: ((datos['numero'] as string) ?? this.consultaDni).toString(),
+      dni: ((datos['numero'] as string) ?? this.consultaDocumento).toString(),
       nombres: nombres || (datos['nombre_completo'] as string) || this.formulario.nombres,
       apellidos:
         `${apellidoPaterno} ${apellidoMaterno}`.trim() ||
@@ -229,19 +214,18 @@ export class PrivadoProveedoresCrud implements OnInit {
   }
 
   private autocompletarDesdeRuc(datos: Record<string, unknown>): void {
+    const nombreEmpresa =
+      (datos['nombre_o_razon_social'] as string) ??
+      (datos['razon_social'] as string) ??
+      (datos['nombre_comercial'] as string) ??
+      '';
+
     this.formulario = {
       ...this.formulario,
-      ruc: ((datos['numero'] as string) ?? this.consultaRuc).toString(),
-      nombres:
-        (datos['nombre_o_razon_social'] as string) ??
-        (datos['razon_social'] as string) ??
-        (datos['nombre_comercial'] as string) ??
-        this.formulario.nombres,
-      nombreEmpresa:
-        (datos['nombre_o_razon_social'] as string) ??
-        (datos['razon_social'] as string) ??
-        (datos['nombre_comercial'] as string) ??
-        this.formulario.nombreEmpresa,
+      ruc: ((datos['numero'] as string) ?? this.consultaDocumento).toString(),
+      nombres: '',
+      apellidos: '',
+      nombreEmpresa: nombreEmpresa || this.formulario.nombreEmpresa,
       direccion: (datos['direccion'] as string) ?? this.formulario.direccion
     };
   }
