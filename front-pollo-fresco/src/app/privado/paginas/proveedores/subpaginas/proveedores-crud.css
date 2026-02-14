@@ -25,7 +25,7 @@
 
 .consulta {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: 1fr;
   gap: 12px;
 }
 
@@ -54,7 +54,7 @@
 
 .campo__acciones {
   display: grid;
-  grid-template-columns: minmax(140px, 1fr) auto;
+  grid-template-columns: minmax(220px, 1fr) auto;
   gap: 12px;
   align-items: center;
 }
@@ -62,7 +62,8 @@
 .acciones {
   display: flex;
   gap: 12px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  grid-column: 1 / -1;
 }
 
 .boton {
@@ -136,4 +137,14 @@
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+.boton--peligro-solido {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.acciones-tabla .boton {
+  padding: 8px 14px;
+  border-radius: 10px;
 }
