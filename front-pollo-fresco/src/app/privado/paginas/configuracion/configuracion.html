@@ -1,14 +1,64 @@
-<!-- Contenido base para la vista de configuracion -->
 <section class="seccion">
   <div class="seccion__encabezado">
-    <h2>Configuracion</h2>
-    <p>Gestión y seguimiento de configuracion en el panel privado.</p>
+    <h2>Configuración de Pollo</h2>
+    <p>
+      Define la merma y precio por kg por proveedor. Todo proveedor registrado aparece automáticamente aquí.
+    </p>
   </div>
 
-  <div class="seccion__tarjeta">
-    <p>
-      Aquí se mostrará el contenido principal de <strong>Configuracion</strong>.
-      Este bloque se diseñó como placeholder para agregar formularios, tablas o reportes.
-    </p>
+  <p class="mensaje mensaje--error" *ngIf="error">{{ error }}</p>
+
+  <div class="seccion__tarjeta" *ngIf="cargando">Cargando configuración...</div>
+
+  <div class="seccion__tarjeta" *ngIf="!cargando">
+    <table class="tabla" *ngIf="configuraciones.length > 0; else sinProveedores">
+      <thead>
+        <tr>
+          <th>Proveedor</th>
+          <th>Documento</th>
+          <th>Merma (factor)</th>
+          <th>Precio por kg (S/)</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let configuracion of configuraciones">
+          <td>{{ obtenerNombreProveedor(configuracion) }}</td>
+          <td>{{ configuracion.ruc || configuracion.dni || '-' }}</td>
+          <td>
+            <input
+              type="number"
+              min="0"
+              step="0.0001"
+              [(ngModel)]="configuracion.merma_factor"
+              name="merma{{ configuracion.proveedor_id }}"
+            />
+          </td>
+          <td>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              [(ngModel)]="configuracion.precio_kg"
+              name="precio{{ configuracion.proveedor_id }}"
+            />
+          </td>
+          <td>
+            <button
+              class="boton"
+              type="button"
+              [disabled]="guardandoProveedorId === configuracion.proveedor_id"
+              (click)="guardar(configuracion)"
+            >
+              {{ guardandoProveedorId === configuracion.proveedor_id ? 'Guardando...' : 'Guardar' }}
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <ng-template #sinProveedores>
+      <p>No hay proveedores registrados todavía.</p>
+    </ng-template>
   </div>
 </section>

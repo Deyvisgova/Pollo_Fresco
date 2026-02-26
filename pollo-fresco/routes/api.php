@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\UsuariosController;
 
 
 use App\Http\Controllers\Api\ClienteController;
+use App\Http\Controllers\Api\ConfiguracionPolloController;
 use App\Http\Controllers\Api\EntregaProveedorController;
 use App\Http\Controllers\Api\OtrosProductosController;
 use App\Http\Controllers\Api\ProveedorController;
@@ -80,6 +81,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('entregas-proveedor', [EntregaProveedorController::class, 'index']);
     Route::post('entregas-proveedor', [EntregaProveedorController::class, 'store']);
+
+    Route::get('configuracion/pollo/proveedores', [ConfiguracionPolloController::class, 'index']);
+    Route::put('configuracion/pollo/proveedores/{proveedorId}', [ConfiguracionPolloController::class, 'upsert']);
 
     Route::get('otros-productos/productos', [OtrosProductosController::class, 'productosIndex']);
     Route::post('otros-productos/productos', [OtrosProductosController::class, 'productosStore']);

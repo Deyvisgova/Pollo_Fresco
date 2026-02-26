@@ -39,6 +39,12 @@
       <strong>{{ proveedorSeleccionado.nombres }} {{ proveedorSeleccionado.apellidos }}</strong>
     </div>
 
+
+    <div class="campo campo--completo" *ngIf="configuracionProveedor">
+      <span>Configuración aplicada</span>
+      <strong>Merma: {{ configuracionProveedor.merma_factor }} | Precio/kg: S/ {{ configuracionProveedor.precio_kg }}</strong>
+    </div>
+
     <div class="lineas">
       <div class="linea" *ngFor="let linea of lineas; let i = index">
         <label class="campo">

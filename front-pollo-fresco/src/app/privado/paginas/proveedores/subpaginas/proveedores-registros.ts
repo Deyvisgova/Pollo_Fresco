@@ -26,6 +26,13 @@ interface ProveedorApi {
   dni: string | null;
 }
 
+
+interface ConfiguracionPolloProveedor {
+  proveedor_id: number;
+  merma_factor: number;
+  precio_kg: number;
+}
+
 interface RegistroLinea {
   cantidadPollos: number | null;
   pesoTotalKg: number | null;
@@ -45,6 +52,7 @@ export class PrivadoProveedoresRegistros implements OnInit {
   proveedores: ProveedorApi[] = [];
   busquedaProveedor = '';
   proveedorSeleccionado: ProveedorApi | null = null;
+  configuracionProveedor: ConfiguracionPolloProveedor | null = null;
 
   fechaEntrega = '';
   usuarioNombre = 'Usuario';
@@ -100,6 +108,7 @@ export class PrivadoProveedoresRegistros implements OnInit {
     this.proveedorSeleccionado = proveedor;
     this.busquedaProveedor = this.formatearProveedor(proveedor);
     this.proveedores = [];
+    this.cargarConfiguracionProveedor(proveedor.proveedor_id);
   }
 
   agregarLinea(): void {
@@ -108,8 +117,8 @@ export class PrivadoProveedoresRegistros implements OnInit {
       {
         cantidadPollos: null,
         pesoTotalKg: null,
-        mermaKg: null,
-        precioKg: null
+        mermaKg: this.configuracionProveedor?.merma_factor ?? null,
+        precioKg: this.configuracionProveedor?.precio_kg ?? null
       }
     ];
   }
@@ -149,6 +158,7 @@ export class PrivadoProveedoresRegistros implements OnInit {
       peso_total_kg: totales.pesoTotalKg,
       merma_kg: totales.mermaKg,
       costo_total: totales.costoTotal,
+      precio_kg: this.configuracionProveedor?.precio_kg ?? null,
       observacion: this.observacion || null
     };
 
@@ -171,8 +181,8 @@ export class PrivadoProveedoresRegistros implements OnInit {
       {
         cantidadPollos: null,
         pesoTotalKg: null,
-        mermaKg: null,
-        precioKg: null
+        mermaKg: this.configuracionProveedor?.merma_factor ?? null,
+        precioKg: this.configuracionProveedor?.precio_kg ?? null
       }
     ];
     this.observacion = '';
@@ -180,6 +190,32 @@ export class PrivadoProveedoresRegistros implements OnInit {
 
   obtenerTotales(): { pesoTotalKg: number; mermaKg: number; costoTotal: number; cantidadPollos: number } {
     return this.calcularTotales();
+  }
+
+
+  private cargarConfiguracionProveedor(proveedorId: number): void {
+    const headers = this.obtenerHeaders();
+    this.http
+      .get<ConfiguracionPolloProveedor[]>('/api/configuracion/pollo/proveedores', { headers })
+      .subscribe({
+        next: (configuraciones) => {
+          const configuracion = configuraciones.find((item) => item.proveedor_id === proveedorId) ?? null;
+          this.configuracionProveedor = configuracion;
+
+          if (!configuracion) {
+            return;
+          }
+
+          this.lineas = this.lineas.map((linea) => ({
+            ...linea,
+            mermaKg: linea.mermaKg ?? Number(configuracion.merma_factor),
+            precioKg: linea.precioKg ?? Number(configuracion.precio_kg)
+          }));
+        },
+        error: () => {
+          this.error = 'No se pudo cargar la configuración del proveedor seleccionado.';
+        }
+      });
   }
 
   private cargarRegistros(): void {
