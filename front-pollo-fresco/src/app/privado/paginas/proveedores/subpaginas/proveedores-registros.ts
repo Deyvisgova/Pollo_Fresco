@@ -27,10 +27,12 @@ interface ProveedorApi {
 }
 
 interface RegistroLinea {
+  tipoAve: 'pollos' | 'gallina';
   cantidadPollos: number | null;
   pesoTotalKg: number | null;
   mermaKg: number | null;
   precioKg: number | null;
+  horaEntrega: string;
 }
 
 @Component({
@@ -52,10 +54,12 @@ export class PrivadoProveedoresRegistros implements OnInit {
 
   lineas: RegistroLinea[] = [
     {
+      tipoAve: 'pollos',
       cantidadPollos: null,
       pesoTotalKg: null,
       mermaKg: null,
-      precioKg: null
+      precioKg: null,
+      horaEntrega: ''
     }
   ];
 
@@ -106,10 +110,12 @@ export class PrivadoProveedoresRegistros implements OnInit {
     this.lineas = [
       ...this.lineas,
       {
+        tipoAve: 'pollos',
         cantidadPollos: null,
         pesoTotalKg: null,
         mermaKg: null,
-        precioKg: null
+        precioKg: null,
+        horaEntrega: ''
       }
     ];
   }
@@ -145,6 +151,7 @@ export class PrivadoProveedoresRegistros implements OnInit {
       proveedor_id: this.proveedorSeleccionado.proveedor_id,
       usuario_id: this.usuarioId,
       fecha_entrega: this.fechaEntrega,
+      fecha_hora: this.construirFechaHora(),
       cantidad_pollos: totales.cantidadPollos,
       peso_total_kg: totales.pesoTotalKg,
       merma_kg: totales.mermaKg,
@@ -169,10 +176,12 @@ export class PrivadoProveedoresRegistros implements OnInit {
   limpiarFormulario(): void {
     this.lineas = [
       {
+        tipoAve: 'pollos',
         cantidadPollos: null,
         pesoTotalKg: null,
         mermaKg: null,
-        precioKg: null
+        precioKg: null,
+        horaEntrega: ''
       }
     ];
     this.observacion = '';
@@ -222,6 +231,12 @@ export class PrivadoProveedoresRegistros implements OnInit {
       },
       { cantidadPollos: 0, pesoTotalKg: 0, mermaKg: 0, costoTotal: 0 }
     );
+  }
+
+
+  private construirFechaHora(): string {
+    const hora = this.lineas.find((linea) => linea.horaEntrega.trim() !== '')?.horaEntrega;
+    return `${this.fechaEntrega} ${hora ?? '00:00'}`;
   }
 
   private formatearProveedor(proveedor: ProveedorApi): string {
