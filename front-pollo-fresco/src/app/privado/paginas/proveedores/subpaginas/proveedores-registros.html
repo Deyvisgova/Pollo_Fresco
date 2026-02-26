@@ -42,7 +42,14 @@
     <div class="lineas">
       <div class="linea" *ngFor="let linea of lineas; let i = index">
         <label class="campo">
-          <span>Cantidad de pollos</span>
+          <span>Tipo</span>
+          <select [(ngModel)]="linea.tipoAve" name="tipoAve{{ i }}">
+            <option value="pollos">Pollos</option>
+            <option value="gallina">Gallina</option>
+          </select>
+        </label>
+        <label class="campo">
+          <span>Cantidad</span>
           <input [(ngModel)]="linea.cantidadPollos" name="cantidadPollos{{ i }}" type="number" min="0" />
         </label>
         <label class="campo">
@@ -50,12 +57,16 @@
           <input [(ngModel)]="linea.pesoTotalKg" name="pesoTotalKg{{ i }}" type="number" min="0" step="0.01" />
         </label>
         <label class="campo">
-          <span>Merma (factor)</span>
+          <span>Merma</span>
           <input [(ngModel)]="linea.mermaKg" name="mermaKg{{ i }}" type="number" min="0" step="0.01" />
         </label>
         <label class="campo">
           <span>Precio por kg (S/)</span>
           <input [(ngModel)]="linea.precioKg" name="precioKg{{ i }}" type="number" min="0" step="0.01" />
+        </label>
+        <label class="campo">
+          <span>Hora</span>
+          <input [(ngModel)]="linea.horaEntrega" name="horaEntrega{{ i }}" type="time" disabled />
         </label>
         <button class="boton boton--link boton--peligro" type="button" (click)="eliminarLinea(i)" *ngIf="lineas.length > 1">
           Quitar

@@ -27,10 +27,12 @@ interface ProveedorApi {
 }
 
 interface RegistroLinea {
+  tipoAve: 'pollos' | 'gallina';
   cantidadPollos: number | null;
   pesoTotalKg: number | null;
   mermaKg: number | null;
   precioKg: number | null;
+  horaEntrega: string;
 }
 
 @Component({
@@ -52,10 +54,12 @@ export class PrivadoProveedoresRegistros implements OnInit {
 
   lineas: RegistroLinea[] = [
     {
+      tipoAve: 'pollos',
       cantidadPollos: null,
       pesoTotalKg: null,
       mermaKg: null,
-      precioKg: null
+      precioKg: null,
+      horaEntrega: this.obtenerHoraActual()
     }
   ];
 
@@ -106,10 +110,12 @@ export class PrivadoProveedoresRegistros implements OnInit {
     this.lineas = [
       ...this.lineas,
       {
+        tipoAve: 'pollos',
         cantidadPollos: null,
         pesoTotalKg: null,
         mermaKg: null,
-        precioKg: null
+        precioKg: null,
+        horaEntrega: this.obtenerHoraActual()
       }
     ];
   }
@@ -145,6 +151,7 @@ export class PrivadoProveedoresRegistros implements OnInit {
       proveedor_id: this.proveedorSeleccionado.proveedor_id,
       usuario_id: this.usuarioId,
       fecha_entrega: this.fechaEntrega,
+      fecha_hora: this.construirFechaHora(),
       cantidad_pollos: totales.cantidadPollos,
       peso_total_kg: totales.pesoTotalKg,
       merma_kg: totales.mermaKg,
@@ -169,10 +176,12 @@ export class PrivadoProveedoresRegistros implements OnInit {
   limpiarFormulario(): void {
     this.lineas = [
       {
+        tipoAve: 'pollos',
         cantidadPollos: null,
         pesoTotalKg: null,
         mermaKg: null,
-        precioKg: null
+        precioKg: null,
+        horaEntrega: this.obtenerHoraActual()
       }
     ];
     this.observacion = '';
@@ -210,18 +219,33 @@ export class PrivadoProveedoresRegistros implements OnInit {
         const peso = linea.pesoTotalKg ?? 0;
         const merma = linea.mermaKg ?? 0;
         const precio = linea.precioKg ?? 0;
-        const kgConMerma = peso + peso * merma;
-        const costo = kgConMerma * precio;
+        const mermaTotal = cantidad * merma;
+        const pesoConMerma = peso + mermaTotal;
+        const costo = pesoConMerma * precio;
 
         return {
           cantidadPollos: acc.cantidadPollos + cantidad,
           pesoTotalKg: acc.pesoTotalKg + peso,
-          mermaKg: acc.mermaKg + merma,
+          mermaKg: acc.mermaKg + mermaTotal,
           costoTotal: acc.costoTotal + costo
         };
       },
       { cantidadPollos: 0, pesoTotalKg: 0, mermaKg: 0, costoTotal: 0 }
     );
+  }
+
+
+
+  private obtenerHoraActual(): string {
+    const ahora = new Date();
+    const horas = String(ahora.getHours()).padStart(2, '0');
+    const minutos = String(ahora.getMinutes()).padStart(2, '0');
+    return `${horas}:${minutos}`;
+  }
+
+  private construirFechaHora(): string {
+    const hora = this.lineas.find((linea) => linea.horaEntrega.trim() !== '')?.horaEntrega;
+    return `${this.fechaEntrega} ${hora ?? '00:00'}`;
   }
 
   private formatearProveedor(proveedor: ProveedorApi): string {
