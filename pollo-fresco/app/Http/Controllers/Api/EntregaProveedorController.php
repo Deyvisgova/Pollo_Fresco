@@ -14,18 +14,18 @@ class EntregaProveedorController extends Controller
     public function index(Request $request)
     {
         $proveedorId = $request->query('proveedor_id');
-        $fechaEntrega = $request->query('fecha_entrega');
+        $fechaHora = $request->query('fecha_hora');
 
         $query = EntregaProveedor::with('proveedor')
-            ->orderByDesc('fecha_entrega')
+            ->orderByDesc('fecha_hora')
             ->orderByDesc('entrega_id');
 
         if ($proveedorId) {
             $query->where('proveedor_id', $proveedorId);
         }
 
-        if ($fechaEntrega) {
-            $query->where('fecha_entrega', $fechaEntrega);
+        if ($fechaHora) {
+            $query->whereDate('fecha_hora', $fechaHora);
         }
 
         return response()->json($query->get());
@@ -39,7 +39,7 @@ class EntregaProveedorController extends Controller
         $validated = $request->validate([
             'proveedor_id' => ['required', 'integer', 'exists:proveedores,proveedor_id'],
             'usuario_id' => ['required', 'integer', 'exists:usuarios,usuario_id'],
-            'fecha_entrega' => ['required', 'date'],
+            'fecha_hora' => ['required', 'date'],
             'cantidad_pollos' => ['required', 'integer', 'min:0'],
             'peso_total_kg' => ['required', 'numeric', 'min:0'],
             'merma_kg' => ['required', 'numeric', 'min:0'],
@@ -61,7 +61,7 @@ class EntregaProveedorController extends Controller
         $costoTotal = $costoTotal ?? 0.0;
 
         $entrega = EntregaProveedor::where('proveedor_id', $validated['proveedor_id'])
-            ->where('fecha_entrega', $validated['fecha_entrega'])
+            ->where('fecha_hora', $validated['fecha_hora'])
             ->first();
 
         if ($entrega) {
@@ -80,7 +80,7 @@ class EntregaProveedorController extends Controller
         $entrega = EntregaProveedor::create([
             'proveedor_id' => $validated['proveedor_id'],
             'usuario_id' => $validated['usuario_id'],
-            'fecha_entrega' => $validated['fecha_entrega'],
+            'fecha_hora' => $validated['fecha_hora'],
             'cantidad_pollos' => $validated['cantidad_pollos'],
             'peso_total_kg' => $validated['peso_total_kg'],
             'merma_kg' => $validated['merma_kg'],
