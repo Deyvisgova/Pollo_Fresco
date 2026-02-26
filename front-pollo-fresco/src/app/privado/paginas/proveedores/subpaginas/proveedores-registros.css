@@ -25,7 +25,7 @@
 
 .formulario {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 12px;
   align-items: end;
 }
@@ -34,16 +34,17 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   color: #334155;
 }
 
 .campo input,
+.campo select,
 .campo textarea {
   border-radius: 10px;
   border: 1px solid #cbd5f5;
-  padding: 10px 12px;
-  font-size: 0.95rem;
+  padding: 7px 9px;
+  font-size: 0.82rem;
 }
 
 .campo--completo {
@@ -75,7 +76,7 @@
 
 .linea {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   gap: 12px;
   align-items: end;
   padding: 12px;
@@ -84,21 +85,17 @@
   background: #f8fafc;
 }
 
-.resumen {
-  grid-column: 1 / -1;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  padding: 12px;
-  border-radius: 12px;
-  background: #eff6ff;
-  color: #1e3a8a;
+.linea .campo input,
+.linea .campo select {
+  max-width: 105px;
 }
+
 
 .acciones {
   display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
+  gap: 8px;
+  flex-wrap: nowrap;
+  align-items: center;
 }
 
 .boton {
@@ -161,7 +158,7 @@
 .mensaje {
   padding: 10px 12px;
   border-radius: 10px;
-  font-size: 0.9rem;
+  font-size: 0.82rem;
 }
 
 .mensaje--error {
@@ -172,4 +169,11 @@
 .nota {
   color: #64748b;
   font-size: 0.8rem;
+}
+
+
+.boton--compacto {
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  border-radius: 10px;
 }

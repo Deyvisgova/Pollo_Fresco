@@ -26,7 +26,7 @@ class EntregaProveedor extends Model
     protected $fillable = [
         'proveedor_id',
         'usuario_id',
-        'fecha_entrega',
+        'fecha_hora',
         'cantidad_pollos',
         'peso_total_kg',
         'merma_kg',
@@ -40,7 +40,7 @@ class EntregaProveedor extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'fecha_entrega' => 'date',
+        'fecha_hora' => 'datetime',
         'cantidad_pollos' => 'integer',
         'peso_total_kg' => 'decimal:2',
         'merma_kg' => 'decimal:2',
