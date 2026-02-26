@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule, HttpHeaders } from '@angular/common/http';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { SesionServicio } from '../../../../servicios/sesion.servicio';
 
@@ -27,10 +27,12 @@ interface ProveedorApi {
 }
 
 interface RegistroLinea {
+  tipoAve: 'pollos' | 'gallina';
   cantidadPollos: number | null;
   pesoTotalKg: number | null;
   mermaKg: number | null;
   precioKg: number | null;
+  horaEntrega: string;
 }
 
 @Component({
@@ -40,7 +42,7 @@ interface RegistroLinea {
   templateUrl: './proveedores-registros.html',
   styleUrl: './proveedores-registros.css'
 })
-export class PrivadoProveedoresRegistros implements OnInit {
+export class PrivadoProveedoresRegistros implements OnInit, OnDestroy {
   registros: RegistroEntrega[] = [];
   proveedores: ProveedorApi[] = [];
   busquedaProveedor = '';
@@ -52,17 +54,21 @@ export class PrivadoProveedoresRegistros implements OnInit {
 
   lineas: RegistroLinea[] = [
     {
+      tipoAve: 'pollos',
       cantidadPollos: null,
       pesoTotalKg: null,
       mermaKg: null,
-      precioKg: null
+      precioKg: null,
+      horaEntrega: this.obtenerHoraActual()
     }
   ];
 
-  observacion = '';
   cargando = false;
   guardando = false;
   error = '';
+
+  private relojId: ReturnType<typeof setInterval> | null = null;
+  private indiceLineaActiva = 0;
 
   constructor(
     private readonly http: HttpClient,
@@ -73,7 +79,15 @@ export class PrivadoProveedoresRegistros implements OnInit {
     this.fechaEntrega = this.obtenerFechaActual();
     this.usuarioNombre = this.sesionServicio.obtenerUsuario()?.name ?? 'Usuario';
     this.usuarioId = this.sesionServicio.obtenerUsuario()?.id ?? 0;
+    this.iniciarReloj();
     this.cargarRegistros();
+  }
+
+  ngOnDestroy(): void {
+    if (this.relojId) {
+      clearInterval(this.relojId);
+      this.relojId = null;
+    }
   }
 
   buscarProveedor(): void {
@@ -106,16 +120,28 @@ export class PrivadoProveedoresRegistros implements OnInit {
     this.lineas = [
       ...this.lineas,
       {
+        tipoAve: 'pollos',
         cantidadPollos: null,
         pesoTotalKg: null,
         mermaKg: null,
-        precioKg: null
+        precioKg: null,
+        horaEntrega: this.obtenerHoraActual()
       }
     ];
+    this.indiceLineaActiva = this.lineas.length - 1;
   }
 
   eliminarLinea(indice: number): void {
     this.lineas = this.lineas.filter((_, posicion) => posicion !== indice);
+
+    if (this.lineas.length === 0) {
+      this.indiceLineaActiva = 0;
+      return;
+    }
+
+    if (indice <= this.indiceLineaActiva) {
+      this.indiceLineaActiva = Math.max(0, this.indiceLineaActiva - 1);
+    }
   }
 
   guardarRegistro(): void {
@@ -145,11 +171,12 @@ export class PrivadoProveedoresRegistros implements OnInit {
       proveedor_id: this.proveedorSeleccionado.proveedor_id,
       usuario_id: this.usuarioId,
       fecha_entrega: this.fechaEntrega,
+      fecha_hora: this.construirFechaHora(),
       cantidad_pollos: totales.cantidadPollos,
       peso_total_kg: totales.pesoTotalKg,
       merma_kg: totales.mermaKg,
       costo_total: totales.costoTotal,
-      observacion: this.observacion || null
+      observacion: null
     };
 
     this.http.post<RegistroEntrega>('/api/entregas-proveedor', payload, { headers }).subscribe({
@@ -169,13 +196,15 @@ export class PrivadoProveedoresRegistros implements OnInit {
   limpiarFormulario(): void {
     this.lineas = [
       {
+        tipoAve: 'pollos',
         cantidadPollos: null,
         pesoTotalKg: null,
         mermaKg: null,
-        precioKg: null
+        precioKg: null,
+        horaEntrega: this.obtenerHoraActual()
       }
     ];
-    this.observacion = '';
+    this.indiceLineaActiva = 0;
   }
 
   obtenerTotales(): { pesoTotalKg: number; mermaKg: number; costoTotal: number; cantidadPollos: number } {
@@ -210,18 +239,43 @@ export class PrivadoProveedoresRegistros implements OnInit {
         const peso = linea.pesoTotalKg ?? 0;
         const merma = linea.mermaKg ?? 0;
         const precio = linea.precioKg ?? 0;
-        const kgConMerma = peso + peso * merma;
-        const costo = kgConMerma * precio;
+        const mermaTotal = cantidad * merma;
+        const pesoConMerma = peso + mermaTotal;
+        const costo = pesoConMerma * precio;
 
         return {
           cantidadPollos: acc.cantidadPollos + cantidad,
           pesoTotalKg: acc.pesoTotalKg + peso,
-          mermaKg: acc.mermaKg + merma,
+          mermaKg: acc.mermaKg + mermaTotal,
           costoTotal: acc.costoTotal + costo
         };
       },
       { cantidadPollos: 0, pesoTotalKg: 0, mermaKg: 0, costoTotal: 0 }
     );
+  }
+
+
+
+  private iniciarReloj(): void {
+    this.relojId = setInterval(() => {
+      const hora = this.obtenerHoraActual();
+      const lineaActiva = this.lineas[this.indiceLineaActiva];
+      if (lineaActiva) {
+        lineaActiva.horaEntrega = hora;
+      }
+    }, 1000);
+  }
+
+  private obtenerHoraActual(): string {
+    const ahora = new Date();
+    const horas = String(ahora.getHours()).padStart(2, '0');
+    const minutos = String(ahora.getMinutes()).padStart(2, '0');
+    return `${horas}:${minutos}`;
+  }
+
+  private construirFechaHora(): string {
+    const horaActiva = this.lineas[this.indiceLineaActiva]?.horaEntrega;
+    return `${this.fechaEntrega} ${horaActiva ?? '00:00'}`;
   }
 
   private formatearProveedor(proveedor: ProveedorApi): string {
