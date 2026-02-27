@@ -11,6 +11,7 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  margin-bottom: 16px;
 }
 
 .tarjeta__encabezado h3 {
@@ -18,12 +19,14 @@
   color: #0f172a;
 }
 
-.tarjeta__encabezado p {
+.tarjeta__encabezado p,
+.tarjeta-proveedor__documento {
   margin: 6px 0 0;
   color: #64748b;
 }
 
-.formulario {
+.formulario,
+.filtros-historial {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 12px;
@@ -40,7 +43,8 @@
 
 .campo input,
 .campo select,
-.campo textarea {
+.tabla input,
+.tabla select {
   border-radius: 10px;
   border: 1px solid #cbd5f5;
   padding: 7px 9px;
@@ -67,8 +71,35 @@
   cursor: pointer;
 }
 
+.tarjeta-proveedor {
+  border-left: 5px solid #1d4ed8;
+}
+
+.tarjeta-proveedor__encabezado {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.tarjeta-proveedor__iconos {
+  display: flex;
+  gap: 8px;
+}
+
+.icono-btn {
+  border: 1px solid #cbd5f5;
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 5px 8px;
+  cursor: pointer;
+}
+
+.icono-btn--cerrar {
+  color: #dc2626;
+}
+
 .lineas {
-  grid-column: 1 / -1;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -87,14 +118,14 @@
 
 .linea .campo input,
 .linea .campo select {
-  max-width: 105px;
+  max-width: 120px;
 }
 
-
-.acciones {
+.acciones,
+.acciones-tabla {
   display: flex;
   gap: 8px;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
 }
 
@@ -123,7 +154,8 @@
 }
 
 .boton--peligro {
-  color: #dc2626;
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 .tabla-contenedor {
@@ -141,18 +173,13 @@
   padding: 10px 12px;
   border-bottom: 1px solid #e2e8f0;
   text-align: left;
+  vertical-align: middle;
 }
 
 .tabla th {
   color: #1e3a8a;
   font-weight: 600;
   background: #eff6ff;
-}
-
-.acciones-tabla {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
 }
 
 .mensaje {
@@ -170,7 +197,6 @@
   color: #64748b;
   font-size: 0.8rem;
 }
-
 
 .boton--compacto {
   padding: 6px 12px;

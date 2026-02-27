@@ -31,7 +31,7 @@ class EntregaProveedor extends Model
         'peso_total_kg',
         'merma_kg',
         'costo_total',
-        'observacion',
+        'tipo',
     ];
 
     /**
