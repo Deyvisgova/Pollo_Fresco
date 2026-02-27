@@ -22,3 +22,53 @@
   border: 1px solid #e2e8f0;
   color: #475569;
 }
+
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.formulario__campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formulario__campo span {
+  font-weight: 600;
+}
+
+.formulario__campo input {
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.formulario__preview img {
+  max-width: 220px;
+  max-height: 130px;
+  object-fit: contain;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  padding: 8px;
+}
+
+.formulario__boton {
+  align-self: flex-start;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: #fff;
+  background: #1d4ed8;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.formulario__mensaje {
+  margin: 0;
+  color: #166534;
+  font-weight: 600;
+}
