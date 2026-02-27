@@ -99,7 +99,7 @@ CREATE TABLE `entregas_proveedor` (
   `peso_total_kg` decimal(10,2) NOT NULL,
   `merma_kg` decimal(10,2) NOT NULL DEFAULT 0.00,
   `costo_total` decimal(10,2) NOT NULL,
-  `observacion` varchar(250) DEFAULT NULL,
+  `tipo` varchar(50) NOT NULL DEFAULT 'POLLO',
   `creado_en` datetime NOT NULL DEFAULT current_timestamp()
 ) ;
 

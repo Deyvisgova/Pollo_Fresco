@@ -11,6 +11,7 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  margin-bottom: 16px;
 }
 
 .tarjeta__encabezado h3 {
@@ -39,8 +40,7 @@
 }
 
 .campo input,
-.campo select,
-.campo textarea {
+.campo select {
   border-radius: 10px;
   border: 1px solid #cbd5f5;
   padding: 7px 9px;
@@ -67,8 +67,11 @@
   cursor: pointer;
 }
 
+.tarjeta-proveedor {
+  border-left: 5px solid #1d4ed8;
+}
+
 .lineas {
-  grid-column: 1 / -1;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -87,14 +90,13 @@
 
 .linea .campo input,
 .linea .campo select {
-  max-width: 105px;
+  max-width: 120px;
 }
-
 
 .acciones {
   display: flex;
   gap: 8px;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
 }
 
@@ -149,12 +151,6 @@
   background: #eff6ff;
 }
 
-.acciones-tabla {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
 .mensaje {
   padding: 10px 12px;
   border-radius: 10px;
@@ -170,7 +166,6 @@
   color: #64748b;
   font-size: 0.8rem;
 }
-
 
 .boton--compacto {
   padding: 6px 12px;

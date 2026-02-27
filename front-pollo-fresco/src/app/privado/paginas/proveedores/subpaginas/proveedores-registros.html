@@ -1,10 +1,10 @@
 <section class="tarjeta">
   <header class="tarjeta__encabezado">
     <h3>Registro de entregas</h3>
-    <p>Registra entregas de pollos con fecha fija, proveedor guardado y cálculo automático.</p>
+    <p>Busca un proveedor y regístralo en una tarjeta independiente con sus propias líneas.</p>
   </header>
 
-  <form class="formulario" (ngSubmit)="guardarRegistro()">
+  <form class="formulario" (ngSubmit)="$event.preventDefault()">
     <label class="campo">
       <span>Fecha de entrega</span>
       <input [(ngModel)]="fechaEntrega" name="fechaEntrega" type="date" disabled />
@@ -34,65 +34,103 @@
         </button>
       </div>
     </label>
-
-    <div class="campo campo--completo" *ngIf="proveedorSeleccionado">
-      <span>Proveedor seleccionado</span>
-      <strong>{{ proveedorSeleccionado.nombres }} {{ proveedorSeleccionado.apellidos }}</strong>
-    </div>
-
-    <div class="lineas">
-      <div class="linea" *ngFor="let linea of lineas; let i = index">
-        <label class="campo">
-          <span>Tipo</span>
-          <select [(ngModel)]="linea.tipoAve" name="tipoAve{{ i }}">
-            <option value="pollos">Pollos</option>
-            <option value="gallina">Gallina</option>
-          </select>
-        </label>
-        <label class="campo">
-          <span>Cantidad</span>
-          <input [(ngModel)]="linea.cantidadPollos" name="cantidadPollos{{ i }}" type="number" min="0" />
-        </label>
-        <label class="campo">
-          <span>Peso total (kg)</span>
-          <input [(ngModel)]="linea.pesoTotalKg" name="pesoTotalKg{{ i }}" type="number" min="0" step="0.01" />
-        </label>
-        <label class="campo">
-          <span>Merma</span>
-          <input [(ngModel)]="linea.mermaKg" name="mermaKg{{ i }}" type="number" min="0" step="0.01" />
-        </label>
-        <label class="campo">
-          <span>Precio por kg (S/)</span>
-          <input [(ngModel)]="linea.precioKg" name="precioKg{{ i }}" type="number" min="0" step="0.01" />
-        </label>
-        <label class="campo">
-          <span>Hora</span>
-          <input [(ngModel)]="linea.horaEntrega" name="horaEntrega{{ i }}" type="time" disabled />
-        </label>
-        <button class="boton boton--link boton--peligro" type="button" (click)="eliminarLinea(i)" *ngIf="lineas.length > 1">
-          Quitar
-        </button>
-      </div>
-    </div>
-
-    <button class="boton boton--secundario boton--compacto" type="button" (click)="agregarLinea()">Agregar línea</button>
-
-
-    <p class="mensaje mensaje--error" *ngIf="error">{{ error }}</p>
-
-    <div class="acciones">
-      <button class="boton boton--primario boton--compacto" type="submit" [disabled]="guardando">
-        Guardar
-      </button>
-      <button class="boton boton--secundario boton--compacto" type="button" (click)="limpiarFormulario()">Limpiar</button>
-    </div>
   </form>
+
+  <p class="mensaje mensaje--error" *ngIf="error">{{ error }}</p>
+</section>
+
+<section class="tarjeta tarjeta-proveedor" *ngFor="let tarjeta of tarjetasProveedor">
+  <header class="tarjeta__encabezado">
+    <h3>{{ tarjeta.proveedor.nombres }} {{ tarjeta.proveedor.apellidos }}</h3>
+    <p>{{ tarjeta.proveedor.ruc || tarjeta.proveedor.dni }}</p>
+  </header>
+
+  <div class="lineas">
+    <div class="linea" *ngFor="let linea of tarjeta.lineas; let i = index">
+      <label class="campo">
+        <span>Tipo</span>
+        <select [(ngModel)]="linea.tipoAve" name="tipoAve{{ tarjeta.proveedor.proveedor_id }}{{ i }}">
+          <option *ngFor="let tipo of tiposAveDisponibles" [value]="tipo">{{ tipo }}</option>
+        </select>
+      </label>
+      <label class="campo">
+        <span>Cantidad</span>
+        <input
+          [(ngModel)]="linea.cantidadPollos"
+          name="cantidadPollos{{ tarjeta.proveedor.proveedor_id }}{{ i }}"
+          type="number"
+          min="0"
+        />
+      </label>
+      <label class="campo">
+        <span>Peso total (kg)</span>
+        <input
+          [(ngModel)]="linea.pesoTotalKg"
+          name="pesoTotalKg{{ tarjeta.proveedor.proveedor_id }}{{ i }}"
+          type="number"
+          min="0"
+          step="0.01"
+        />
+      </label>
+      <label class="campo">
+        <span>Merma</span>
+        <input
+          [(ngModel)]="linea.mermaKg"
+          name="mermaKg{{ tarjeta.proveedor.proveedor_id }}{{ i }}"
+          type="number"
+          min="0"
+          step="0.01"
+        />
+      </label>
+      <label class="campo">
+        <span>Precio por kg (S/)</span>
+        <input
+          [(ngModel)]="linea.precioKg"
+          name="precioKg{{ tarjeta.proveedor.proveedor_id }}{{ i }}"
+          type="number"
+          min="0"
+          step="0.01"
+        />
+      </label>
+      <label class="campo">
+        <span>Hora</span>
+        <input [(ngModel)]="linea.horaEntrega" name="horaEntrega{{ tarjeta.proveedor.proveedor_id }}{{ i }}" type="time" disabled />
+      </label>
+      <button
+        class="boton boton--link boton--peligro"
+        type="button"
+        (click)="eliminarLinea(tarjeta.proveedor.proveedor_id, i)"
+        *ngIf="tarjeta.lineas.length > 1"
+      >
+        Quitar
+      </button>
+    </div>
+  </div>
+
+  <p class="mensaje mensaje--error" *ngIf="tarjeta.error">{{ tarjeta.error }}</p>
+
+  <div class="acciones">
+    <button class="boton boton--secundario boton--compacto" type="button" (click)="agregarLinea(tarjeta.proveedor.proveedor_id)">
+      Agregar línea
+    </button>
+    <button
+      class="boton boton--primario boton--compacto"
+      type="button"
+      [disabled]="tarjeta.guardando"
+      (click)="guardarRegistro(tarjeta.proveedor.proveedor_id)"
+    >
+      Guardar
+    </button>
+    <button class="boton boton--secundario boton--compacto" type="button" (click)="limpiarFormulario(tarjeta.proveedor.proveedor_id)">
+      Limpiar
+    </button>
+  </div>
 </section>
 
 <section class="tarjeta">
   <header class="tarjeta__encabezado">
     <h3>Historial de entregas</h3>
-    <p>Consulta los registros recientes y administra cada entrega.</p>
+    <p>Cada fila queda registrada por proveedor y por línea.</p>
   </header>
 
   <div class="tabla-contenedor">
@@ -100,12 +138,12 @@
       <thead>
         <tr>
           <th>Proveedor</th>
+          <th>Tipo</th>
           <th>Fecha</th>
           <th>Pollos</th>
           <th>Peso total</th>
           <th>Merma</th>
           <th>Costo</th>
-          <th>Observación</th>
           <th>Creado en</th>
         </tr>
       </thead>
@@ -115,12 +153,12 @@
             {{ registro.proveedor?.nombres }} {{ registro.proveedor?.apellidos }}
             <div class="nota">{{ registro.proveedor?.ruc || registro.proveedor?.dni }}</div>
           </td>
+          <td>{{ registro.tipo || '-' }}</td>
           <td>{{ registro.fecha_hora | date: 'short' }}</td>
           <td>{{ registro.cantidad_pollos }}</td>
           <td>{{ registro.peso_total_kg | number: '1.2-2' }} kg</td>
           <td>{{ registro.merma_kg | number: '1.2-2' }}</td>
           <td>S/ {{ registro.costo_total | number: '1.2-2' }}</td>
-          <td>{{ registro.observacion || '-' }}</td>
           <td>{{ registro.creado_en | date: 'short' }}</td>
         </tr>
         <tr *ngIf="registros.length === 0">

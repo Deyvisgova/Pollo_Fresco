@@ -32,7 +32,7 @@ class EntregaProveedorController extends Controller
     }
 
     /**
-     * Registrar una entrega. Si existe misma fecha y proveedor, se incrementa.
+     * Registrar una entrega por línea.
      */
     public function store(Request $request)
     {
@@ -45,7 +45,7 @@ class EntregaProveedorController extends Controller
             'merma_kg' => ['required', 'numeric', 'min:0'],
             'costo_total' => ['nullable', 'numeric', 'min:0'],
             'precio_kg' => ['nullable', 'numeric', 'min:0'],
-            'observacion' => ['nullable', 'string', 'max:250'],
+            'tipo' => ['required', 'string', 'max:50'],
         ]);
 
         $costoTotal = $validated['costo_total'] ?? null;
@@ -54,27 +54,8 @@ class EntregaProveedorController extends Controller
             $pesoTotal = (float) $validated['peso_total_kg'];
             $merma = (float) $validated['merma_kg'];
             $precioKg = (float) $validated['precio_kg'];
-            $kgConMerma = $pesoTotal + ($pesoTotal * $merma);
+            $kgConMerma = $pesoTotal + $merma;
             $costoTotal = round($kgConMerma * $precioKg, 2);
-        }
-
-        $costoTotal = $costoTotal ?? 0.0;
-
-        $entrega = EntregaProveedor::where('proveedor_id', $validated['proveedor_id'])
-            ->where('fecha_hora', $validated['fecha_hora'])
-            ->first();
-
-        if ($entrega) {
-            $entrega->fill([
-                'usuario_id' => $validated['usuario_id'],
-                'cantidad_pollos' => $entrega->cantidad_pollos + $validated['cantidad_pollos'],
-                'peso_total_kg' => $entrega->peso_total_kg + $validated['peso_total_kg'],
-                'merma_kg' => $entrega->merma_kg + $validated['merma_kg'],
-                'costo_total' => $entrega->costo_total + $costoTotal,
-                'observacion' => $this->mergeObservaciones($entrega->observacion, $validated['observacion'] ?? null),
-            ])->save();
-
-            return response()->json($entrega->load('proveedor'));
         }
 
         $entrega = EntregaProveedor::create([
@@ -84,33 +65,10 @@ class EntregaProveedorController extends Controller
             'cantidad_pollos' => $validated['cantidad_pollos'],
             'peso_total_kg' => $validated['peso_total_kg'],
             'merma_kg' => $validated['merma_kg'],
-            'costo_total' => $costoTotal,
-            'observacion' => $validated['observacion'] ?? null,
+            'costo_total' => $costoTotal ?? 0.0,
+            'tipo' => $validated['tipo'],
         ]);
 
         return response()->json($entrega->load('proveedor'), 201);
-    }
-
-    /**
-     * Combinar observaciones en una sola cadena.
-     */
-    private function mergeObservaciones(?string $actual, ?string $nueva): ?string
-    {
-        $actual = trim((string) $actual);
-        $nueva = trim((string) $nueva);
-
-        if ($actual === '' && $nueva === '') {
-            return null;
-        }
-
-        if ($actual === '') {
-            return $nueva;
-        }
-
-        if ($nueva === '') {
-            return $actual;
-        }
-
-        return "{$actual} | {$nueva}";
     }
 }
