@@ -1,14 +1,60 @@
-<!-- Contenido base para la vista de configuracion -->
+<!-- Configuración visual del panel administrativo -->
 <section class="seccion">
   <div class="seccion__encabezado">
-    <h2>Configuracion</h2>
-    <p>Gestión y seguimiento de configuracion en el panel privado.</p>
+    <h2>Configuración</h2>
+    <p>Define el nombre de empresa y sube un logo pequeño para el sidebar.</p>
   </div>
 
-  <div class="seccion__tarjeta">
-    <p>
-      Aquí se mostrará el contenido principal de <strong>Configuracion</strong>.
-      Este bloque se diseñó como placeholder para agregar formularios, tablas o reportes.
-    </p>
-  </div>
+  <form class="seccion__tarjeta formulario" (ngSubmit)="guardarConfiguracion()">
+    <label class="formulario__campo">
+      <span>Nombre de empresa</span>
+      <input
+        type="text"
+        name="nombreEmpresa"
+        [(ngModel)]="configuracion.nombreEmpresa"
+        placeholder="Ejemplo: Pollos Frescos S.A."
+      />
+    </label>
+
+    <label class="formulario__campo">
+      <span>Subir logo (acepta cualquier tipo de imagen)</span>
+      <input type="file" accept="image/*" (change)="seleccionarLogo($event)" />
+    </label>
+
+    @if (configuracion.logoUrl.trim()) {
+      <div class="formulario__preview">
+        <p>Vista previa del logo:</p>
+        <img [src]="configuracion.logoUrl" alt="Vista previa del logo" />
+      </div>
+
+      <button
+        type="button"
+        class="formulario__boton formulario__boton--secundario"
+        [disabled]="subiendoLogo || eliminandoLogo"
+        (click)="eliminarLogo()"
+      >
+        Eliminar imagen
+      </button>
+    }
+
+    <button type="submit" class="formulario__boton" [disabled]="subiendoLogo || eliminandoLogo">
+      Guardar cambios
+    </button>
+
+    @if (subiendoLogo) {
+      <p class="formulario__mensaje">Subiendo logo...</p>
+    }
+
+    @if (eliminandoLogo) {
+      <p class="formulario__mensaje">Eliminando logo...</p>
+    }
+
+    @if (mensajeGuardado) {
+      <p class="formulario__mensaje">{{ mensajeGuardado }}</p>
+    }
+
+    @if (mensajeError) {
+      <p class="formulario__mensaje formulario__mensaje--error">{{ mensajeError }}</p>
+    }
+  </form>
 </section>

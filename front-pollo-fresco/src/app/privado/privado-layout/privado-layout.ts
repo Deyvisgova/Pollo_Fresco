@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, computed } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { AutenticacionServicio } from '../../servicios/autenticacion.servicio';
+import { ConfiguracionEmpresaServicio } from '../../servicios/configuracion-empresa.servicio';
 
 @Component({
   selector: 'app-privado-layout',
@@ -26,10 +27,17 @@ export class PrivadoLayout {
     { etiqueta: 'Reportes', ruta: 'reportes' }
   ];
 
+  readonly configuracionEmpresa;
+  readonly mostrarLogo;
+
   constructor(
     private readonly autenticacionServicio: AutenticacionServicio,
+    private readonly configuracionEmpresaServicio: ConfiguracionEmpresaServicio,
     private readonly router: Router
-  ) {}
+  ) {
+    this.configuracionEmpresa = this.configuracionEmpresaServicio.configuracion;
+    this.mostrarLogo = computed(() => Boolean(this.configuracionEmpresa().logoUrl));
+  }
 
   cerrarSesion(): void {
     this.autenticacionServicio.cerrarSesion().subscribe({

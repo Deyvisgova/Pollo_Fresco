@@ -2,10 +2,18 @@
 <section class="panel">
   <!-- Barra lateral con identidad de la empresa y navegación -->
   <aside class="panel__sidebar">
-    <!-- Área de logo con un placeholder visual -->
+    <!-- Área de logo con imagen configurable -->
     <div class="panel__logo">
-      <div class="panel__logo-imagen">LOGO (imagen)</div>
-      <p class="panel__empresa">Nombre de la empresa</p>
+      @if (mostrarLogo()) {
+        <img
+          class="panel__logo-imagen"
+          [src]="configuracionEmpresa().logoUrl"
+          [alt]="'Logo de ' + configuracionEmpresa().nombreEmpresa"
+        />
+      } @else {
+        <div class="panel__logo-imagen panel__logo-imagen--placeholder">LOGO (imagen)</div>
+      }
+      <p class="panel__empresa">{{ configuracionEmpresa().nombreEmpresa }}</p>
     </div>
 
     <!-- Navegación principal del módulo privado -->
