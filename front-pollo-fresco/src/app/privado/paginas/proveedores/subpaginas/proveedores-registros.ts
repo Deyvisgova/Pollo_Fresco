@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule, HttpHeaders } from '@angular/common/http';
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import { SesionServicio } from '../../../../servicios/sesion.servicio';
 
 interface RegistroEntrega {
@@ -14,7 +15,7 @@ interface RegistroEntrega {
   peso_total_kg: number;
   merma_kg: number;
   costo_total: number;
-  observacion: string | null;
+  tipo: string | null;
   creado_en: string;
 }
 
@@ -27,12 +28,27 @@ interface ProveedorApi {
 }
 
 interface RegistroLinea {
-  tipoAve: 'pollos' | 'gallina';
+  tipoAve: string;
   cantidadPollos: number | null;
   pesoTotalKg: number | null;
   mermaKg: number | null;
   precioKg: number | null;
   horaEntrega: string;
+}
+
+interface TarjetaProveedor {
+  proveedor: ProveedorApi;
+  lineas: RegistroLinea[];
+  guardando: boolean;
+  error: string;
+  expandida: boolean;
+}
+
+interface FiltrosHistorial {
+  texto: string;
+  proveedorId: string;
+  tipo: string;
+  fecha: string;
 }
 
 @Component({
@@ -42,33 +58,47 @@ interface RegistroLinea {
   templateUrl: './proveedores-registros.html',
   styleUrl: './proveedores-registros.css'
 })
-export class PrivadoProveedoresRegistros implements OnInit, OnDestroy {
+export class PrivadoProveedoresRegistros implements OnInit {
+  readonly tiposAveDisponibles = ['POLLO', 'GALLINA'];
+  private readonly storageTarjetasKey = 'proveedores_registros_tarjetas';
+
   registros: RegistroEntrega[] = [];
+  registrosFiltrados: RegistroEntrega[] = [];
   proveedores: ProveedorApi[] = [];
   busquedaProveedor = '';
-  proveedorSeleccionado: ProveedorApi | null = null;
+  tarjetasProveedor: TarjetaProveedor[] = [];
 
   fechaEntrega = '';
   usuarioNombre = 'Usuario';
   usuarioId = 0;
 
-  lineas: RegistroLinea[] = [
-    {
-      tipoAve: 'pollos',
-      cantidadPollos: null,
-      pesoTotalKg: null,
-      mermaKg: null,
-      precioKg: null,
-      horaEntrega: this.obtenerHoraActual()
-    }
-  ];
+  filtros: FiltrosHistorial = {
+    texto: '',
+    proveedorId: '',
+    tipo: '',
+    fecha: ''
+  };
+
+  editandoEntregaId: number | null = null;
+  formularioEdicion: {
+    tipo: string;
+    cantidad_pollos: number | null;
+    peso_total_kg: number | null;
+    merma_kg: number | null;
+    costo_total: number | null;
+    fecha_hora: string;
+  } = {
+    tipo: 'POLLO',
+    cantidad_pollos: null,
+    peso_total_kg: null,
+    merma_kg: null,
+    costo_total: null,
+    fecha_hora: ''
+  };
 
   cargando = false;
-  guardando = false;
+  guardandoEdicion = false;
   error = '';
-
-  private relojId: ReturnType<typeof setInterval> | null = null;
-  private indiceLineaActiva = 0;
 
   constructor(
     private readonly http: HttpClient,
@@ -79,15 +109,8 @@ export class PrivadoProveedoresRegistros implements OnInit, OnDestroy {
     this.fechaEntrega = this.obtenerFechaActual();
     this.usuarioNombre = this.sesionServicio.obtenerUsuario()?.name ?? 'Usuario';
     this.usuarioId = this.sesionServicio.obtenerUsuario()?.id ?? 0;
-    this.iniciarReloj();
+    this.recuperarTarjetas();
     this.cargarRegistros();
-  }
-
-  ngOnDestroy(): void {
-    if (this.relojId) {
-      clearInterval(this.relojId);
-      this.relojId = null;
-    }
   }
 
   buscarProveedor(): void {
@@ -111,103 +134,259 @@ export class PrivadoProveedoresRegistros implements OnInit, OnDestroy {
   }
 
   seleccionarProveedor(proveedor: ProveedorApi): void {
-    this.proveedorSeleccionado = proveedor;
-    this.busquedaProveedor = this.formatearProveedor(proveedor);
+    const yaExiste = this.tarjetasProveedor.some(
+      (tarjeta) => tarjeta.proveedor.proveedor_id === proveedor.proveedor_id
+    );
+
+    if (!yaExiste) {
+      this.tarjetasProveedor = [
+        ...this.tarjetasProveedor,
+        {
+          proveedor,
+          lineas: [this.crearLineaInicial()],
+          guardando: false,
+          error: '',
+          expandida: true
+        }
+      ];
+      this.persistirTarjetas();
+    }
+
+    this.busquedaProveedor = '';
     this.proveedores = [];
   }
 
-  agregarLinea(): void {
-    this.lineas = [
-      ...this.lineas,
-      {
-        tipoAve: 'pollos',
-        cantidadPollos: null,
-        pesoTotalKg: null,
-        mermaKg: null,
-        precioKg: null,
-        horaEntrega: this.obtenerHoraActual()
-      }
-    ];
-    this.indiceLineaActiva = this.lineas.length - 1;
-  }
-
-  eliminarLinea(indice: number): void {
-    this.lineas = this.lineas.filter((_, posicion) => posicion !== indice);
-
-    if (this.lineas.length === 0) {
-      this.indiceLineaActiva = 0;
+  alternarTarjeta(proveedorId: number): void {
+    const tarjeta = this.obtenerTarjeta(proveedorId);
+    if (!tarjeta) {
       return;
     }
 
-    if (indice <= this.indiceLineaActiva) {
-      this.indiceLineaActiva = Math.max(0, this.indiceLineaActiva - 1);
-    }
+    tarjeta.expandida = !tarjeta.expandida;
+    this.persistirTarjetas();
   }
 
-  guardarRegistro(): void {
+  cerrarTarjeta(proveedorId: number): void {
+    this.tarjetasProveedor = this.tarjetasProveedor.filter((tarjeta) => tarjeta.proveedor.proveedor_id !== proveedorId);
+    this.persistirTarjetas();
+  }
+
+  agregarLinea(proveedorId: number): void {
+    const tarjeta = this.obtenerTarjeta(proveedorId);
+    if (!tarjeta) {
+      return;
+    }
+
+    tarjeta.lineas = [...tarjeta.lineas, this.crearLineaInicial()];
+    this.persistirTarjetas();
+  }
+
+  eliminarLinea(proveedorId: number, indice: number): void {
+    const tarjeta = this.obtenerTarjeta(proveedorId);
+    if (!tarjeta) {
+      return;
+    }
+
+    tarjeta.lineas = tarjeta.lineas.filter((_, posicion) => posicion !== indice);
+
+    if (tarjeta.lineas.length === 0) {
+      tarjeta.lineas = [this.crearLineaInicial()];
+    }
+
+    this.persistirTarjetas();
+  }
+
+  guardarRegistro(proveedorId: number): void {
     this.error = '';
-
-    if (!this.proveedorSeleccionado) {
-      this.error = 'Selecciona un proveedor guardado.';
-      return;
-    }
 
     if (this.usuarioId === 0) {
       this.error = 'No se encontró usuario autenticado.';
       return;
     }
 
-    const totales = this.calcularTotales();
-
-    if (totales.pesoTotalKg === 0) {
-      this.error = 'Ingresa los valores de la entrega.';
+    const tarjeta = this.obtenerTarjeta(proveedorId);
+    if (!tarjeta) {
       return;
     }
 
+    const lineasValidas = tarjeta.lineas.filter((linea) => (linea.pesoTotalKg ?? 0) > 0);
+
+    if (lineasValidas.length === 0) {
+      tarjeta.error = 'Ingresa al menos una línea con peso mayor a 0.';
+      return;
+    }
+
+    tarjeta.error = '';
+    tarjeta.guardando = true;
+
     const headers = this.obtenerHeaders();
-    this.guardando = true;
+    const requests = lineasValidas.map((linea) => {
+      const cantidad = linea.cantidadPollos ?? 0;
+      const peso = linea.pesoTotalKg ?? 0;
+      const mermaPorPollo = linea.mermaKg ?? 0;
+      const precio = linea.precioKg ?? 0;
+      const mermaTotal = cantidad * mermaPorPollo;
 
-    const payload = {
-      proveedor_id: this.proveedorSeleccionado.proveedor_id,
-      usuario_id: this.usuarioId,
-      fecha_hora: this.construirFechaHora(),
-      cantidad_pollos: totales.cantidadPollos,
-      peso_total_kg: totales.pesoTotalKg,
-      merma_kg: totales.mermaKg,
-      costo_total: totales.costoTotal,
-      observacion: null
-    };
+      const payload = {
+        proveedor_id: tarjeta.proveedor.proveedor_id,
+        usuario_id: this.usuarioId,
+        fecha_hora: this.construirFechaHora(linea.horaEntrega),
+        cantidad_pollos: cantidad,
+        peso_total_kg: peso,
+        merma_kg: mermaTotal,
+        costo_total: (peso + mermaTotal) * precio,
+        tipo: linea.tipoAve
+      };
 
-    this.http.post<RegistroEntrega>('/api/entregas-proveedor', payload, { headers }).subscribe({
+      return this.http.post<RegistroEntrega>('/api/entregas-proveedor', payload, { headers });
+    });
+
+    forkJoin(requests).subscribe({
       next: () => {
+        this.cerrarTarjeta(proveedorId);
         this.cargarRegistros();
-        this.limpiarFormulario();
       },
       error: () => {
-        this.error = 'No se pudo guardar la entrega.';
+        tarjeta.error = 'No se pudo guardar la entrega.';
       },
       complete: () => {
-        this.guardando = false;
+        tarjeta.guardando = false;
       }
     });
   }
 
-  limpiarFormulario(): void {
-    this.lineas = [
-      {
-        tipoAve: 'pollos',
-        cantidadPollos: null,
-        pesoTotalKg: null,
-        mermaKg: null,
-        precioKg: null,
-        horaEntrega: this.obtenerHoraActual()
-      }
-    ];
-    this.indiceLineaActiva = 0;
+  limpiarFormulario(proveedorId: number): void {
+    const tarjeta = this.obtenerTarjeta(proveedorId);
+    if (!tarjeta) {
+      return;
+    }
+
+    tarjeta.lineas = [this.crearLineaInicial()];
+    tarjeta.error = '';
+    this.persistirTarjetas();
   }
 
-  obtenerTotales(): { pesoTotalKg: number; mermaKg: number; costoTotal: number; cantidadPollos: number } {
-    return this.calcularTotales();
+  aplicarFiltros(): void {
+    const texto = this.filtros.texto.trim().toLowerCase();
+
+    this.registrosFiltrados = this.registros.filter((registro) => {
+      const nombreProveedor = `${registro.proveedor?.nombres ?? ''} ${registro.proveedor?.apellidos ?? ''}`.toLowerCase();
+      const documento = (registro.proveedor?.ruc || registro.proveedor?.dni || '').toLowerCase();
+      const tipo = (registro.tipo || '').toLowerCase();
+
+      const pasaTexto =
+        !texto ||
+        nombreProveedor.includes(texto) ||
+        documento.includes(texto) ||
+        tipo.includes(texto);
+
+      const pasaProveedor =
+        !this.filtros.proveedorId ||
+        String(registro.proveedor_id) === this.filtros.proveedorId;
+
+      const pasaTipo = !this.filtros.tipo || (registro.tipo || '') === this.filtros.tipo;
+
+      const fechaRegistro = registro.fecha_hora.slice(0, 10);
+      const pasaFecha = !this.filtros.fecha || fechaRegistro === this.filtros.fecha;
+
+      return pasaTexto && pasaProveedor && pasaTipo && pasaFecha;
+    });
+  }
+
+  limpiarFiltros(): void {
+    this.filtros = {
+      texto: '',
+      proveedorId: '',
+      tipo: '',
+      fecha: ''
+    };
+    this.aplicarFiltros();
+  }
+
+  proveedoresEnHistorial(): ProveedorApi[] {
+    const mapa = new Map<number, ProveedorApi>();
+
+    this.registros.forEach((registro) => {
+      if (!registro.proveedor) {
+        return;
+      }
+
+      if (!mapa.has(registro.proveedor_id)) {
+        mapa.set(registro.proveedor_id, {
+          proveedor_id: registro.proveedor_id,
+          nombres: registro.proveedor.nombres,
+          apellidos: registro.proveedor.apellidos,
+          ruc: registro.proveedor.ruc,
+          dni: registro.proveedor.dni
+        });
+      }
+    });
+
+    return Array.from(mapa.values()).sort((a, b) => a.nombres.localeCompare(b.nombres));
+  }
+
+  iniciarEdicion(registro: RegistroEntrega): void {
+    this.editandoEntregaId = registro.entrega_id;
+    this.formularioEdicion = {
+      tipo: registro.tipo || 'POLLO',
+      cantidad_pollos: registro.cantidad_pollos,
+      peso_total_kg: registro.peso_total_kg,
+      merma_kg: registro.merma_kg,
+      costo_total: registro.costo_total,
+      fecha_hora: this.formatearFechaHoraInput(registro.fecha_hora)
+    };
+  }
+
+  cancelarEdicion(): void {
+    this.editandoEntregaId = null;
+  }
+
+  guardarEdicion(entregaId: number): void {
+    if (!this.formularioEdicion.fecha_hora) {
+      this.error = 'La fecha y hora de edición es obligatoria.';
+      return;
+    }
+
+    this.guardandoEdicion = true;
+    const headers = this.obtenerHeaders();
+
+    const payload = {
+      tipo: this.formularioEdicion.tipo,
+      cantidad_pollos: this.formularioEdicion.cantidad_pollos ?? 0,
+      peso_total_kg: this.formularioEdicion.peso_total_kg ?? 0,
+      merma_kg: this.formularioEdicion.merma_kg ?? 0,
+      costo_total: this.formularioEdicion.costo_total ?? 0,
+      fecha_hora: this.formularioEdicion.fecha_hora.replace('T', ' ') + ':00'
+    };
+
+    this.http.put(`/api/entregas-proveedor/${entregaId}`, payload, { headers }).subscribe({
+      next: () => {
+        this.editandoEntregaId = null;
+        this.cargarRegistros();
+      },
+      error: () => {
+        this.error = 'No se pudo actualizar la fila.';
+      },
+      complete: () => {
+        this.guardandoEdicion = false;
+      }
+    });
+  }
+
+  eliminarRegistro(entregaId: number): void {
+    const headers = this.obtenerHeaders();
+
+    this.http.delete(`/api/entregas-proveedor/${entregaId}`, { headers }).subscribe({
+      next: () => {
+        if (this.editandoEntregaId === entregaId) {
+          this.editandoEntregaId = null;
+        }
+        this.cargarRegistros();
+      },
+      error: () => {
+        this.error = 'No se pudo eliminar la fila.';
+      }
+    });
   }
 
   private cargarRegistros(): void {
@@ -216,6 +395,7 @@ export class PrivadoProveedoresRegistros implements OnInit, OnDestroy {
     this.http.get<RegistroEntrega[]>('/api/entregas-proveedor', { headers }).subscribe({
       next: (registros) => {
         this.registros = registros;
+        this.aplicarFiltros();
       },
       error: () => {
         this.error = 'No se pudo cargar el historial de entregas.';
@@ -226,43 +406,15 @@ export class PrivadoProveedoresRegistros implements OnInit, OnDestroy {
     });
   }
 
-  private calcularTotales(): {
-    cantidadPollos: number;
-    pesoTotalKg: number;
-    mermaKg: number;
-    costoTotal: number;
-  } {
-    return this.lineas.reduce(
-      (acc, linea) => {
-        const cantidad = linea.cantidadPollos ?? 0;
-        const peso = linea.pesoTotalKg ?? 0;
-        const merma = linea.mermaKg ?? 0;
-        const precio = linea.precioKg ?? 0;
-        const mermaTotal = cantidad * merma;
-        const pesoConMerma = peso + mermaTotal;
-        const costo = pesoConMerma * precio;
-
-        return {
-          cantidadPollos: acc.cantidadPollos + cantidad,
-          pesoTotalKg: acc.pesoTotalKg + peso,
-          mermaKg: acc.mermaKg + mermaTotal,
-          costoTotal: acc.costoTotal + costo
-        };
-      },
-      { cantidadPollos: 0, pesoTotalKg: 0, mermaKg: 0, costoTotal: 0 }
-    );
-  }
-
-
-
-  private iniciarReloj(): void {
-    this.relojId = setInterval(() => {
-      const hora = this.obtenerHoraActual();
-      const lineaActiva = this.lineas[this.indiceLineaActiva];
-      if (lineaActiva) {
-        lineaActiva.horaEntrega = hora;
-      }
-    }, 1000);
+  private crearLineaInicial(): RegistroLinea {
+    return {
+      tipoAve: this.tiposAveDisponibles[0],
+      cantidadPollos: null,
+      pesoTotalKg: null,
+      mermaKg: null,
+      precioKg: null,
+      horaEntrega: this.obtenerHoraActual()
+    };
   }
 
   private obtenerHoraActual(): string {
@@ -272,18 +424,56 @@ export class PrivadoProveedoresRegistros implements OnInit, OnDestroy {
     return `${horas}:${minutos}`;
   }
 
-  private construirFechaHora(): string {
-    const horaActiva = this.lineas[this.indiceLineaActiva]?.horaEntrega ?? '00:00';
-    return `${this.fechaEntrega} ${horaActiva}:00`;
+  private construirFechaHora(horaEntrega: string): string {
+    return `${this.fechaEntrega} ${horaEntrega}:00`;
   }
 
-  private formatearProveedor(proveedor: ProveedorApi): string {
-    const documento = proveedor.ruc || proveedor.dni || '';
-    return [proveedor.nombres, proveedor.apellidos].filter(Boolean).join(' ').trim() + ` (${documento})`;
+  private obtenerTarjeta(proveedorId: number): TarjetaProveedor | undefined {
+    return this.tarjetasProveedor.find((tarjeta) => tarjeta.proveedor.proveedor_id === proveedorId);
   }
 
   private obtenerFechaActual(): string {
     return new Date().toISOString().slice(0, 10);
+  }
+
+  persistirTarjetas(): void {
+    localStorage.setItem(this.storageTarjetasKey, JSON.stringify(this.tarjetasProveedor));
+  }
+
+  private recuperarTarjetas(): void {
+    const contenido = localStorage.getItem(this.storageTarjetasKey);
+    if (!contenido) {
+      return;
+    }
+
+    try {
+      const tarjetas: TarjetaProveedor[] = JSON.parse(contenido);
+      this.tarjetasProveedor = tarjetas.map((tarjeta) => ({
+        ...tarjeta,
+        guardando: false,
+        error: tarjeta.error ?? '',
+        expandida: tarjeta.expandida !== false,
+        lineas: (tarjeta.lineas && tarjeta.lineas.length > 0 ? tarjeta.lineas : [this.crearLineaInicial()])
+      }));
+    } catch {
+      this.tarjetasProveedor = [];
+      localStorage.removeItem(this.storageTarjetasKey);
+    }
+  }
+
+  private formatearFechaHoraInput(fechaHora: string): string {
+    const fecha = new Date(fechaHora);
+    if (Number.isNaN(fecha.getTime())) {
+      return '';
+    }
+
+    const year = fecha.getFullYear();
+    const month = String(fecha.getMonth() + 1).padStart(2, '0');
+    const day = String(fecha.getDate()).padStart(2, '0');
+    const hours = String(fecha.getHours()).padStart(2, '0');
+    const minutes = String(fecha.getMinutes()).padStart(2, '0');
+
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
   }
 
   private obtenerHeaders(): HttpHeaders {

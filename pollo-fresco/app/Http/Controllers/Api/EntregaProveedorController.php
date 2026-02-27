@@ -32,7 +32,7 @@ class EntregaProveedorController extends Controller
     }
 
     /**
-     * Registrar una entrega. Si existe misma fecha y proveedor, se incrementa.
+     * Registrar una entrega por línea.
      */
     public function store(Request $request)
     {
@@ -45,37 +45,8 @@ class EntregaProveedorController extends Controller
             'merma_kg' => ['required', 'numeric', 'min:0'],
             'costo_total' => ['nullable', 'numeric', 'min:0'],
             'precio_kg' => ['nullable', 'numeric', 'min:0'],
-            'observacion' => ['nullable', 'string', 'max:250'],
+            'tipo' => ['required', 'string', 'max:50'],
         ]);
-
-        $costoTotal = $validated['costo_total'] ?? null;
-
-        if ($costoTotal === null && isset($validated['precio_kg'])) {
-            $pesoTotal = (float) $validated['peso_total_kg'];
-            $merma = (float) $validated['merma_kg'];
-            $precioKg = (float) $validated['precio_kg'];
-            $kgConMerma = $pesoTotal + ($pesoTotal * $merma);
-            $costoTotal = round($kgConMerma * $precioKg, 2);
-        }
-
-        $costoTotal = $costoTotal ?? 0.0;
-
-        $entrega = EntregaProveedor::where('proveedor_id', $validated['proveedor_id'])
-            ->where('fecha_hora', $validated['fecha_hora'])
-            ->first();
-
-        if ($entrega) {
-            $entrega->fill([
-                'usuario_id' => $validated['usuario_id'],
-                'cantidad_pollos' => $entrega->cantidad_pollos + $validated['cantidad_pollos'],
-                'peso_total_kg' => $entrega->peso_total_kg + $validated['peso_total_kg'],
-                'merma_kg' => $entrega->merma_kg + $validated['merma_kg'],
-                'costo_total' => $entrega->costo_total + $costoTotal,
-                'observacion' => $this->mergeObservaciones($entrega->observacion, $validated['observacion'] ?? null),
-            ])->save();
-
-            return response()->json($entrega->load('proveedor'));
-        }
 
         $entrega = EntregaProveedor::create([
             'proveedor_id' => $validated['proveedor_id'],
@@ -84,33 +55,39 @@ class EntregaProveedorController extends Controller
             'cantidad_pollos' => $validated['cantidad_pollos'],
             'peso_total_kg' => $validated['peso_total_kg'],
             'merma_kg' => $validated['merma_kg'],
-            'costo_total' => $costoTotal,
-            'observacion' => $validated['observacion'] ?? null,
+            'costo_total' => $validated['costo_total'] ?? 0.0,
+            'tipo' => $validated['tipo'],
         ]);
 
         return response()->json($entrega->load('proveedor'), 201);
     }
 
     /**
-     * Combinar observaciones en una sola cadena.
+     * Actualizar una fila de entrega.
      */
-    private function mergeObservaciones(?string $actual, ?string $nueva): ?string
+    public function update(Request $request, EntregaProveedor $entregaProveedor)
     {
-        $actual = trim((string) $actual);
-        $nueva = trim((string) $nueva);
+        $validated = $request->validate([
+            'fecha_hora' => ['required', 'date'],
+            'cantidad_pollos' => ['required', 'integer', 'min:0'],
+            'peso_total_kg' => ['required', 'numeric', 'min:0'],
+            'merma_kg' => ['required', 'numeric', 'min:0'],
+            'costo_total' => ['required', 'numeric', 'min:0'],
+            'tipo' => ['required', 'string', 'max:50'],
+        ]);
 
-        if ($actual === '' && $nueva === '') {
-            return null;
-        }
+        $entregaProveedor->update($validated);
 
-        if ($actual === '') {
-            return $nueva;
-        }
+        return response()->json($entregaProveedor->load('proveedor'));
+    }
 
-        if ($nueva === '') {
-            return $actual;
-        }
+    /**
+     * Eliminar una fila de entrega.
+     */
+    public function destroy(EntregaProveedor $entregaProveedor)
+    {
+        $entregaProveedor->delete();
 
-        return "{$actual} | {$nueva}";
+        return response()->json(['message' => 'Entrega eliminada']);
     }
 }
