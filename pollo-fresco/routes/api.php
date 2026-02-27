@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\UsuariosController;
 
 
 use App\Http\Controllers\Api\ClienteController;
+use App\Http\Controllers\Api\ConfiguracionController;
 use App\Http\Controllers\Api\EntregaProveedorController;
 use App\Http\Controllers\Api\OtrosProductosController;
 use App\Http\Controllers\Api\ProveedorController;
@@ -91,4 +92,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('otros-productos/lotes', [OtrosProductosController::class, 'lotesStore']);
     Route::put('otros-productos/lotes/{compraLoteId}', [OtrosProductosController::class, 'lotesUpdate']);
     Route::delete('otros-productos/lotes/{compraLoteId}', [OtrosProductosController::class, 'lotesDestroy']);
+
+    Route::post('configuracion/logo', [ConfiguracionController::class, 'subirLogo']);
 });
