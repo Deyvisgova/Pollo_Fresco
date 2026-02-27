@@ -1,3 +1,9 @@
+:host {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
 :root {
   --primary-color: #ff6f00;
   --secondary-color: #ffd54f;
@@ -17,6 +23,7 @@ main {
   display: flex;
   flex-direction: column;
   gap: 0;
+  flex: 1;
 }
 
 a {
