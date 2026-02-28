@@ -9,7 +9,8 @@ interface ClienteApi {
   dni: string | null;
   ruc: string | null;
   nombres: string;
-  apellidos: string;
+  apellidos: string | null;
+  nombre_empresa: string | null;
   celular: string | null;
   direccion: string | null;
   direccion_fiscal: string | null;
@@ -24,6 +25,7 @@ interface ClienteFormulario {
   ruc: string;
   nombres: string;
   apellidos: string;
+  nombreEmpresa: string;
   celular: string;
   direccion: string;
   direccionFiscal: string;
@@ -40,12 +42,13 @@ interface ClienteFormulario {
 export class PrivadoClientesCrud implements OnInit {
   private token = 'f3ba6fa1f3a2b2d1a6390dc06d831ebad2f218a9d3ba43e7f1f42b425dd03e26';
 
-  consultaDni = '';
+  consultaDocumento = '';
   consultaCargando = false;
   guardando = false;
   cargando = false;
   mensajeError = '';
   filtro = '';
+  mostrarModalRegistro = false;
 
   clientes: ClienteApi[] = [];
 
@@ -55,6 +58,7 @@ export class PrivadoClientesCrud implements OnInit {
     ruc: '',
     nombres: '',
     apellidos: '',
+    nombreEmpresa: '',
     celular: '',
     direccion: '',
     direccionFiscal: '',
@@ -70,42 +74,51 @@ export class PrivadoClientesCrud implements OnInit {
     this.cargarClientes();
   }
 
-  consultarDni(): void {
+  abrirModalRegistro(): void {
+    this.limpiarFormulario();
+    this.mostrarModalRegistro = true;
+  }
+
+  cerrarModalRegistro(): void {
+    this.mostrarModalRegistro = false;
+    this.consultaCargando = false;
+    this.guardando = false;
+    this.mensajeError = '';
+  }
+
+  consultarDocumentoApi(): void {
     this.mensajeError = '';
 
-    if (!this.consultaDni.trim()) {
-      this.mensajeError = 'Ingresa el DNI para consultar.';
+    const documento = this.consultaDocumento.trim();
+
+    if (!documento) {
+      this.mensajeError = 'Ingresa el DNI o RUC para consultar.';
       return;
     }
 
-    if (this.consultaDni.length !== 8) {
-      this.mensajeError = 'El DNI debe tener 8 dígitos.';
+    if (!/^\d+$/.test(documento)) {
+      this.mensajeError = 'El documento solo debe contener dígitos.';
       return;
     }
 
-    const url = `https://apiperu.dev/api/dni/${this.consultaDni}?api_token=${this.token}`;
+    if (documento.length === 8) {
+      this.consultarApi(`dni/${documento}`, this.autocompletarDesdeDni.bind(this));
+      return;
+    }
 
-    this.consultaCargando = true;
-    this.http.get<Record<string, unknown>>(url).subscribe({
-      next: (respuesta) => {
-        const datos = (respuesta?.['data'] as Record<string, unknown>) ?? {};
-        this.autocompletarDesdeDni(datos);
-      },
-      error: () => {
-        this.mensajeError = 'No pudimos conectar con la SUNAT/RENIEC. Revisa el número e intenta nuevamente.';
-        this.consultaCargando = false;
-      },
-      complete: () => {
-        this.consultaCargando = false;
-      }
-    });
+    if (documento.length === 11) {
+      this.consultarApi(`ruc/${documento}`, this.autocompletarDesdeRuc.bind(this));
+      return;
+    }
+
+    this.mensajeError = 'El documento debe tener 8 dígitos (DNI) o 11 dígitos (RUC).';
   }
 
   guardarCliente(): void {
     this.mensajeError = '';
 
-    if (!this.formulario.nombres.trim() || !this.formulario.apellidos.trim()) {
-      this.mensajeError = 'Completa los nombres y apellidos del cliente.';
+    if (!this.formulario.nombres.trim() && !this.formulario.nombreEmpresa.trim()) {
+      this.mensajeError = 'Completa al menos el nombre o el nombre de la empresa del cliente.';
       return;
     }
 
@@ -114,8 +127,9 @@ export class PrivadoClientesCrud implements OnInit {
     const payload = {
       dni: this.formulario.dni || null,
       ruc: this.formulario.ruc || null,
-      nombres: this.formulario.nombres,
-      apellidos: this.formulario.apellidos,
+      nombres: this.formulario.nombres || null,
+      apellidos: this.formulario.apellidos || null,
+      nombre_empresa: this.formulario.nombreEmpresa || null,
       celular: this.formulario.celular || null,
       direccion: this.formulario.direccion || null,
       direccion_fiscal: this.formulario.direccionFiscal || null,
@@ -130,9 +144,19 @@ export class PrivadoClientesCrud implements OnInit {
     request.subscribe({
       next: () => {
         this.cargarClientes(this.filtro);
+        this.cerrarModalRegistro();
         this.limpiarFormulario();
       },
-      error: () => {
+      error: (error) => {
+        const errores = error?.error?.errors as Record<string, string[]> | undefined;
+        if (errores) {
+          const primerError = Object.values(errores)?.[0]?.[0];
+          if (primerError) {
+            this.mensajeError = primerError;
+            return;
+          }
+        }
+
         this.mensajeError = 'No se pudo guardar el cliente. Revisa los datos e intenta nuevamente.';
       },
       complete: () => {
@@ -146,13 +170,16 @@ export class PrivadoClientesCrud implements OnInit {
       cliente_id: cliente.cliente_id,
       dni: cliente.dni ?? '',
       ruc: cliente.ruc ?? '',
-      nombres: cliente.nombres,
-      apellidos: cliente.apellidos,
+      nombres: cliente.nombres ?? '',
+      apellidos: cliente.apellidos ?? '',
+      nombreEmpresa: cliente.nombre_empresa ?? '',
       celular: cliente.celular ?? '',
       direccion: cliente.direccion ?? '',
       direccionFiscal: cliente.direccion_fiscal ?? '',
       referencias: cliente.referencias ?? ''
     };
+    this.consultaDocumento = cliente.ruc ?? cliente.dni ?? '';
+    this.mostrarModalRegistro = true;
   }
 
   eliminarCliente(cliente: ClienteApi): void {
@@ -166,12 +193,14 @@ export class PrivadoClientesCrud implements OnInit {
   }
 
   limpiarFormulario(): void {
+    this.consultaDocumento = '';
     this.formulario = {
       cliente_id: null,
       dni: '',
       ruc: '',
       nombres: '',
       apellidos: '',
+      nombreEmpresa: '',
       celular: '',
       direccion: '',
       direccionFiscal: '',
@@ -183,6 +212,25 @@ export class PrivadoClientesCrud implements OnInit {
     this.cargarClientes(this.filtro);
   }
 
+  private consultarApi(endpoint: string, autocompletar: (datos: Record<string, unknown>) => void): void {
+    const url = `https://apiperu.dev/api/${endpoint}?api_token=${this.token}`;
+
+    this.consultaCargando = true;
+    this.http.get<Record<string, unknown>>(url).subscribe({
+      next: (respuesta) => {
+        const datos = (respuesta?.['data'] as Record<string, unknown>) ?? {};
+        autocompletar(datos);
+      },
+      error: () => {
+        this.mensajeError = 'No pudimos conectar con la SUNAT/RENIEC. Revisa el número e intenta nuevamente.';
+        this.consultaCargando = false;
+      },
+      complete: () => {
+        this.consultaCargando = false;
+      }
+    });
+  }
+
   private autocompletarDesdeDni(datos: Record<string, unknown>): void {
     const apellidoPaterno = (datos['apellido_paterno'] as string) ?? '';
     const apellidoMaterno = (datos['apellido_materno'] as string) ?? '';
@@ -190,12 +238,27 @@ export class PrivadoClientesCrud implements OnInit {
 
     this.formulario = {
       ...this.formulario,
-      dni: ((datos['numero'] as string) ?? this.consultaDni).toString(),
+      dni: ((datos['numero'] as string) ?? this.consultaDocumento).toString(),
       nombres: nombres || (datos['nombre_completo'] as string) || this.formulario.nombres,
       apellidos:
         `${apellidoPaterno} ${apellidoMaterno}`.trim() ||
         (datos['apellido'] as string) ||
         this.formulario.apellidos
+    };
+  }
+
+  private autocompletarDesdeRuc(datos: Record<string, unknown>): void {
+    const nombreEmpresa =
+      (datos['nombre_o_razon_social'] as string) ??
+      (datos['razon_social'] as string) ??
+      (datos['nombre_comercial'] as string) ??
+      '';
+
+    this.formulario = {
+      ...this.formulario,
+      ruc: ((datos['numero'] as string) ?? this.consultaDocumento).toString(),
+      nombreEmpresa: nombreEmpresa || this.formulario.nombreEmpresa,
+      direccionFiscal: (datos['direccion'] as string) ?? this.formulario.direccionFiscal
     };
   }
 

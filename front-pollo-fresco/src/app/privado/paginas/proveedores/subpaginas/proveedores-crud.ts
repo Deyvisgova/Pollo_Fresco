@@ -44,6 +44,7 @@ export class PrivadoProveedoresCrud implements OnInit {
   consultaCargando = false;
   cargando = false;
   guardando = false;
+  mostrarModalRegistro = false;
 
   proveedores: ProveedorApi[] = [];
 
@@ -65,6 +66,18 @@ export class PrivadoProveedoresCrud implements OnInit {
 
   ngOnInit(): void {
     this.cargarProveedores();
+  }
+
+  abrirModalRegistro(): void {
+    this.limpiarFormulario();
+    this.mostrarModalRegistro = true;
+  }
+
+  cerrarModalRegistro(): void {
+    this.mostrarModalRegistro = false;
+    this.consultaCargando = false;
+    this.guardando = false;
+    this.consultaError = '';
   }
 
   consultarDocumentoApi(): void {
@@ -117,16 +130,13 @@ export class PrivadoProveedoresCrud implements OnInit {
 
     const headers = this.obtenerHeaders();
     const request = this.formulario.proveedor_id
-      ? this.http.put<ProveedorApi>(
-          `/api/proveedores/${this.formulario.proveedor_id}`,
-          payload,
-          { headers }
-        )
+      ? this.http.put<ProveedorApi>(`/api/proveedores/${this.formulario.proveedor_id}`, payload, { headers })
       : this.http.post<ProveedorApi>('/api/proveedores', payload, { headers });
 
     request.subscribe({
       next: () => {
         this.cargarProveedores();
+        this.cerrarModalRegistro();
         this.limpiarFormulario();
       },
       error: (error) => {
@@ -163,6 +173,8 @@ export class PrivadoProveedoresCrud implements OnInit {
       direccion: proveedor.direccion ?? '',
       telefono: proveedor.telefono ?? ''
     };
+    this.consultaDocumento = proveedor.ruc ?? proveedor.dni ?? '';
+    this.mostrarModalRegistro = true;
   }
 
   eliminarProveedor(proveedor: ProveedorApi): void {
