@@ -24,7 +24,9 @@ class ProveedorController extends Controller
                     ->where('nombres', 'like', "%{$search}%")
                     ->orWhere('apellidos', 'like', "%{$search}%")
                     ->orWhere('ruc', 'like', "%{$search}%")
-                    ->orWhere('dni', 'like', "%{$search}%");
+                    ->orWhere('dni', 'like', "%{$search}%")
+                    ->orWhere('nombre_empresa', 'like', "%{$search}%")
+                    ->orWhere('telefono', 'like', "%{$search}%");
             });
         }
 
@@ -38,7 +40,7 @@ class ProveedorController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $this->validatePayload($request);
+        $validated = $this->normalizarPayload($this->validatePayload($request));
 
         $proveedor = Proveedor::create($validated);
 
@@ -50,7 +52,7 @@ class ProveedorController extends Controller
      */
     public function update(Request $request, Proveedor $proveedor)
     {
-        $validated = $this->validatePayload($request, $proveedor->proveedor_id);
+        $validated = $this->normalizarPayload($this->validatePayload($request, $proveedor->proveedor_id));
 
         $proveedor->fill($validated)->save();
 
@@ -93,11 +95,23 @@ class ProveedorController extends Controller
                 'size:11',
                 Rule::unique('proveedores', 'ruc')->ignore($proveedorId, 'proveedor_id'),
             ],
-            'nombre_empresa' => ['nullable', 'string', 'max:100', 'required_without:nombres'],
-            'nombres' => ['nullable', 'string', 'max:80', 'required_without:nombre_empresa'],
+            'nombre_empresa' => ['nullable', 'string', 'max:100'],
+            'nombres' => ['nullable', 'string', 'max:80'],
             'apellidos' => ['nullable', 'string', 'max:80'],
             'direccion' => ['nullable', 'string', 'max:200'],
             'telefono' => ['nullable', 'string', 'max:9'],
         ]);
     }
+
+    /**
+     * Normalizar datos para tablas con columnas NOT NULL.
+     */
+    private function normalizarPayload(array $payload): array
+    {
+        $payload['nombres'] = isset($payload['nombres']) ? trim((string) $payload['nombres']) : '';
+        $payload['apellidos'] = isset($payload['apellidos']) ? trim((string) $payload['apellidos']) : '';
+
+        return $payload;
+    }
+
 }
