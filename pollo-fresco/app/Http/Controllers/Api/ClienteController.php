@@ -25,7 +25,8 @@ class ClienteController extends Controller
                     ->orWhere('apellidos', 'like', "%{$search}%")
                     ->orWhere('dni', 'like', "%{$search}%")
                     ->orWhere('ruc', 'like', "%{$search}%")
-                    ->orWhere('celular', 'like', "%{$search}%");
+                    ->orWhere('celular', 'like', "%{$search}%")
+                    ->orWhere('nombre_empresa', 'like', "%{$search}%");
             });
         }
 
@@ -94,8 +95,9 @@ class ClienteController extends Controller
                 'size:11',
                 Rule::unique('clientes', 'ruc')->ignore($clienteId, 'cliente_id'),
             ],
-            'nombres' => ['required', 'string', 'max:80'],
-            'apellidos' => ['required', 'string', 'max:80'],
+            'nombres' => ['nullable', 'string', 'max:80'],
+            'apellidos' => ['nullable', 'string', 'max:80'],
+            'nombre_empresa' => ['nullable', 'string', 'max:100'],
             'celular' => ['nullable', 'string', 'size:9'],
             'direccion' => ['nullable', 'string', 'max:200'],
             'direccion_fiscal' => ['nullable', 'string', 'max:200'],

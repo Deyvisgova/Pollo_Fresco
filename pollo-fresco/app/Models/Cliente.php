@@ -27,6 +27,7 @@ class Cliente extends Model
         'ruc',
         'nombres',
         'apellidos',
+        'nombre_empresa',
         'celular',
         'direccion',
         'direccion_fiscal',

@@ -24,7 +24,9 @@ class ProveedorController extends Controller
                     ->where('nombres', 'like', "%{$search}%")
                     ->orWhere('apellidos', 'like', "%{$search}%")
                     ->orWhere('ruc', 'like', "%{$search}%")
-                    ->orWhere('dni', 'like', "%{$search}%");
+                    ->orWhere('dni', 'like', "%{$search}%")
+                    ->orWhere('nombre_empresa', 'like', "%{$search}%")
+                    ->orWhere('telefono', 'like', "%{$search}%");
             });
         }
 
@@ -93,8 +95,8 @@ class ProveedorController extends Controller
                 'size:11',
                 Rule::unique('proveedores', 'ruc')->ignore($proveedorId, 'proveedor_id'),
             ],
-            'nombre_empresa' => ['nullable', 'string', 'max:100', 'required_without:nombres'],
-            'nombres' => ['nullable', 'string', 'max:80', 'required_without:nombre_empresa'],
+            'nombre_empresa' => ['nullable', 'string', 'max:100'],
+            'nombres' => ['nullable', 'string', 'max:80'],
             'apellidos' => ['nullable', 'string', 'max:80'],
             'direccion' => ['nullable', 'string', 'max:200'],
             'telefono' => ['nullable', 'string', 'max:9'],
