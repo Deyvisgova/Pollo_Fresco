@@ -74,6 +74,7 @@ CRUD de proveedores y registro de entregas de pollos.
 */
 Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('proveedores', ProveedorController::class)
+        ->parameters(['proveedores' => 'proveedor'])
         ->only(['index', 'store', 'show', 'update', 'destroy']);
 
     Route::apiResource('clientes', ClienteController::class)

@@ -25,7 +25,8 @@ class ClienteController extends Controller
                     ->orWhere('apellidos', 'like', "%{$search}%")
                     ->orWhere('dni', 'like', "%{$search}%")
                     ->orWhere('ruc', 'like', "%{$search}%")
-                    ->orWhere('celular', 'like', "%{$search}%");
+                    ->orWhere('celular', 'like', "%{$search}%")
+                    ->orWhere('nombre_empresa', 'like', "%{$search}%");
             });
         }
 
@@ -39,7 +40,7 @@ class ClienteController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $this->validatePayload($request);
+        $validated = $this->normalizarPayload($this->validatePayload($request));
 
         $cliente = Cliente::create($validated);
 
@@ -51,7 +52,7 @@ class ClienteController extends Controller
      */
     public function update(Request $request, Cliente $cliente)
     {
-        $validated = $this->validatePayload($request, $cliente->cliente_id);
+        $validated = $this->normalizarPayload($this->validatePayload($request, $cliente->cliente_id));
 
         $cliente->fill($validated)->save();
 
@@ -94,12 +95,25 @@ class ClienteController extends Controller
                 'size:11',
                 Rule::unique('clientes', 'ruc')->ignore($clienteId, 'cliente_id'),
             ],
-            'nombres' => ['required', 'string', 'max:80'],
-            'apellidos' => ['required', 'string', 'max:80'],
+            'nombres' => ['nullable', 'string', 'max:80'],
+            'apellidos' => ['nullable', 'string', 'max:80'],
+            'nombre_empresa' => ['nullable', 'string', 'max:100'],
             'celular' => ['nullable', 'string', 'size:9'],
             'direccion' => ['nullable', 'string', 'max:200'],
             'direccion_fiscal' => ['nullable', 'string', 'max:200'],
             'referencias' => ['nullable', 'string', 'max:250'],
         ]);
     }
+
+    /**
+     * Normalizar datos para tablas con columnas NOT NULL.
+     */
+    private function normalizarPayload(array $payload): array
+    {
+        $payload['nombres'] = isset($payload['nombres']) ? trim((string) $payload['nombres']) : '';
+        $payload['apellidos'] = isset($payload['apellidos']) ? trim((string) $payload['apellidos']) : '';
+
+        return $payload;
+    }
+
 }

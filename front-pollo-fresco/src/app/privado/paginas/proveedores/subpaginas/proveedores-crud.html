@@ -1,104 +1,55 @@
 <section class="tarjeta">
-  <header class="tarjeta__encabezado">
-    <h3>Registro de proveedor</h3>
-    <p>
-      Ingresa DNI o RUC para autocompletar datos. Luego completa el celular y guarda el proveedor.
-    </p>
+  <header class="tarjeta__encabezado tarjeta__encabezado--acciones">
+    <div>
+      <h3>Proveedores</h3>
+      <p>Administra tu cartera de proveedores con acciones rápidas.</p>
+    </div>
+    <button class="boton boton--primario" type="button" (click)="abrirModalRegistro()">+ Nuevo proveedor</button>
   </header>
-
-  <div class="consulta">
-    <label class="campo">
-      <span>DNI o RUC</span>
-      <div class="campo__acciones">
-        <input
-          [(ngModel)]="consultaDocumento"
-          name="consultaDocumento"
-          type="text"
-          placeholder="8 dígitos (DNI) o 11 dígitos (RUC)"
-        />
-        <button class="boton boton--primario" type="button" (click)="consultarDocumentoApi()" [disabled]="consultaCargando">
-          {{ consultaCargando ? 'Consultando...' : 'Consultar' }}
-        </button>
-      </div>
-    </label>
-  </div>
 
   <p class="mensaje mensaje--error" *ngIf="consultaError">{{ consultaError }}</p>
 
-  <form class="formulario" (ngSubmit)="guardarProveedor()">
+  <div class="busqueda">
     <label class="campo">
-      <span>DNI</span>
-      <input [(ngModel)]="formulario.dni" name="dni" type="text" placeholder="8 dígitos" />
+      <span>Buscar</span>
+      <input
+        [(ngModel)]="filtro"
+        (ngModelChange)="onFiltroChange()"
+        name="filtro"
+        type="text"
+        placeholder="Nombre, empresa, DNI, teléfono o RUC"
+      />
     </label>
-    <label class="campo">
-      <span>RUC</span>
-      <input [(ngModel)]="formulario.ruc" name="ruc" type="text" placeholder="11 dígitos" />
-    </label>
-    <label class="campo">
-      <span>Nombres</span>
-      <input [(ngModel)]="formulario.nombres" name="nombres" type="text" />
-    </label>
-    <label class="campo">
-      <span>Nombre de la empresa</span>
-      <input [(ngModel)]="formulario.nombreEmpresa" name="nombreEmpresa" type="text" />
-    </label>
-    <label class="campo">
-      <span>Apellidos</span>
-      <input [(ngModel)]="formulario.apellidos" name="apellidos" type="text" />
-    </label>
-    <label class="campo">
-      <span>Dirección</span>
-      <input [(ngModel)]="formulario.direccion" name="direccion" type="text" />
-    </label>
-    <label class="campo">
-      <span>Teléfono</span>
-      <input [(ngModel)]="formulario.telefono" name="telefono" type="text" />
-    </label>
-
-    <div class="acciones">
-      <button class="boton boton--primario" type="submit" [disabled]="guardando">
-        {{ formulario.proveedor_id === null ? 'Guardar proveedor' : 'Actualizar proveedor' }}
-      </button>
-      <button class="boton boton--secundario" type="button" (click)="limpiarFormulario()">Limpiar</button>
-    </div>
-  </form>
-</section>
-
-<section class="tarjeta">
-  <header class="tarjeta__encabezado">
-    <h3>Listado de proveedores</h3>
-    <p>Administra tu cartera de proveedores con acciones rápidas.</p>
-  </header>
+  </div>
 
   <div class="tabla-contenedor">
     <table class="tabla">
       <thead>
         <tr>
-          <th>DNI</th>
-          <th>RUC</th>
-          <th>Nombres</th>
-          <th>Empresa</th>
+          <th>Proveedor / Empresa</th>
+          <th>Documento</th>
           <th>Contacto</th>
-          <th>Creado en</th>
-          <th>Actualizado en</th>
+          <th>Dirección</th>
+          <th>Registro</th>
           <th>Acciones</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let proveedor of proveedores">
-          <td>{{ proveedor.dni || '-' }}</td>
-          <td>{{ proveedor.ruc || '-' }}</td>
           <td>
-            <strong>{{ proveedor.nombres || '-' }}</strong>
-            <div class="nota" *ngIf="proveedor.apellidos">{{ proveedor.apellidos }}</div>
+            <strong>{{ ((proveedor.nombres || '') + ' ' + (proveedor.apellidos || '')).trim() || '-' }}</strong>
+            <div class="nota">{{ proveedor.nombre_empresa || 'Sin empresa' }}</div>
           </td>
           <td>
-            <strong>{{ proveedor.nombre_empresa || '-' }}</strong>
-            <div class="nota" *ngIf="proveedor.nombre_empresa && proveedor.direccion">{{ proveedor.direccion }}</div>
+            <div>DNI: {{ proveedor.dni || '-' }}</div>
+            <div class="nota">RUC: {{ proveedor.ruc || '-' }}</div>
           </td>
           <td>{{ proveedor.telefono || '-' }}</td>
-          <td>{{ proveedor.creado_en | date: 'short' }}</td>
-          <td>{{ proveedor.actualizado_en | date: 'short' }}</td>
+          <td>{{ proveedor.direccion || '-' }}</td>
+          <td>
+            <div>Creado: {{ proveedor.creado_en | date: 'short' }}</div>
+            <div class="nota">Actualizado: {{ proveedor.actualizado_en | date: 'short' }}</div>
+          </td>
           <td class="acciones-tabla">
             <button class="boton boton--secundario" type="button" (click)="editarProveedor(proveedor)">Editar</button>
             <button class="boton boton--peligro-solido" type="button" (click)="eliminarProveedor(proveedor)">
@@ -107,9 +58,78 @@
           </td>
         </tr>
         <tr *ngIf="proveedores.length === 0">
-          <td colspan="8">Todavía no hay proveedores registrados.</td>
+          <td colspan="6">Todavía no hay proveedores registrados.</td>
         </tr>
       </tbody>
     </table>
   </div>
 </section>
+
+<div class="modal-fondo" *ngIf="mostrarModalRegistro">
+  <section class="modal-contenido">
+    <header class="tarjeta__encabezado tarjeta__encabezado--acciones">
+      <div>
+        <h3>{{ formulario.proveedor_id === null ? 'Registro de proveedor' : 'Edición de proveedor' }}</h3>
+        <p>
+          Ingresa DNI o RUC para autocompletar datos. Luego completa lo necesario y guarda el proveedor.
+        </p>
+      </div>
+      <button class="boton boton--secundario" type="button" (click)="cerrarModalRegistro()">Cerrar</button>
+    </header>
+
+    <div class="consulta">
+      <label class="campo">
+        <span>DNI o RUC</span>
+        <div class="campo__acciones">
+          <input
+            [(ngModel)]="consultaDocumento"
+            name="consultaDocumento"
+            type="text"
+            placeholder="8 dígitos (DNI) o 11 dígitos (RUC)"
+          />
+          <button class="boton boton--primario" type="button" (click)="consultarDocumentoApi()" [disabled]="consultaCargando">
+            {{ consultaCargando ? 'Consultando...' : 'Consultar' }}
+          </button>
+        </div>
+      </label>
+    </div>
+
+    <form class="formulario" (ngSubmit)="guardarProveedor()">
+      <label class="campo">
+        <span>DNI</span>
+        <input [(ngModel)]="formulario.dni" name="dni" type="text" placeholder="8 dígitos" />
+      </label>
+      <label class="campo">
+        <span>RUC</span>
+        <input [(ngModel)]="formulario.ruc" name="ruc" type="text" placeholder="11 dígitos" />
+      </label>
+      <label class="campo">
+        <span>Nombres</span>
+        <input [(ngModel)]="formulario.nombres" name="nombres" type="text" />
+      </label>
+      <label class="campo">
+        <span>Nombre de la empresa</span>
+        <input [(ngModel)]="formulario.nombreEmpresa" name="nombreEmpresa" type="text" />
+      </label>
+      <label class="campo">
+        <span>Apellidos</span>
+        <input [(ngModel)]="formulario.apellidos" name="apellidos" type="text" />
+      </label>
+      <label class="campo">
+        <span>Dirección</span>
+        <input [(ngModel)]="formulario.direccion" name="direccion" type="text" />
+      </label>
+      <label class="campo">
+        <span>Teléfono</span>
+        <input [(ngModel)]="formulario.telefono" name="telefono" type="text" />
+      </label>
+
+      <div class="acciones">
+        <button class="boton boton--primario" type="submit" [disabled]="guardando">
+          {{ formulario.proveedor_id === null ? 'Guardar proveedor' : 'Actualizar proveedor' }}
+        </button>
+        <button class="boton boton--secundario" type="button" (click)="limpiarFormulario()">Limpiar</button>
+      </div>
+    </form>
+  </section>
+</div>

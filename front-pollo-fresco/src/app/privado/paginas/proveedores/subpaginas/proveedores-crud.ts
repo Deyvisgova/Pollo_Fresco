@@ -37,6 +37,7 @@ interface ProveedorFormulario {
 })
 export class PrivadoProveedoresCrud implements OnInit {
   private token = 'f3ba6fa1f3a2b2d1a6390dc06d831ebad2f218a9d3ba43e7f1f42b425dd03e26';
+  private temporizadorBusqueda: ReturnType<typeof setTimeout> | null = null;
 
   consultaDocumento = '';
   consultaResultado: Record<string, unknown> | null = null;
@@ -44,6 +45,8 @@ export class PrivadoProveedoresCrud implements OnInit {
   consultaCargando = false;
   cargando = false;
   guardando = false;
+  mostrarModalRegistro = false;
+  filtro = '';
 
   proveedores: ProveedorApi[] = [];
 
@@ -65,6 +68,28 @@ export class PrivadoProveedoresCrud implements OnInit {
 
   ngOnInit(): void {
     this.cargarProveedores();
+  }
+
+  abrirModalRegistro(): void {
+    this.limpiarFormulario();
+    this.mostrarModalRegistro = true;
+  }
+
+  cerrarModalRegistro(): void {
+    this.mostrarModalRegistro = false;
+    this.consultaCargando = false;
+    this.guardando = false;
+    this.consultaError = '';
+  }
+
+  onFiltroChange(): void {
+    if (this.temporizadorBusqueda) {
+      clearTimeout(this.temporizadorBusqueda);
+    }
+
+    this.temporizadorBusqueda = setTimeout(() => {
+      this.cargarProveedores(this.filtro);
+    }, 250);
   }
 
   consultarDocumentoApi(): void {
@@ -97,36 +122,28 @@ export class PrivadoProveedoresCrud implements OnInit {
   }
 
   guardarProveedor(): void {
-    if (!this.formulario.nombres.trim() && !this.formulario.nombreEmpresa.trim()) {
-      this.consultaError = 'Completa al menos el nombre o el nombre de la empresa del proveedor.';
-      return;
-    }
-
     this.guardando = true;
     this.consultaError = '';
 
     const payload = {
       dni: this.formulario.dni || null,
       ruc: this.formulario.ruc || null,
-      nombres: this.formulario.nombres,
-      apellidos: this.formulario.apellidos || null,
-      nombre_empresa: this.formulario.nombreEmpresa || null,
-      direccion: this.formulario.direccion || null,
-      telefono: this.formulario.telefono || null
+      nombres: this.formulario.nombres || '',
+      apellidos: this.formulario.apellidos || '',
+      nombre_empresa: this.formulario.nombreEmpresa || '',
+      direccion: this.formulario.direccion || '',
+      telefono: this.formulario.telefono || ''
     };
 
     const headers = this.obtenerHeaders();
     const request = this.formulario.proveedor_id
-      ? this.http.put<ProveedorApi>(
-          `/api/proveedores/${this.formulario.proveedor_id}`,
-          payload,
-          { headers }
-        )
+      ? this.http.put<ProveedorApi>(`/api/proveedores/${this.formulario.proveedor_id}`, payload, { headers })
       : this.http.post<ProveedorApi>('/api/proveedores', payload, { headers });
 
     request.subscribe({
       next: () => {
-        this.cargarProveedores();
+        this.cargarProveedores(this.filtro);
+        this.cerrarModalRegistro();
         this.limpiarFormulario();
       },
       error: (error) => {
@@ -163,6 +180,8 @@ export class PrivadoProveedoresCrud implements OnInit {
       direccion: proveedor.direccion ?? '',
       telefono: proveedor.telefono ?? ''
     };
+    this.consultaDocumento = proveedor.ruc ?? proveedor.dni ?? '';
+    this.mostrarModalRegistro = true;
   }
 
   eliminarProveedor(proveedor: ProveedorApi): void {
@@ -175,14 +194,14 @@ export class PrivadoProveedoresCrud implements OnInit {
 
     const headers = this.obtenerHeaders();
     this.http.delete(`/api/proveedores/${proveedor.proveedor_id}`, { headers }).subscribe({
-      next: () => this.cargarProveedores(),
+      next: () => this.cargarProveedores(this.filtro),
       error: (error) => {
         if (error?.status === 401) {
           this.consultaError = 'Tu sesión expiró. Inicia sesión nuevamente para eliminar el proveedor.';
           return;
         }
 
-        this.consultaError = 'No se pudo eliminar el proveedor.';
+        this.consultaError = error?.error?.message || 'No se pudo eliminar el proveedor.';
       }
     });
   }
@@ -261,10 +280,17 @@ export class PrivadoProveedoresCrud implements OnInit {
     };
   }
 
-  private cargarProveedores(): void {
+  private cargarProveedores(search?: string): void {
     this.cargando = true;
+    this.consultaError = '';
     const headers = this.obtenerHeaders();
-    this.http.get<ProveedorApi[]>('/api/proveedores', { headers }).subscribe({
+    const options: { headers: HttpHeaders; params?: Record<string, string> } = { headers };
+
+    if (search && search.trim()) {
+      options.params = { search: search.trim() };
+    }
+
+    this.http.get<ProveedorApi[]>('/api/proveedores', options).subscribe({
       next: (proveedores) => {
         this.proveedores = proveedores;
       },
