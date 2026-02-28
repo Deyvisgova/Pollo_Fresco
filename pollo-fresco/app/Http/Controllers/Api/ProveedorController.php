@@ -24,7 +24,9 @@ class ProveedorController extends Controller
                     ->where('nombres', 'like', "%{$search}%")
                     ->orWhere('apellidos', 'like', "%{$search}%")
                     ->orWhere('ruc', 'like', "%{$search}%")
-                    ->orWhere('dni', 'like', "%{$search}%");
+                    ->orWhere('dni', 'like', "%{$search}%")
+                    ->orWhere('nombre_empresa', 'like', "%{$search}%")
+                    ->orWhere('telefono', 'like', "%{$search}%");
             });
         }
 
@@ -38,7 +40,8 @@ class ProveedorController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $this->validatePayload($request);
+        $this->normalizarRequest($request);
+        $validated = $this->normalizarPayload($this->validatePayload($request));
 
         $proveedor = Proveedor::create($validated);
 
@@ -48,31 +51,47 @@ class ProveedorController extends Controller
     /**
      * Actualizar un proveedor existente.
      */
-    public function update(Request $request, Proveedor $proveedor)
+    public function update(Request $request, int $proveedor)
     {
-        $validated = $this->validatePayload($request, $proveedor->proveedor_id);
+        $this->normalizarRequest($request);
+        $proveedorModel = Proveedor::findOrFail($proveedor);
+        $validated = $this->normalizarPayload($this->validatePayload($request, $proveedorModel->proveedor_id));
 
-        $proveedor->fill($validated)->save();
+        $proveedorModel->fill($validated)->save();
 
-        return response()->json($proveedor);
+        return response()->json($proveedorModel);
     }
 
     /**
      * Mostrar un proveedor.
      */
-    public function show(Proveedor $proveedor)
+    public function show(int $proveedor)
     {
-        return response()->json($proveedor);
+        return response()->json(Proveedor::findOrFail($proveedor));
     }
 
     /**
      * Eliminar un proveedor.
      */
-    public function destroy(Proveedor $proveedor)
+    public function destroy(int $proveedor)
     {
-        $proveedor->delete();
+        $proveedorModel = Proveedor::findOrFail($proveedor);
+        $proveedorModel->delete();
 
         return response()->json(['message' => 'Proveedor eliminado correctamente.']);
+    }
+
+
+
+    /**
+     * Limpiar documento antes de validar.
+     */
+    private function normalizarRequest(Request $request): void
+    {
+        $request->merge([
+            'dni' => ($request->filled('dni') ? trim((string) $request->input('dni')) : null),
+            'ruc' => ($request->filled('ruc') ? trim((string) $request->input('ruc')) : null),
+        ]);
     }
 
     /**
@@ -93,11 +112,23 @@ class ProveedorController extends Controller
                 'size:11',
                 Rule::unique('proveedores', 'ruc')->ignore($proveedorId, 'proveedor_id'),
             ],
-            'nombre_empresa' => ['nullable', 'string', 'max:100', 'required_without:nombres'],
-            'nombres' => ['nullable', 'string', 'max:80', 'required_without:nombre_empresa'],
+            'nombre_empresa' => ['nullable', 'string', 'max:100'],
+            'nombres' => ['nullable', 'string', 'max:80'],
             'apellidos' => ['nullable', 'string', 'max:80'],
             'direccion' => ['nullable', 'string', 'max:200'],
             'telefono' => ['nullable', 'string', 'max:9'],
         ]);
     }
+
+    /**
+     * Normalizar datos para tablas con columnas NOT NULL.
+     */
+    private function normalizarPayload(array $payload): array
+    {
+        $payload['nombres'] = isset($payload['nombres']) ? trim((string) $payload['nombres']) : '';
+        $payload['apellidos'] = isset($payload['apellidos']) ? trim((string) $payload['apellidos']) : '';
+
+        return $payload;
+    }
+
 }
