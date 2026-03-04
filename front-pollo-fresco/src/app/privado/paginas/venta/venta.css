@@ -512,3 +512,28 @@
     grid-column: span 1;
   }
 }
+
+.mensaje-ok {
+  color: #15803d;
+  font-size: 12px;
+}
+
+.acciones-voucher__botones {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.boton-icono-accion {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.modal__contenido--voucher {
+  width: min(460px, 100%);
+}

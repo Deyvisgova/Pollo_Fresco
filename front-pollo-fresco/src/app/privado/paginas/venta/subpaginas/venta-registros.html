@@ -1,0 +1,59 @@
+<section class="seccion">
+  <div class="seccion__encabezado">
+    <h2>Ventas registradas</h2>
+    <p>Historial de comprobantes emitidos en el sistema.</p>
+  </div>
+
+  <article class="tarjeta">
+    <div class="filtros">
+      <input type="text" [(ngModel)]="buscando" placeholder="Buscar por cliente, serie, número o documento" />
+      <input type="date" [(ngModel)]="fechaDesde" />
+      <input type="date" [(ngModel)]="fechaHasta" />
+      <select [(ngModel)]="formatoVoucher">
+        <option value="a4">A4</option>
+        <option value="ticket-80">Tiquetera láser 8 cm</option>
+        <option value="ticket-57">Tiquetera láser 5.7 cm</option>
+      </select>
+      <button type="button" class="boton" (click)="cargarVentas()">Buscar</button>
+      <button type="button" class="boton boton--suave" (click)="limpiarFiltros()">Limpiar</button>
+    </div>
+
+    <p *ngIf="cargando" class="estado">Cargando ventas...</p>
+    <p *ngIf="error" class="error">{{ error }}</p>
+
+    <div class="tabla-ventas" *ngIf="!cargando">
+      <table>
+        <thead>
+          <tr>
+            <th>Comprobante</th>
+            <th>Tipo</th>
+            <th>Fecha</th>
+            <th>Cliente</th>
+            <th>Total</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let venta of ventasRegistradas">
+            <td>{{ venta.serie }}-{{ venta.numero }}</td>
+            <td>{{ venta.tipo_comprobante }}</td>
+            <td>{{ venta.fecha_emision }}</td>
+            <td>{{ venta.cliente_nombre || 'Público general' }}</td>
+            <td>{{ venta.moneda }} {{ venta.total | number: '1.2-2' }}</td>
+            <td>
+              <div class="acciones-fila">
+                <button type="button" class="icono" (click)="imprimir(venta)" title="Imprimir">🖨️</button>
+                <button type="button" class="icono" (click)="descargar(venta)" title="Descargar PDF">⬇️</button>
+                <button type="button" class="icono" (click)="compartir(venta)" title="Compartir">📤</button>
+                <button type="button" class="icono" (click)="descargarXml(venta)" title="Descargar XML">🧾</button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="!ventasRegistradas.length">
+            <td colspan="6">No hay ventas registradas todavía.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </article>
+</section>
