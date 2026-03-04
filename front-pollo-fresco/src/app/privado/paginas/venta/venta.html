@@ -297,11 +297,15 @@
       </div>
 
       <footer class="acciones">
-        <button class="boton boton--primario" type="button">
-          Emitir comprobante
+        <small class="mensaje-ok" *ngIf="mensajeVenta">{{ mensajeVenta }}</small>
+        <small class="mensaje-error" *ngIf="errorVenta">{{ errorVenta }}</small>
+        <button class="boton boton--primario" type="button" (click)="emitirComprobante()" [disabled]="guardandoVenta">
+          {{ guardandoVenta ? 'Guardando...' : 'Emitir comprobante' }}
         </button>
       </footer>
+
     </article>
+
   </div>
 </section>
 
@@ -330,6 +334,44 @@
         (click)="guardarProductoNuevo()"
       >
         Guardar
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" *ngIf="mostrarModalVoucher && ultimaVentaEmitida">
+  <div class="modal__contenido modal__contenido--voucher">
+    <h4>Comprobante emitido</h4>
+    <p class="nota">Selecciona el formato y la acción que deseas realizar.</p>
+    <div class="campo">
+      <label>Formato de comprobante</label>
+      <select [(ngModel)]="formatoVoucher">
+        <option value="a4">A4</option>
+        <option value="ticket-80">Tiquetera láser 8 cm</option>
+        <option value="ticket-57">Tiquetera láser 5.7 cm</option>
+      </select>
+    </div>
+    <div class="acciones-voucher__botones">
+      <button class="boton-icono-accion" type="button" (click)="imprimirVoucher()" title="Imprimir">
+        🖨️
+      </button>
+      <button class="boton-icono-accion" type="button" (click)="descargarVoucher()" title="Descargar PDF">
+        ⬇️
+      </button>
+      <button class="boton-icono-accion" type="button" (click)="enviarVoucher()" title="Enviar">
+        📤
+      </button>
+      <button class="boton-icono-accion" type="button" (click)="descargarXmlVoucher()" title="Descargar XML">
+        🧾
+      </button>
+    </div>
+    <div class="modal__acciones">
+      <button
+        type="button"
+        class="boton boton--secundario"
+        (click)="cerrarModalVoucher()"
+      >
+        Cerrar
       </button>
     </div>
   </div>

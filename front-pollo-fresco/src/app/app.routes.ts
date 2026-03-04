@@ -22,6 +22,7 @@ import { PrivadoProveedoresRegistros } from './privado/paginas/proveedores/subpa
 import { PrivadoReportes } from './privado/paginas/reportes/reportes';
 import { PrivadoUsuarios } from './privado/paginas/usuarios/usuarios';
 import { PrivadoVenta } from './privado/paginas/venta/venta';
+import { PrivadoVentaRegistros } from './privado/paginas/venta/subpaginas/venta-registros';
 
 export const routes: Routes = [
   {
@@ -104,6 +105,10 @@ export const routes: Routes = [
       {
         path: 'venta',
         component: PrivadoVenta
+      },
+      {
+        path: 'venta-registros',
+        component: PrivadoVentaRegistros
       },
       {
         path: 'pedidos',
