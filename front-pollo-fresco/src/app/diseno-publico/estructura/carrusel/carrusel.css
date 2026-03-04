@@ -1,8 +1,13 @@
 .carrusel {
+  width: 100%;
   background: linear-gradient(120deg, #fff4e8, #ffe1c2);
-  border-radius: 24px;
-  padding: 2.5rem;
+  padding: 2.5rem 0;
   box-shadow: 0 20px 40px rgba(122, 46, 13, 0.12);
+}
+
+.carrusel .container {
+  padding-left: 2.5rem;
+  padding-right: 2.5rem;
 }
 
 .carrusel__tarjeta {
@@ -51,7 +56,12 @@
 
 @media (max-width: 991.98px) {
   .carrusel {
-    padding: 2rem 1.5rem;
+    padding: 2rem 0;
+  }
+
+  .carrusel .container {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
   }
 
   .carrusel__acciones {
@@ -61,7 +71,12 @@
 
 @media (max-width: 575.98px) {
   .carrusel {
-    padding: 1.5rem;
+    padding: 1.5rem 0;
+  }
+
+  .carrusel .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
   }
 
   .carrusel__tarjeta img {
