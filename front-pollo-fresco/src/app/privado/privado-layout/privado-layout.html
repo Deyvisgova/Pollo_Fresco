@@ -23,6 +23,7 @@
         [routerLink]="item.ruta"
         routerLinkActive="panel__link--activo"
         class="panel__link"
+        [class.panel__link--subitem]="item.etiqueta.startsWith('↳')"
       >
         {{ item.etiqueta }}
       </a>

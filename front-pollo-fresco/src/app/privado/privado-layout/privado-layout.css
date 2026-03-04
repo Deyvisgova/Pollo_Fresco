@@ -73,6 +73,12 @@
   font-weight: 600;
 }
 
+.panel__link--subitem {
+  margin-left: 14px;
+  font-size: 14px;
+  color: #475569;
+}
+
 /* Botón de salida */
 .panel__salir {
   margin-top: auto;

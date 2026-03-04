@@ -19,6 +19,7 @@ export class PrivadoLayout {
     { etiqueta: 'Proveedores', ruta: 'proveedores' },
     { etiqueta: 'Clientes', ruta: 'clientes' },
     { etiqueta: 'Venta', ruta: 'venta' },
+    { etiqueta: '↳ Ventas registradas', ruta: 'venta-registros' },
     { etiqueta: 'Pedidos (delivery)', ruta: 'pedidos' },
     { etiqueta: 'Otros productos', ruta: 'otros-productos' },
     { etiqueta: 'Usuarios', ruta: 'usuarios' },
