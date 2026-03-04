@@ -158,6 +158,11 @@ class OtrosProductosController extends Controller
             return response()->json(['message' => 'Producto no encontrado'], 404);
         }
 
+        // Regla solicitada por negocio: los huevos no se manejan por lotes.
+        if ($this->esProductoHuevo($producto->nombre)) {
+            return response()->json(['message' => 'Los huevos no se registran por lote'], 422);
+        }
+
         $numeroLote = (int) DB::table('compras_lote_detalle')
             ->where('producto_id', $productoId)
             ->count() + 1;
@@ -232,6 +237,11 @@ class OtrosProductosController extends Controller
             return response()->json(['message' => 'Producto no encontrado'], 404);
         }
 
+        // Regla solicitada por negocio: los huevos no se manejan por lotes.
+        if ($this->esProductoHuevo($producto->nombre)) {
+            return response()->json(['message' => 'Los huevos no se registran por lote'], 422);
+        }
+
         DB::beginTransaction();
         try {
             DB::table('compras_lote')
@@ -273,6 +283,11 @@ class OtrosProductosController extends Controller
             'estado' => $lote->estado,
             'proveedor_id' => $proveedorId,
         ]);
+    }
+
+    private function esProductoHuevo(string $nombreProducto): bool
+    {
+        return str_contains(mb_strtolower($nombreProducto), 'huevo');
     }
 
     public function lotesDestroy(Request $request, int $compraLoteId)

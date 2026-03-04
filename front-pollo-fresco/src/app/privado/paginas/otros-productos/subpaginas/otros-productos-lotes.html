@@ -3,8 +3,8 @@
     <div>
       <h3>Lotes y ganancias</h3>
       <p>
-        Registra productos por lote, precio y estado. Aquí puedes editar o
-        eliminar si el lote está abierto.
+        Este apartado es solo para congelados. Registra compra por kilos,
+        costo del lote y proveedor para controlar stock y ganancia.
       </p>
     </div>
     <button class="boton boton--primario" (click)="abrirModal()">
@@ -28,7 +28,7 @@
           <th>Lote</th>
           <th>Nombre</th>
           <th>Proveedor</th>
-          <th>Cantidad</th>
+          <th>Cantidad (kg)</th>
           <th>Total</th>
           <th>Fecha</th>
           <th>Estado</th>
@@ -104,7 +104,7 @@
         <input type="date" [(ngModel)]="loteForm.fechaIngreso" />
       </label>
       <label>
-        Costo del lote (S/)
+        Costo total del lote (S/)
         <input
           type="number"
           [(ngModel)]="loteForm.costoLote"
@@ -184,8 +184,8 @@
 
     <div class="modal__grid">
       <label class="modal__cantidad">
-        Cantidad
-        <input type="number" [(ngModel)]="loteForm.cantidad" placeholder="0" />
+        Cantidad en kilos
+        <input type="number" [(ngModel)]="loteForm.cantidad" placeholder="0.00" />
       </label>
     </div>
 

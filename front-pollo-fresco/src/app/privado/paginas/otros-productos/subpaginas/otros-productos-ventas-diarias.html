@@ -1,9 +1,9 @@
 <section class="seccion__tarjeta">
   <header class="seccion__encabezado">
     <div>
-      <h3>Registro manual de ventas diarias</h3>
+      <h3>Registro de ganancias por día</h3>
       <p class="seccion__descripcion">
-        Agrega líneas durante el día. El precio es obligatorio para registrar la venta.
+        Congelados: control por kilos (stock + ganancia). Huevos: control de ganancia por casillero/unidad.
       </p>
     </div>
     <div class="seccion__acciones">
@@ -22,18 +22,28 @@
   <form class="seccion__formulario">
     <div class="seccion__campo">
       <label for="tipo">Tipo de producto</label>
-      <select id="tipo" [(ngModel)]="tipoSeleccionado" name="tipo" [disabled]="cerrado">
+      <select id="tipo" [(ngModel)]="tipoSeleccionado" name="tipo" [disabled]="cerrado" (ngModelChange)="onTipoSeleccionado()">
         <option value="">Selecciona: Congelados o Huevos</option>
         <option value="CONGELADO">Congelados</option>
         <option value="HUEVO">Huevos</option>
       </select>
-      <small>Se usará para registrar automáticamente cuando se active la facturación electrónica.</small>
+    </div>
+
+    <div class="seccion__campo" *ngIf="tipoSeleccionado === 'HUEVO'">
+      <label for="costo-huevo">Costo referencial por unidad de huevo (S/)</label>
+      <input id="costo-huevo" type="number" min="0" step="0.01" [(ngModel)]="costoHuevosUnidad" name="costoHuevosUnidad" [disabled]="cerrado" />
+      <small>Este costo cambia según la compra semanal del proveedor.</small>
+    </div>
+
+    <div class="seccion__campo" *ngIf="tipoSeleccionado === 'CONGELADO'">
+      <label>Costo promedio de congelados por kg (S/)</label>
+      <input type="text" [value]="costoPromedioCongeladosKg | number : '1.2-2'" disabled />
+      <small>Sale del promedio entre costo_lote y kilos de los lotes registrados.</small>
     </div>
 
     <div class="seccion__campo">
       <label for="fecha">Fecha</label>
       <input id="fecha" type="date" [value]="fechaHoy" disabled />
-      <small>Fecha automática (no editable).</small>
     </div>
   </form>
 
@@ -42,75 +52,54 @@
       <thead>
         <tr>
           <th>Detalle</th>
+          <th>Unidad</th>
           <th>Cantidad</th>
-          <th>Precio (S/)</th>
+          <th>Precio unitario (S/)</th>
           <th></th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let venta of ventas; let i = index">
+          <td><input type="text" [(ngModel)]="venta.descripcion" name="descripcion-{{ i }}" [disabled]="cerrado" /></td>
           <td>
-            <input
-              type="text"
-              [(ngModel)]="venta.descripcion"
-              name="descripcion-{{ i }}"
-              [disabled]="cerrado"
-            />
+            <select [(ngModel)]="venta.unidad" name="unidad-{{ i }}" [disabled]="cerrado || tipoSeleccionado === 'CONGELADO'">
+              <option value="KG">Kg</option>
+              <option value="CASILLERO" *ngIf="tipoSeleccionado === 'HUEVO'">Casillero</option>
+              <option value="UNIDAD" *ngIf="tipoSeleccionado === 'HUEVO'">Unidad</option>
+            </select>
           </td>
+          <td><input type="number" placeholder="0.00" [(ngModel)]="venta.cantidad" name="cantidad-{{ i }}" [disabled]="cerrado" /></td>
+          <td><input type="number" placeholder="0.00" [(ngModel)]="venta.precio" name="precio-{{ i }}" required [disabled]="cerrado" /></td>
           <td>
-            <input
-              type="number"
-              placeholder="0.00"
-              [(ngModel)]="venta.cantidad"
-              name="cantidad-{{ i }}"
-              [disabled]="cerrado"
-            />
-          </td>
-          <td>
-            <input
-              type="number"
-              placeholder="0.00"
-              [(ngModel)]="venta.precio"
-              name="precio-{{ i }}"
-              required
-              [disabled]="cerrado"
-            />
-          </td>
-          <td>
-            <button
-              type="button"
-              class="boton boton--texto boton--peligro"
-              (click)="eliminarFila(i)"
-              [disabled]="cerrado"
-            >
-              Quitar
-            </button>
+            <button type="button" class="boton boton--texto boton--peligro" (click)="eliminarFila(i)" [disabled]="cerrado">Quitar</button>
           </td>
         </tr>
       </tbody>
     </table>
   </div>
 
-  <div class="seccion__resumen">
-    <div>
-      <span>Total del día</span>
+  <div class="panel-resumenes">
+    <article class="panel-resumenes__item">
+      <span>Ingreso total del día</span>
       <strong>S/ {{ totalDia | number : '1.2-2' }}</strong>
-    </div>
-    <div class="seccion__acciones">
-      <button type="button" class="boton boton--secundario" (click)="limpiar()" [disabled]="cerrado">
-        Limpiar formulario
-      </button>
-    </div>
+    </article>
+    <article class="panel-resumenes__item">
+      <span>Costo estimado del día</span>
+      <strong>S/ {{ costoEstimadoDia | number : '1.2-2' }}</strong>
+    </article>
+    <article class="panel-resumenes__item panel-resumenes__item--ganancia">
+      <span>Ganancia estimada</span>
+      <strong>S/ {{ gananciaEstimadaDia | number : '1.2-2' }}</strong>
+    </article>
+    <article class="panel-resumenes__item" *ngIf="tipoSeleccionado === 'CONGELADO'">
+      <span>Stock congelados restante</span>
+      <strong>{{ stockRestanteCongeladosKg | number : '1.2-2' }} kg</strong>
+    </article>
   </div>
-</section>
 
-<section class="seccion__tarjeta seccion__tarjeta--info">
-  <h3>Automatización con facturación electrónica</h3>
-  <p>
-    Cuando el sistema de facturación esté activo, al elegir “Congelados” o “Huevos”
-    se registrarán automáticamente las cantidades vendidas en el día.
-  </p>
-  <p *ngIf="cerrado" class="seccion__estado">
-    Día cerrado: ya no se permite editar ni eliminar registros.
-  </p>
+  <div class="seccion__acciones">
+    <button type="button" class="boton boton--secundario" (click)="limpiar()" [disabled]="cerrado">
+      Limpiar formulario
+    </button>
+  </div>
 </section>

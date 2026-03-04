@@ -241,6 +241,13 @@ export class PrivadoOtrosProductosLotes implements OnInit {
       return;
     }
 
+    const productoSeleccionado = this.productos.find((producto) => producto.id === this.loteForm.productoId);
+    // Regla del negocio: en lotes solo ingresan congelados, no huevos.
+    if (productoSeleccionado && this.esProductoHuevo(productoSeleccionado.nombre)) {
+      this.mensajeError = 'Los huevos no se registran por lote. Usa la sección de ventas diarias para su ganancia.';
+      return;
+    }
+
     this.mensajeError = '';
     const payload = {
       producto_id: this.loteForm.productoId,
@@ -430,6 +437,10 @@ export class PrivadoOtrosProductosLotes implements OnInit {
     }
     const proveedor = this.proveedores.find((item) => item.proveedor_id === proveedorId);
     return proveedor ? this.formatearProveedor(proveedor) : 'Proveedor pendiente';
+  }
+
+  private esProductoHuevo(nombre: string): boolean {
+    return nombre.toLowerCase().includes('huevo');
   }
 
   @HostListener('document:click', ['$event'])
