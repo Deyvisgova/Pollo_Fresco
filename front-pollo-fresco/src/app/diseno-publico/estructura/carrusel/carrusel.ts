@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
@@ -12,7 +12,7 @@ import { MatIconModule } from '@angular/material/icon';
   templateUrl: './carrusel.html',
   styleUrl: './carrusel.css'
 })
-export class Carrusel {
+export class Carrusel implements OnInit, OnDestroy {
   readonly slides = [
     {
       title: 'Pollo entero',
@@ -35,9 +35,19 @@ export class Carrusel {
   ];
 
   activeIndex = 0;
+  private readonly autoSlideIntervalMs = 5000;
+  private autoSlideTimer?: ReturnType<typeof setInterval>;
 
   get activeSlide() {
     return this.slides[this.activeIndex];
+  }
+
+  ngOnInit(): void {
+    this.startAutoSlide();
+  }
+
+  ngOnDestroy(): void {
+    this.stopAutoSlide();
   }
 
   nextSlide(): void {
@@ -50,5 +60,24 @@ export class Carrusel {
 
   goToSlide(index: number): void {
     this.activeIndex = index;
+    this.restartAutoSlide();
+  }
+
+  private startAutoSlide(): void {
+    this.autoSlideTimer = setInterval(() => this.nextSlide(), this.autoSlideIntervalMs);
+  }
+
+  private stopAutoSlide(): void {
+    if (!this.autoSlideTimer) {
+      return;
+    }
+
+    clearInterval(this.autoSlideTimer);
+    this.autoSlideTimer = undefined;
+  }
+
+  private restartAutoSlide(): void {
+    this.stopAutoSlide();
+    this.startAutoSlide();
   }
 }
