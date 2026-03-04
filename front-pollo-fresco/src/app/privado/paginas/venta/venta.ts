@@ -31,6 +31,17 @@ interface MetodoPago {
   icono: string;
 }
 
+interface VentaGuardada {
+  comprobante_venta_id: number;
+  tipo_comprobante: string;
+  serie: string;
+  numero: string;
+  fecha_emision: string;
+  cliente_nombre: string;
+  total: number;
+  moneda: string;
+}
+
 @Component({
   selector: 'app-privado-venta',
   // Componente informativo para la sección de venta.
@@ -83,6 +94,12 @@ export class PrivadoVenta implements OnInit {
     { id: 'yape', etiqueta: 'Yape', icono: '🟣' },
     { id: 'otro', etiqueta: 'Otro', icono: '⋯' }
   ];
+  ventasRegistradas: VentaGuardada[] = [];
+  guardandoVenta = false;
+  mensajeVenta = '';
+  errorVenta = '';
+  ultimaVentaEmitida: VentaGuardada | null = null;
+  formatoVoucher: 'a4' | 'ticket-80' | 'ticket-57' = 'a4';
 
   constructor(
     private readonly http: HttpClient,
@@ -92,6 +109,7 @@ export class PrivadoVenta implements OnInit {
   ngOnInit(): void {
     this.actualizarSerieNumero();
     this.cargarProductos();
+    this.cargarVentas();
   }
 
   actualizarSerieNumero(): void {
@@ -226,6 +244,18 @@ export class PrivadoVenta implements OnInit {
     });
   }
 
+  private cargarVentas(): void {
+    const headers = this.obtenerHeaders();
+    this.http.get<VentaGuardada[]>('/api/ventas', { headers }).subscribe({
+      next: (ventas) => {
+        this.ventasRegistradas = ventas;
+      },
+      error: () => {
+        this.ventasRegistradas = [];
+      }
+    });
+  }
+
   private obtenerHeaders(): HttpHeaders {
     const token = this.sesionServicio.obtenerToken();
     return token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : new HttpHeaders();
@@ -240,6 +270,139 @@ export class PrivadoVenta implements OnInit {
     if (metodoId !== 'efectivo') {
       this.montoRecibido = null;
     }
+  }
+
+  emitirComprobante(): void {
+    this.errorVenta = '';
+    this.mensajeVenta = '';
+    if (!this.detalles.length) {
+      this.errorVenta = 'Agrega al menos un producto para registrar la venta.';
+      return;
+    }
+
+    const detallesValidos = this.detalles
+      .filter((item) => !!item.descripcion.trim() && (item.cantidad ?? 0) > 0)
+      .map((item) => ({
+        descripcion: item.descripcion.trim(),
+        unidad: item.unidad,
+        cantidad: Number(item.cantidad ?? 0),
+        precio_unitario: Number(item.precioUnitario ?? 0)
+      }));
+
+    if (!detallesValidos.length) {
+      this.errorVenta = 'Verifica el detalle de la venta. Debe tener descripción y cantidad.';
+      return;
+    }
+
+    const payload = {
+      tipo_comprobante: this.tipoComprobante,
+      serie: this.serie,
+      numero: this.numero,
+      fecha_emision: this.fechaEmision,
+      moneda: this.moneda,
+      forma_pago: this.formaPago,
+      metodo_pago: this.metodoPagoSeleccionado,
+      cliente_tipo_documento: this.tipoDocumentoCliente,
+      cliente_documento: this.cliente.documento,
+      cliente_nombre: this.cliente.nombre,
+      cliente_direccion: this.cliente.direccion,
+      subtotal: this.subtotal,
+      total: this.total,
+      monto_recibido: this.montoRecibido,
+      vuelto: this.vuelto,
+      referencia_serie: this.referenciaSerie,
+      referencia_numero: this.referenciaNumero,
+      referencia_motivo: this.referenciaMotivo,
+      detalles: detallesValidos
+    };
+
+    this.guardandoVenta = true;
+    this.http.post<VentaGuardada>('/api/ventas', payload, { headers: this.obtenerHeaders() }).subscribe({
+      next: (venta) => {
+        this.guardandoVenta = false;
+        this.mensajeVenta = 'Venta registrada correctamente.';
+        this.ultimaVentaEmitida = venta;
+        this.cargarVentas();
+      },
+      error: () => {
+        this.guardandoVenta = false;
+        this.errorVenta = 'No se pudo guardar la venta. Inténtalo nuevamente.';
+      }
+    });
+  }
+
+  imprimirVoucher(): void {
+    this.abrirComprobante('print');
+  }
+
+  descargarVoucher(): void {
+    this.abrirComprobante('download');
+  }
+
+  enviarVoucher(): void {
+    if (!this.ultimaVentaEmitida) {
+      return;
+    }
+
+    this.obtenerPdfBlob(this.ultimaVentaEmitida.comprobante_venta_id).subscribe({
+      next: async (blob) => {
+        const archivo = new File([blob], `comprobante-${this.ultimaVentaEmitida?.serie}-${this.ultimaVentaEmitida?.numero}.pdf`, {
+          type: 'application/pdf'
+        });
+
+        if (navigator.share && navigator.canShare?.({ files: [archivo] })) {
+          await navigator.share({
+            title: 'Comprobante de venta',
+            text: 'Adjunto el comprobante de venta en PDF.',
+            files: [archivo]
+          });
+          return;
+        }
+
+        this.errorVenta = 'Tu navegador no soporta el envío directo. Usa Descargar PDF.';
+      },
+      error: () => {
+        this.errorVenta = 'No se pudo generar el voucher para enviar.';
+      }
+    });
+  }
+
+  private abrirComprobante(modo: 'print' | 'download'): void {
+    if (!this.ultimaVentaEmitida) {
+      return;
+    }
+
+    this.obtenerPdfBlob(this.ultimaVentaEmitida.comprobante_venta_id).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        if (modo === 'print') {
+          const ventana = window.open(url, '_blank');
+          if (ventana) {
+            ventana.onload = () => ventana.print();
+          }
+          return;
+        }
+
+        const enlace = document.createElement('a');
+        enlace.href = url;
+        enlace.download = `comprobante-${this.ultimaVentaEmitida?.serie}-${this.ultimaVentaEmitida?.numero}.pdf`;
+        enlace.click();
+      },
+      error: () => {
+        this.errorVenta = 'No se pudo generar el voucher en PDF.';
+      }
+    });
+  }
+
+  private obtenerPdfBlob(ventaId: number) {
+    return this.http.get(this.obtenerUrlPdf(ventaId), {
+      headers: this.obtenerHeaders(),
+      responseType: 'blob'
+    });
+  }
+
+  private obtenerUrlPdf(ventaId: number): string {
+    return `/api/ventas/${ventaId}/pdf?formato=${this.formatoVoucher}`;
   }
 
   consultarDocumento(): void {

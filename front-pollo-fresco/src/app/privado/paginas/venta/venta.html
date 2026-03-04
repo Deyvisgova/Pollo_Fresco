@@ -297,10 +297,60 @@
       </div>
 
       <footer class="acciones">
-        <button class="boton boton--primario" type="button">
-          Emitir comprobante
+        <small class="mensaje-ok" *ngIf="mensajeVenta">{{ mensajeVenta }}</small>
+        <small class="mensaje-error" *ngIf="errorVenta">{{ errorVenta }}</small>
+        <button class="boton boton--primario" type="button" (click)="emitirComprobante()" [disabled]="guardandoVenta">
+          {{ guardandoVenta ? 'Guardando...' : 'Emitir comprobante' }}
         </button>
       </footer>
+
+      <div class="acciones-voucher" *ngIf="ultimaVentaEmitida">
+        <div class="campo">
+          <label>Formato de comprobante</label>
+          <select [(ngModel)]="formatoVoucher">
+            <option value="a4">A4</option>
+            <option value="ticket-80">Tiquetera láser 8 cm</option>
+            <option value="ticket-57">Tiquetera láser 5.7 cm</option>
+          </select>
+        </div>
+        <div class="acciones-voucher__botones">
+          <button class="boton-icono-accion" type="button" (click)="imprimirVoucher()" title="Imprimir">
+            🖨️
+          </button>
+          <button class="boton-icono-accion" type="button" (click)="descargarVoucher()" title="Descargar PDF">
+            ⬇️
+          </button>
+          <button class="boton-icono-accion" type="button" (click)="enviarVoucher()" title="Enviar">
+            📤
+          </button>
+        </div>
+      </div>
+    </article>
+
+    <article class="tarjeta tarjeta--tabla">
+      <div class="tarjeta__titulo">
+        <h4>Ventas registradas</h4>
+      </div>
+      <div class="tabla-ventas">
+        <table>
+          <thead>
+            <tr>
+              <th>Comprobante</th>
+              <th>Fecha</th>
+              <th>Cliente</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let venta of ventasRegistradas">
+              <td>{{ venta.serie }}-{{ venta.numero }}</td>
+              <td>{{ venta.fecha_emision }}</td>
+              <td>{{ venta.cliente_nombre || 'Público general' }}</td>
+              <td>{{ venta.moneda }} {{ venta.total | number: '1.2-2' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </article>
   </div>
 </section>

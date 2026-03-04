@@ -512,3 +512,45 @@
     grid-column: span 1;
   }
 }
+
+.mensaje-ok {
+  color: #15803d;
+  font-size: 12px;
+}
+
+.acciones-voucher {
+  border-top: 1px dashed #cbd5e1;
+  padding-top: 12px;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.acciones-voucher__botones {
+  display: flex;
+  gap: 8px;
+}
+
+.boton-icono-accion {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.tabla-ventas table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tabla-ventas th,
+.tabla-ventas td {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 10px;
+  text-align: left;
+  font-size: 13px;
+}
