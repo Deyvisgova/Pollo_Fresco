@@ -50,15 +50,20 @@
 .panel__menu {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .panel__link {
   text-decoration: none;
   color: #1f2937;
   font-weight: 500;
-  padding: 10px 12px;
-  border-radius: 10px;
+  font-size: 0.95rem;
+  min-height: 46px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
   transition: background 0.2s ease, color 0.2s ease;
 }
 
@@ -71,6 +76,66 @@
   background: #dbeafe;
   color: #1d4ed8;
   font-weight: 600;
+}
+
+.panel__link--trigger {
+  width: 100%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.panel__accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-radius: 14px;
+}
+
+.panel__accordion--abierto {
+  background: #f8fafc;
+  padding: 4px;
+}
+
+.panel__chevron {
+  font-size: 0.9rem;
+  transition: transform 0.2s ease;
+}
+
+.panel__accordion--abierto .panel__chevron {
+  transform: rotate(180deg);
+}
+
+.panel__submenu {
+  margin-left: 16px;
+  padding-left: 12px;
+  border-left: 1px solid #dbe3ef;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.panel__sublink {
+  text-decoration: none;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: #64748b;
+  font-size: 0.87rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.panel__sublink:hover {
+  background: #eef2ff;
+  color: #334155;
+}
+
+.panel__sublink--activo {
+  background: #eaf1ff;
+  color: #1e3a8a;
 }
 
 /* Botón de salida */

@@ -17,9 +17,49 @@
     </div>
 
     <!-- Navegación principal del módulo privado -->
-    <nav class="panel__menu">
+    <nav class="panel__menu" aria-label="Navegación del panel">
       <a
-        *ngFor="let item of menu"
+        *ngFor="let item of menuPrincipal"
+        [routerLink]="item.ruta"
+        routerLinkActive="panel__link--activo"
+        class="panel__link"
+      >
+        {{ item.etiqueta }}
+      </a>
+
+      <div class="panel__accordion" [class.panel__accordion--abierto]="ventaMenuAbierto || rutaVentaActiva">
+        <button
+          type="button"
+          class="panel__link panel__link--trigger"
+          [class.panel__link--activo]="rutaVentaActiva"
+          (click)="toggleVentaMenu()"
+          [attr.aria-expanded]="ventaMenuAbierto || rutaVentaActiva"
+        >
+          <span>Venta</span>
+          <span class="panel__chevron" aria-hidden="true">⌄</span>
+        </button>
+
+        <div class="panel__submenu" *ngIf="ventaMenuAbierto || rutaVentaActiva">
+          <a
+            [routerLink]="'venta'"
+            routerLinkActive="panel__sublink--activo"
+            [routerLinkActiveOptions]="{ exact: true }"
+            class="panel__sublink"
+          >
+            Emitir comprobante
+          </a>
+          <a
+            [routerLink]="'venta-registros'"
+            routerLinkActive="panel__sublink--activo"
+            class="panel__sublink"
+          >
+            Ventas registradas
+          </a>
+        </div>
+      </div>
+
+      <a
+        *ngFor="let item of menuPosterior"
         [routerLink]="item.ruta"
         routerLinkActive="panel__link--activo"
         class="panel__link"

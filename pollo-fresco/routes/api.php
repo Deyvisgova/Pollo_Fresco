@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\ConfiguracionController;
 use App\Http\Controllers\Api\EntregaProveedorController;
 use App\Http\Controllers\Api\OtrosProductosController;
 use App\Http\Controllers\Api\ProveedorController;
+use App\Http\Controllers\Api\VentaController;
 
 
 use Illuminate\Http\Request;
@@ -96,4 +97,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('configuracion/logo', [ConfiguracionController::class, 'subirLogo']);
     Route::delete('configuracion/logo', [ConfiguracionController::class, 'eliminarLogo']);
+
+    Route::get('ventas', [VentaController::class, 'index']);
+    Route::post('ventas', [VentaController::class, 'store']);
+    Route::get('ventas/{ventaId}/pdf', [VentaController::class, 'pdf']);
 });
