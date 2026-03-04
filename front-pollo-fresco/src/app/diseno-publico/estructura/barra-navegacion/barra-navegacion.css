@@ -1,9 +1,9 @@
 .barra-navegacion {
-  border-bottom: 2px solid rgba(255, 255, 255, 0.25);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
   position: sticky;
   top: 0;
   z-index: 1030;
-  box-shadow: 0 8px 24px rgba(74, 40, 10, 0.18);
+  box-shadow: 0 10px 26px rgba(47, 27, 10, 0.25);
 }
 
 .barra-navegacion__logo {
@@ -22,20 +22,47 @@
   padding: 0;
 }
 
-.barra-navegacion__enlaces a {
-  font-weight: 600;
+.barra-navegacion__enlaces .nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
   color: #ffffff;
   text-transform: uppercase;
-  letter-spacing: 0.4px;
-  font-size: 0.85rem;
+  letter-spacing: 0.35px;
+  font-size: 0.82rem;
+  border-radius: 999px;
+  padding: 0.5rem 0.8rem;
+  transition: background-color 0.2s ease, transform 0.2s ease, color 0.2s ease;
 }
 
-.barra-navegacion__enlaces a:hover {
-  color: #ffe0c3;
+.barra-navegacion__enlaces .nav-link mat-icon {
+  font-size: 1.05rem;
+  width: 1.05rem;
+  height: 1.05rem;
 }
 
-.barra-navegacion__accion {
-  white-space: nowrap;
+.barra-navegacion__enlaces .nav-link:hover {
+  color: #fff4e7;
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateY(-1px);
+}
+
+.barra-navegacion__enlaces .nav-link.active {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.barra-navegacion__enlaces .barra-navegacion__ingresar {
+  background: linear-gradient(135deg, #ffdd9e, #ffc05c);
+  color: #5a2a04;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 6px 14px rgba(49, 27, 8, 0.22);
+}
+
+.barra-navegacion__enlaces .barra-navegacion__ingresar:hover,
+.barra-navegacion__enlaces .barra-navegacion__ingresar.active {
+  background: linear-gradient(135deg, #ffe9be, #ffd07f);
+  color: #4a2303;
 }
 
 @media (max-width: 991.98px) {
@@ -46,11 +73,5 @@
 
   .barra-navegacion__enlaces {
     justify-content: center;
-  }
-}
-
-@media (max-width: 575.98px) {
-  .barra-navegacion__accion {
-    width: 100%;
   }
 }

@@ -4,32 +4,46 @@
       <span class="barra-navegacion__logo">Pollo Fresco</span>
       <span class="barra-navegacion__slogan">Pollo Fresco · Mercado Ayaymama</span>
     </div>
-    <nav class="ms-lg-auto">
+
+    <nav class="ms-lg-auto" aria-label="Navegación principal">
       <ul class="nav flex-wrap gap-2 barra-navegacion__enlaces">
         <li class="nav-item">
           <a class="nav-link" routerLink="/inicio" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-            Inicio
+            <mat-icon>home</mat-icon>
+            <span>Inicio</span>
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" routerLink="/nosotros" routerLinkActive="active">Nosotros</a>
+          <a class="nav-link" routerLink="/nosotros" routerLinkActive="active">
+            <mat-icon>groups</mat-icon>
+            <span>Nosotros</span>
+          </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" routerLink="/productos" routerLinkActive="active">Productos</a>
+          <a class="nav-link" routerLink="/productos" routerLinkActive="active">
+            <mat-icon>storefront</mat-icon>
+            <span>Productos</span>
+          </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" routerLink="/clientes" routerLinkActive="active">Clientes</a>
+          <a class="nav-link" routerLink="/clientes" routerLinkActive="active">
+            <mat-icon>verified_user</mat-icon>
+            <span>Clientes</span>
+          </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" routerLink="/contacto" routerLinkActive="active">Contacto</a>
+          <a class="nav-link" routerLink="/contacto" routerLinkActive="active">
+            <mat-icon>support_agent</mat-icon>
+            <span>Contacto</span>
+          </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" routerLink="/ingresar" routerLinkActive="active">Ingresar</a>
+          <a class="nav-link barra-navegacion__ingresar" routerLink="/ingresar" routerLinkActive="active">
+            <mat-icon>lock</mat-icon>
+            <span>Ingresar</span>
+          </a>
         </li>
       </ul>
     </nav>
-    <button mat-raised-button color="accent" type="button" class="barra-navegacion__accion">
-      Pedir por WhatsApp
-    </button>
   </div>
 </mat-toolbar>
