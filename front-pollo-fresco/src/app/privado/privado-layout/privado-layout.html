@@ -1,82 +1,122 @@
 <!-- Contenedor general del panel administrativo -->
 <section class="panel">
-  <!-- Barra lateral con identidad de la empresa y navegación -->
-  <aside class="panel__sidebar">
-    <!-- Área de logo con imagen configurable -->
-    <div class="panel__logo">
-      @if (mostrarLogo()) {
-        <img
-          class="panel__logo-imagen"
-          [src]="configuracionEmpresa().logoUrl"
-          [alt]="'Logo de ' + configuracionEmpresa().nombreEmpresa"
-        />
-      } @else {
-        <div class="panel__logo-imagen panel__logo-imagen--placeholder">LOGO (imagen)</div>
-      }
-      <p class="panel__empresa">{{ configuracionEmpresa().nombreEmpresa }}</p>
-    </div>
+  <header class="panel__topbar">
+    <button
+      type="button"
+      class="panel__toggle"
+      (click)="toggleSidebar()"
+      [attr.aria-expanded]="sidebarAbierto"
+      aria-controls="panel-sidebar"
+      aria-label="Mostrar u ocultar menú lateral"
+    >
+      ☰
+    </button>
 
-    <!-- Navegación principal del módulo privado -->
-    <nav class="panel__menu" aria-label="Navegación del panel">
-      <a
-        *ngFor="let item of menuPrincipal"
-        [routerLink]="item.ruta"
-        routerLinkActive="panel__link--activo"
-        class="panel__link"
+    <p class="panel__topbar-mensaje">Bienvenidos al sistema de EL POLLO FRESCO</p>
+
+    <div class="panel__usuario">
+      <button
+        type="button"
+        class="panel__usuario-trigger"
+        [attr.aria-expanded]="menuUsuarioAbierto"
+        (click)="toggleMenuUsuario($event)"
       >
-        {{ item.etiqueta }}
-      </a>
+        <span class="panel__usuario-icono" aria-hidden="true">👤</span>
+        <span class="panel__usuario-nombre">{{ nombreUsuario() }}</span>
+        <span class="panel__usuario-flecha" aria-hidden="true">⌄</span>
+      </button>
 
-      <div class="panel__accordion" [class.panel__accordion--abierto]="ventaMenuAbierto">
-        <button
-          type="button"
-          class="panel__link panel__link--trigger"
-          [class.panel__link--activo]="rutaVentaActiva"
-          (click)="toggleVentaMenu()"
-          [attr.aria-expanded]="ventaMenuAbierto"
-        >
-          <span>Venta</span>
-          <span class="panel__chevron" aria-hidden="true">⌄</span>
+      <div class="panel__usuario-menu" *ngIf="menuUsuarioAbierto">
+        <p class="panel__usuario-titulo">{{ nombreUsuario() }}</p>
+        <button type="button" class="panel__usuario-item" (click)="irACambiarContrasena()">
+          Cambiar contraseña
         </button>
+        <button type="button" class="panel__usuario-item panel__usuario-item--salir" (click)="cerrarSesion()">
+          Cerrar sesión
+        </button>
+      </div>
+    </div>
+  </header>
 
-        <div class="panel__submenu" *ngIf="ventaMenuAbierto">
-          <a
-            [routerLink]="'venta'"
-            routerLinkActive="panel__sublink--activo"
-            [routerLinkActiveOptions]="{ exact: true }"
-            class="panel__sublink"
-          >
-            Emitir comprobante
-          </a>
-          <a
-            [routerLink]="'venta-registros'"
-            routerLinkActive="panel__sublink--activo"
-            class="panel__sublink"
-          >
-            Ventas registradas
-          </a>
-        </div>
+  <div class="panel__cuerpo">
+    <!-- Barra lateral con identidad de la empresa y navegación -->
+    <aside class="panel__sidebar" id="panel-sidebar" [class.panel__sidebar--abierto]="sidebarAbierto">
+      <!-- Área de logo con imagen configurable -->
+      <div class="panel__logo">
+        @if (mostrarLogo()) {
+          <img
+            class="panel__logo-imagen"
+            [src]="configuracionEmpresa().logoUrl"
+            [alt]="'Logo de ' + configuracionEmpresa().nombreEmpresa"
+          />
+        } @else {
+          <div class="panel__logo-imagen panel__logo-imagen--placeholder">LOGO (imagen)</div>
+        }
+        <p class="panel__empresa">{{ configuracionEmpresa().nombreEmpresa }}</p>
       </div>
 
-      <a
-        *ngFor="let item of menuPosterior"
-        [routerLink]="item.ruta"
-        routerLinkActive="panel__link--activo"
-        class="panel__link"
-      >
-        {{ item.etiqueta }}
-      </a>
-    </nav>
+      <!-- Navegación principal del módulo privado -->
+      <nav class="panel__menu" aria-label="Navegación del panel">
+        <a
+          *ngFor="let item of menuPrincipal"
+          [routerLink]="item.ruta"
+          routerLinkActive="panel__link--activo"
+          class="panel__link"
+          (click)="cerrarSidebarEnMovil()"
+        >
+          {{ item.etiqueta }}
+        </a>
 
-    <!-- Acciones secundarias, por ejemplo cerrar sesión -->
-    <button class="panel__salir" type="button" (click)="cerrarSesion()">Cerrar sesión</button>
-  </aside>
+        <div class="panel__accordion" [class.panel__accordion--abierto]="ventaMenuAbierto">
+          <button
+            type="button"
+            class="panel__link panel__link--trigger"
+            [class.panel__link--activo]="rutaVentaActiva"
+            (click)="toggleVentaMenu()"
+            [attr.aria-expanded]="ventaMenuAbierto"
+          >
+            <span>Venta</span>
+            <span class="panel__chevron" aria-hidden="true">⌄</span>
+          </button>
 
-  <!-- Área principal en donde se renderizan las rutas hijas -->
-  <main class="panel__contenido">
-    <!-- Aquí se pintan los componentes de las rutas hijas -->
-    <section class="panel__rutas">
-      <router-outlet></router-outlet>
-    </section>
-  </main>
+          <div class="panel__submenu" *ngIf="ventaMenuAbierto">
+            <a
+              [routerLink]="'venta'"
+              routerLinkActive="panel__sublink--activo"
+              [routerLinkActiveOptions]="{ exact: true }"
+              class="panel__sublink"
+              (click)="cerrarSidebarEnMovil()"
+            >
+              Emitir comprobante
+            </a>
+            <a
+              [routerLink]="'venta-registros'"
+              routerLinkActive="panel__sublink--activo"
+              class="panel__sublink"
+              (click)="cerrarSidebarEnMovil()"
+            >
+              Ventas registradas
+            </a>
+          </div>
+        </div>
+
+        <a
+          *ngFor="let item of menuPosterior"
+          [routerLink]="item.ruta"
+          routerLinkActive="panel__link--activo"
+          class="panel__link"
+          (click)="cerrarSidebarEnMovil()"
+        >
+          {{ item.etiqueta }}
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Área principal en donde se renderizan las rutas hijas -->
+    <main class="panel__contenido">
+      <section class="panel__rutas">
+        <router-outlet></router-outlet>
+      </section>
+    </main>
+  </div>
 </section>
