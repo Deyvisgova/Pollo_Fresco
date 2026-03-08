@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed } from '@angular/core';
+import { AfterViewInit, Component, computed } from '@angular/core';
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { AutenticacionServicio } from '../../servicios/autenticacion.servicio';
@@ -13,7 +13,7 @@ import { ConfiguracionEmpresaServicio } from '../../servicios/configuracion-empr
   templateUrl: './privado-layout.html',
   styleUrl: './privado-layout.css'
 })
-export class PrivadoLayout {
+export class PrivadoLayout implements AfterViewInit {
   menuPrincipal = [
     { etiqueta: 'Inicio (por defecto)', ruta: 'inicio' },
     { etiqueta: 'Proveedores', ruta: 'proveedores' },
@@ -30,6 +30,7 @@ export class PrivadoLayout {
   ];
 
   ventaMenuAbierto = false;
+  sidebarAbierto = window.innerWidth > 900;
 
   readonly configuracionEmpresa;
   readonly mostrarLogo;
@@ -47,7 +48,12 @@ export class PrivadoLayout {
       .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe((event) => {
         this.sincronizarMenuVenta((event as NavigationEnd).urlAfterRedirects);
+        this.actualizarDataLabelsTablas();
       });
+  }
+
+  ngAfterViewInit(): void {
+    this.actualizarDataLabelsTablas();
   }
 
   get rutaVentaActiva(): boolean {
@@ -56,6 +62,16 @@ export class PrivadoLayout {
 
   toggleVentaMenu(): void {
     this.ventaMenuAbierto = !this.ventaMenuAbierto;
+  }
+
+  toggleSidebar(): void {
+    this.sidebarAbierto = !this.sidebarAbierto;
+  }
+
+  cerrarSidebarEnMovil(): void {
+    if (window.innerWidth <= 900) {
+      this.sidebarAbierto = false;
+    }
   }
 
   cerrarSesion(): void {
@@ -73,5 +89,30 @@ export class PrivadoLayout {
 
   private esRutaVenta(url: string): boolean {
     return url.includes('/privado/venta');
+  }
+
+  private actualizarDataLabelsTablas(): void {
+    setTimeout(() => {
+      const tablas = Array.from(document.querySelectorAll('table'));
+
+      tablas.forEach((tabla) => {
+        const encabezados = Array.from(tabla.querySelectorAll('thead th')).map((th) =>
+          (th.textContent || '').trim()
+        );
+
+        if (!encabezados.length) {
+          return;
+        }
+
+        const filas = Array.from(tabla.querySelectorAll('tbody tr'));
+        filas.forEach((fila) => {
+          Array.from(fila.children).forEach((celda, indice) => {
+            if (celda instanceof HTMLElement) {
+              celda.setAttribute('data-label', encabezados[indice] || 'Dato');
+            }
+          });
+        });
+      });
+    });
   }
 }

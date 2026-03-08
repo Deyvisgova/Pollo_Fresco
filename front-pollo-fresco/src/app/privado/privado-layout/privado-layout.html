@@ -1,7 +1,18 @@
 <!-- Contenedor general del panel administrativo -->
-<section class="panel">
+<section class="panel" [class.panel--sidebar-abierto]="sidebarAbierto">
+  <button
+    type="button"
+    class="panel__toggle"
+    (click)="toggleSidebar()"
+    [attr.aria-expanded]="sidebarAbierto"
+    aria-controls="panel-sidebar"
+    aria-label="Mostrar u ocultar menú lateral"
+  >
+    ☰
+  </button>
+
   <!-- Barra lateral con identidad de la empresa y navegación -->
-  <aside class="panel__sidebar">
+  <aside class="panel__sidebar" id="panel-sidebar" [class.panel__sidebar--abierto]="sidebarAbierto">
     <!-- Área de logo con imagen configurable -->
     <div class="panel__logo">
       @if (mostrarLogo()) {
@@ -23,6 +34,7 @@
         [routerLink]="item.ruta"
         routerLinkActive="panel__link--activo"
         class="panel__link"
+        (click)="cerrarSidebarEnMovil()"
       >
         {{ item.etiqueta }}
       </a>
@@ -45,6 +57,7 @@
             routerLinkActive="panel__sublink--activo"
             [routerLinkActiveOptions]="{ exact: true }"
             class="panel__sublink"
+            (click)="cerrarSidebarEnMovil()"
           >
             Emitir comprobante
           </a>
@@ -52,6 +65,7 @@
             [routerLink]="'venta-registros'"
             routerLinkActive="panel__sublink--activo"
             class="panel__sublink"
+            (click)="cerrarSidebarEnMovil()"
           >
             Ventas registradas
           </a>
@@ -63,6 +77,7 @@
         [routerLink]="item.ruta"
         routerLinkActive="panel__link--activo"
         class="panel__link"
+        (click)="cerrarSidebarEnMovil()"
       >
         {{ item.etiqueta }}
       </a>

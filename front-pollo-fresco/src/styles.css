@@ -42,3 +42,48 @@ app-root {
   max-height: 320px;
   border-radius: 0;
 }
+
+@media (max-width: 900px) {
+  .panel__rutas table,
+  .panel__rutas thead,
+  .panel__rutas tbody,
+  .panel__rutas th,
+  .panel__rutas td,
+  .panel__rutas tr {
+    display: block;
+    width: 100%;
+  }
+
+  .panel__rutas thead {
+    display: none;
+  }
+
+  .panel__rutas tbody {
+    display: grid;
+    gap: 12px;
+  }
+
+  .panel__rutas tbody tr {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 10px 12px;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+  }
+
+  .panel__rutas tbody td {
+    border: none !important;
+    padding: 8px 0;
+    display: grid;
+    grid-template-columns: minmax(120px, 42%) 1fr;
+    gap: 10px;
+    align-items: start;
+    text-align: left;
+  }
+
+  .panel__rutas tbody td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #334155;
+  }
+}

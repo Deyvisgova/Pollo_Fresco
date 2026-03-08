@@ -1,11 +1,28 @@
 /* Contenedor principal con layout en dos columnas */
 .panel {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(220px, 280px) 1fr;
   min-height: calc(100vh - 140px);
   background: #f5f7fb;
   gap: 24px;
   padding: 24px;
+}
+
+.panel__toggle {
+  position: fixed;
+  top: 90px;
+  left: 16px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: none;
+  background: #1d4ed8;
+  color: #ffffff;
+  font-size: 1.2rem;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.22);
+  z-index: 1001;
 }
 
 /* Estilos de la barra lateral */
@@ -161,47 +178,53 @@
   gap: 24px;
 }
 
-.panel__cabecera h1 {
-  margin: 0;
-  color: #0f172a;
-}
-
-.panel__cabecera p {
-  margin: 6px 0 0;
-  color: #64748b;
-}
-
 .panel__rutas {
   flex: 1;
 }
 
-/* Adaptación responsiva para móviles y tablets */
-@media (max-width: 900px) {
-  .panel {
-    grid-template-columns: 1fr;
-  }
-
-  .panel__sidebar {
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .panel__menu {
-    width: 100%;
+/* Desktop: visible por defecto */
+@media (min-width: 901px) {
+  .panel__toggle {
+    display: none;
   }
 }
 
-@media (max-width: 600px) {
+/* Móvil/tablet: oculto por defecto y se abre con botón */
+@media (max-width: 900px) {
   .panel {
+    grid-template-columns: 1fr;
     padding: 16px;
+  }
+
+  .panel__toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .panel__sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: min(320px, 84vw);
+    height: 100vh;
+    border-radius: 0 18px 18px 0;
+    z-index: 1000;
+    overflow-y: auto;
+    transform: translateX(-105%);
+    transition: transform 0.25s ease;
+  }
+
+  .panel__sidebar.panel__sidebar--abierto {
+    transform: translateX(0);
   }
 
   .panel__contenido {
     padding: 20px;
   }
+}
 
+@media (max-width: 600px) {
   .panel__link {
     font-size: 14px;
   }
