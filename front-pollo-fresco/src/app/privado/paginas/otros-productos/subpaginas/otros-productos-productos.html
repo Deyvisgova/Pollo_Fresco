@@ -32,9 +32,9 @@
       </thead>
       <tbody>
         <tr *ngFor="let producto of productosFiltrados">
-          <td>{{ producto.id }}</td>
-          <td>{{ producto.nombre }}</td>
-          <td>
+          <td data-label="#">{{ producto.id }}</td>
+          <td data-label="Nombre">{{ producto.nombre }}</td>
+          <td data-label="Estado">
             <span
               class="etiqueta"
               [class.etiqueta--cerrada]="!producto.activo"
@@ -42,7 +42,7 @@
               {{ obtenerEstadoTexto(producto) }}
             </span>
           </td>
-          <td class="tabla__acciones">
+          <td data-label="Acciones" class="tabla__acciones">
             <button
               type="button"
               class="toggle"

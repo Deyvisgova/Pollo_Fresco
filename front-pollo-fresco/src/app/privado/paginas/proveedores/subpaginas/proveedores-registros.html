@@ -196,48 +196,48 @@
       </thead>
       <tbody>
         <tr *ngFor="let registro of registrosFiltrados">
-          <td>
+          <td data-label="Proveedor">
             {{ registro.proveedor?.nombres }} {{ registro.proveedor?.apellidos }}
             <div class="nota">{{ registro.proveedor?.ruc || registro.proveedor?.dni }}</div>
           </td>
 
           <ng-container *ngIf="editandoEntregaId !== registro.entrega_id; else modoEdicion">
-            <td>{{ registro.tipo || '-' }}</td>
-            <td>{{ registro.fecha_hora | date: 'short' }}</td>
-            <td>{{ registro.cantidad_pollos }}</td>
-            <td>{{ registro.peso_total_kg | number: '1.2-2' }} kg</td>
-            <td>{{ registro.merma_kg | number: '1.2-2' }}</td>
-            <td>S/ {{ registro.costo_total | number: '1.2-2' }}</td>
-            <td>{{ registro.creado_en | date: 'short' }}</td>
-            <td class="acciones-tabla">
+            <td data-label="Tipo">{{ registro.tipo || '-' }}</td>
+            <td data-label="Fecha">{{ registro.fecha_hora | date: 'short' }}</td>
+            <td data-label="Pollos">{{ registro.cantidad_pollos }}</td>
+            <td data-label="Peso total">{{ registro.peso_total_kg | number: '1.2-2' }} kg</td>
+            <td data-label="Merma">{{ registro.merma_kg | number: '1.2-2' }}</td>
+            <td data-label="Costo">S/ {{ registro.costo_total | number: '1.2-2' }}</td>
+            <td data-label="Creado en">{{ registro.creado_en | date: 'short' }}</td>
+            <td data-label="Acciones" class="acciones-tabla">
               <button class="boton boton--secundario boton--compacto" type="button" (click)="iniciarEdicion(registro)">Editar</button>
               <button class="boton boton--peligro boton--compacto" type="button" (click)="eliminarRegistro(registro.entrega_id)">Eliminar</button>
             </td>
           </ng-container>
 
           <ng-template #modoEdicion>
-            <td>
+            <td data-label="Tipo">
               <select [(ngModel)]="formularioEdicion.tipo" name="editTipo{{ registro.entrega_id }}">
                 <option *ngFor="let tipo of tiposAveDisponibles" [value]="tipo">{{ tipo }}</option>
               </select>
             </td>
-            <td>
+            <td data-label="Fecha">
               <input [(ngModel)]="formularioEdicion.fecha_hora" name="editFecha{{ registro.entrega_id }}" type="datetime-local" />
             </td>
-            <td>
+            <td data-label="Pollos">
               <input [(ngModel)]="formularioEdicion.cantidad_pollos" name="editCantidad{{ registro.entrega_id }}" type="number" min="0" />
             </td>
-            <td>
+            <td data-label="Peso total">
               <input [(ngModel)]="formularioEdicion.peso_total_kg" name="editPeso{{ registro.entrega_id }}" type="number" min="0" step="0.01" />
             </td>
-            <td>
+            <td data-label="Merma">
               <input [(ngModel)]="formularioEdicion.merma_kg" name="editMerma{{ registro.entrega_id }}" type="number" min="0" step="0.01" />
             </td>
-            <td>
+            <td data-label="Costo">
               <input [(ngModel)]="formularioEdicion.costo_total" name="editCosto{{ registro.entrega_id }}" type="number" min="0" step="0.01" />
             </td>
-            <td>{{ registro.creado_en | date: 'short' }}</td>
-            <td class="acciones-tabla">
+            <td data-label="Creado en">{{ registro.creado_en | date: 'short' }}</td>
+            <td data-label="Acciones" class="acciones-tabla">
               <button class="boton boton--primario boton--compacto" type="button" [disabled]="guardandoEdicion" (click)="guardarEdicion(registro.entrega_id)">Guardar</button>
               <button class="boton boton--secundario boton--compacto" type="button" (click)="cancelarEdicion()">Cancelar</button>
             </td>
