@@ -49,7 +49,7 @@
       </thead>
       <tbody>
         <tr *ngFor="let venta of ventas; let i = index">
-          <td>
+          <td data-label="Detalle">
             <input
               type="text"
               [(ngModel)]="venta.descripcion"
@@ -57,7 +57,7 @@
               [disabled]="cerrado"
             />
           </td>
-          <td>
+          <td data-label="Cantidad">
             <input
               type="number"
               placeholder="0.00"
@@ -66,7 +66,7 @@
               [disabled]="cerrado"
             />
           </td>
-          <td>
+          <td data-label="Precio (S/)">
             <input
               type="number"
               placeholder="0.00"
@@ -76,7 +76,7 @@
               [disabled]="cerrado"
             />
           </td>
-          <td>
+          <td data-label="Acción">
             <button
               type="button"
               class="boton boton--texto boton--peligro"

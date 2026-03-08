@@ -37,25 +37,25 @@
       </thead>
       <tbody>
         <tr *ngFor="let cliente of clientes">
-          <td>
+          <td data-label="Cliente / Empresa">
             <strong>{{ ((cliente.nombres || '') + ' ' + (cliente.apellidos || '')).trim() || '-' }}</strong>
             <div class="nota">{{ cliente.nombre_empresa || 'Sin empresa' }}</div>
           </td>
-          <td>
+          <td data-label="Documento">
             <div>DNI: {{ cliente.dni || '-' }}</div>
             <div class="nota">RUC: {{ cliente.ruc || '-' }}</div>
           </td>
-          <td>{{ cliente.celular || '-' }}</td>
-          <td>
+          <td data-label="Contacto">{{ cliente.celular || '-' }}</td>
+          <td data-label="Dirección">
             <div>{{ cliente.direccion || '-' }}</div>
             <div class="nota">Fiscal: {{ cliente.direccion_fiscal || '-' }}</div>
           </td>
-          <td>{{ cliente.referencias || '-' }}</td>
-          <td>
+          <td data-label="Referencia">{{ cliente.referencias || '-' }}</td>
+          <td data-label="Registro">
             <div>Creado: {{ cliente.creado_en | date: 'short' }}</div>
             <div class="nota">Actualizado: {{ cliente.actualizado_en | date: 'short' }}</div>
           </td>
-          <td class="acciones-tabla">
+          <td data-label="Acciones" class="acciones-tabla">
             <button class="boton boton--secundario" type="button" (click)="editarCliente(cliente)">Editar</button>
             <button class="boton boton--peligro-solido" type="button" (click)="eliminarCliente(cliente)">
               Eliminar

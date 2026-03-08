@@ -37,13 +37,13 @@
       </thead>
       <tbody>
         <tr *ngFor="let lote of lotesFiltrados">
-          <td>{{ lote.numeroLote }}</td>
-          <td>{{ lote.nombre }}</td>
-          <td>{{ lote.proveedorNombre }}</td>
-          <td>{{ lote.cantidad | number : '1.0-2' }}</td>
-          <td>S/ {{ lote.total | number : '1.2-2' }}</td>
-          <td>{{ lote.fechaIngreso }}</td>
-          <td>
+          <td data-label="Lote">{{ lote.numeroLote }}</td>
+          <td data-label="Nombre">{{ lote.nombre }}</td>
+          <td data-label="Proveedor">{{ lote.proveedorNombre }}</td>
+          <td data-label="Cantidad">{{ lote.cantidad | number : '1.0-2' }}</td>
+          <td data-label="Total">S/ {{ lote.total | number : '1.2-2' }}</td>
+          <td data-label="Fecha">{{ lote.fechaIngreso }}</td>
+          <td data-label="Estado">
             <span
               class="etiqueta"
               [class.etiqueta--cerrada]="lote.estado === 'CERRADO'"
@@ -51,7 +51,7 @@
               {{ lote.estado }}
             </span>
           </td>
-          <td class="tabla__acciones">
+          <td data-label="Acciones" class="tabla__acciones">
             <button
               class="boton boton--accion"
               [disabled]="lote.estado === 'CERRADO'"

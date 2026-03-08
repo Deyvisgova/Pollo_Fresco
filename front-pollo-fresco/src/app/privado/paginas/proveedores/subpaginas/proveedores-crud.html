@@ -36,21 +36,21 @@
       </thead>
       <tbody>
         <tr *ngFor="let proveedor of proveedores">
-          <td>
+          <td data-label="Proveedor / Empresa">
             <strong>{{ ((proveedor.nombres || '') + ' ' + (proveedor.apellidos || '')).trim() || '-' }}</strong>
             <div class="nota">{{ proveedor.nombre_empresa || 'Sin empresa' }}</div>
           </td>
-          <td>
+          <td data-label="Documento">
             <div>DNI: {{ proveedor.dni || '-' }}</div>
             <div class="nota">RUC: {{ proveedor.ruc || '-' }}</div>
           </td>
-          <td>{{ proveedor.telefono || '-' }}</td>
-          <td>{{ proveedor.direccion || '-' }}</td>
-          <td>
+          <td data-label="Contacto">{{ proveedor.telefono || '-' }}</td>
+          <td data-label="Dirección">{{ proveedor.direccion || '-' }}</td>
+          <td data-label="Registro">
             <div>Creado: {{ proveedor.creado_en | date: 'short' }}</div>
             <div class="nota">Actualizado: {{ proveedor.actualizado_en | date: 'short' }}</div>
           </td>
-          <td class="acciones-tabla">
+          <td data-label="Acciones" class="acciones-tabla">
             <button class="boton boton--secundario" type="button" (click)="editarProveedor(proveedor)">Editar</button>
             <button class="boton boton--peligro-solido" type="button" (click)="eliminarProveedor(proveedor)">
               Eliminar

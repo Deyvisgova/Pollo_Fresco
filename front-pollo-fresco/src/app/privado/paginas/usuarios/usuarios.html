@@ -50,15 +50,15 @@
               </td>
             </tr>
             <tr *ngFor="let usuario of usuariosFiltrados">
-              <td>#{{ usuario.usuario_id }}</td>
-              <td>{{ obtenerNombreRol(usuario.rol_id) }}</td>
-              <td>
+              <td data-label="ID">#{{ usuario.usuario_id }}</td>
+              <td data-label="Rol">{{ obtenerNombreRol(usuario.rol_id) }}</td>
+              <td data-label="Nombre">
                 <strong>{{ usuario.nombres }} {{ usuario.apellidos }}</strong>
               </td>
-              <td>{{ usuario.usuario }}</td>
-              <td>{{ usuario.email }}</td>
-              <td>{{ usuario.telefono || 'No registrado' }}</td>
-              <td>
+              <td data-label="Usuario">{{ usuario.usuario }}</td>
+              <td data-label="Email">{{ usuario.email }}</td>
+              <td data-label="Teléfono">{{ usuario.telefono || 'No registrado' }}</td>
+              <td data-label="Estado">
                 <span
                   class="estado"
                   [class.estado--activo]="usuario.activo"
@@ -67,9 +67,9 @@
                   {{ usuario.activo ? 'Activo' : 'Inactivo' }}
                 </span>
               </td>
-              <td>{{ usuario.creado_en | date: 'short' }}</td>
-              <td>{{ usuario.actualizado_en | date: 'short' }}</td>
-              <td class="tabla__acciones">
+              <td data-label="Creado">{{ usuario.creado_en | date: 'short' }}</td>
+              <td data-label="Actualizado">{{ usuario.actualizado_en | date: 'short' }}</td>
+              <td data-label="Acciones" class="tabla__acciones">
                 <label class="switch switch--tabla" title="Activar o desactivar usuario">
                   <input
                     type="checkbox"

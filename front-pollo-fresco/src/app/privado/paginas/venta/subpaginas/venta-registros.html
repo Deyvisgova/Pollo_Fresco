@@ -35,12 +35,12 @@
         </thead>
         <tbody>
           <tr *ngFor="let venta of ventasRegistradas">
-            <td>{{ venta.serie }}-{{ venta.numero }}</td>
-            <td>{{ venta.tipo_comprobante }}</td>
-            <td>{{ venta.fecha_emision }}</td>
-            <td>{{ venta.cliente_nombre || 'Público general' }}</td>
-            <td>{{ venta.moneda }} {{ venta.total | number: '1.2-2' }}</td>
-            <td>
+            <td data-label="Comprobante">{{ venta.serie }}-{{ venta.numero }}</td>
+            <td data-label="Tipo">{{ venta.tipo_comprobante }}</td>
+            <td data-label="Fecha">{{ venta.fecha_emision }}</td>
+            <td data-label="Cliente">{{ venta.cliente_nombre || 'Público general' }}</td>
+            <td data-label="Total">{{ venta.moneda }} {{ venta.total | number: '1.2-2' }}</td>
+            <td data-label="Acciones">
               <div class="acciones-fila">
                 <button type="button" class="icono" (click)="imprimir(venta)" title="Imprimir">🖨️</button>
                 <button type="button" class="icono" (click)="descargar(venta)" title="Descargar PDF">⬇️</button>
