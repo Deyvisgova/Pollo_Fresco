@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 class EntregaProveedor extends Model
 {
@@ -27,6 +28,7 @@ class EntregaProveedor extends Model
         'proveedor_id',
         'usuario_id',
         'fecha_hora',
+        'fecha_entrega',
         'cantidad_pollos',
         'peso_total_kg',
         'merma_kg',
@@ -41,11 +43,16 @@ class EntregaProveedor extends Model
      */
     protected $casts = [
         'fecha_hora' => 'datetime',
+        'fecha_entrega' => 'date',
         'cantidad_pollos' => 'integer',
         'peso_total_kg' => 'decimal:2',
         'merma_kg' => 'decimal:2',
         'costo_total' => 'decimal:2',
         'creado_en' => 'datetime',
+    ];
+
+    protected $appends = [
+        'fecha_hora',
     ];
 
     /**
@@ -54,5 +61,21 @@ class EntregaProveedor extends Model
     public function proveedor(): BelongsTo
     {
         return $this->belongsTo(Proveedor::class, 'proveedor_id', 'proveedor_id');
+    }
+
+    /**
+     * Compatibilidad entre esquemas antiguos (fecha_entrega) y nuevos (fecha_hora).
+     */
+    public function getFechaHoraAttribute(): ?string
+    {
+        if (isset($this->attributes['fecha_hora'])) {
+            return $this->attributes['fecha_hora'];
+        }
+
+        if (isset($this->attributes['fecha_entrega'])) {
+            return Carbon::parse($this->attributes['fecha_entrega'])->startOfDay()->toDateTimeString();
+        }
+
+        return null;
     }
 }

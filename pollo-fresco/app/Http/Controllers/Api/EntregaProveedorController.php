@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\EntregaProveedor;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Schema;
 
 class EntregaProveedorController extends Controller
 {
@@ -15,9 +17,10 @@ class EntregaProveedorController extends Controller
     {
         $proveedorId = $request->query('proveedor_id');
         $fechaHora = $request->query('fecha_hora');
+        $fechaColumn = $this->fechaColumn();
 
         $query = EntregaProveedor::with('proveedor')
-            ->orderByDesc('fecha_hora')
+            ->orderByDesc($fechaColumn)
             ->orderByDesc('entrega_id');
 
         if ($proveedorId) {
@@ -25,7 +28,7 @@ class EntregaProveedorController extends Controller
         }
 
         if ($fechaHora) {
-            $query->whereDate('fecha_hora', $fechaHora);
+            $query->whereDate($fechaColumn, $fechaHora);
         }
 
         return response()->json($query->get());
@@ -48,16 +51,15 @@ class EntregaProveedorController extends Controller
             'tipo' => ['required', 'string', 'max:50'],
         ]);
 
-        $entrega = EntregaProveedor::create([
+        $entrega = EntregaProveedor::create(array_merge([
             'proveedor_id' => $validated['proveedor_id'],
             'usuario_id' => $validated['usuario_id'],
-            'fecha_hora' => $validated['fecha_hora'],
             'cantidad_pollos' => $validated['cantidad_pollos'],
             'peso_total_kg' => $validated['peso_total_kg'],
             'merma_kg' => $validated['merma_kg'],
             'costo_total' => $validated['costo_total'] ?? 0.0,
             'tipo' => $validated['tipo'],
-        ]);
+        ], $this->fechaPayload($validated['fecha_hora'])));
 
         return response()->json($entrega->load('proveedor'), 201);
     }
@@ -76,7 +78,13 @@ class EntregaProveedorController extends Controller
             'tipo' => ['required', 'string', 'max:50'],
         ]);
 
-        $entregaProveedor->update($validated);
+        $entregaProveedor->update(array_merge([
+            'cantidad_pollos' => $validated['cantidad_pollos'],
+            'peso_total_kg' => $validated['peso_total_kg'],
+            'merma_kg' => $validated['merma_kg'],
+            'costo_total' => $validated['costo_total'],
+            'tipo' => $validated['tipo'],
+        ], $this->fechaPayload($validated['fecha_hora'])));
 
         return response()->json($entregaProveedor->load('proveedor'));
     }
@@ -89,5 +97,24 @@ class EntregaProveedorController extends Controller
         $entregaProveedor->delete();
 
         return response()->json(['message' => 'Entrega eliminada']);
+    }
+
+    private function fechaColumn(): string
+    {
+        return Schema::hasColumn('entregas_proveedor', 'fecha_hora') ? 'fecha_hora' : 'fecha_entrega';
+    }
+
+    /**
+     * Prepara el campo de fecha según el esquema disponible en BD.
+     *
+     * @return array<string, mixed>
+     */
+    private function fechaPayload(string $fechaHora): array
+    {
+        if (Schema::hasColumn('entregas_proveedor', 'fecha_hora')) {
+            return ['fecha_hora' => $fechaHora];
+        }
+
+        return ['fecha_entrega' => Carbon::parse($fechaHora)->toDateString()];
     }
 }
