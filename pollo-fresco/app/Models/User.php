@@ -75,6 +75,15 @@ class User extends Authenticatable
         'role',
     ];
 
+
+    /**
+     * Forzar el nombre de tabla de usuarios para evitar desalineaciones con entornos legacy.
+     */
+    public function getTable()
+    {
+        return 'usuarios';
+    }
+
     /**
      * Obtener la lista de roles permitidos en el sistema.
      *

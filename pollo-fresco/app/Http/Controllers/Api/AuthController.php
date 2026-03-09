@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 
 class AuthController extends Controller
@@ -96,6 +98,9 @@ class AuthController extends Controller
             ])->save();
         }
 
+        // Garantizar tabla de tokens en instalaciones creadas desde SQL legado.
+        $this->ensurePersonalAccessTokensTableExists();
+
         // Emitir un nuevo token para la sesión.
         $token = $user->createToken('api-token')->plainTextToken;
 
@@ -176,5 +181,26 @@ class AuthController extends Controller
         return $status === Password::PASSWORD_RESET
             ? response()->json(['message' => __($status)])
             : response()->json(['message' => __($status)], 422);
+    }
+
+    /**
+     * Crear la tabla de Sanctum cuando la BD fue importada sin migraciones.
+     */
+    private function ensurePersonalAccessTokensTableExists(): void
+    {
+        if (Schema::hasTable('personal_access_tokens')) {
+            return;
+        }
+
+        Schema::create('personal_access_tokens', function (Blueprint $table) {
+            $table->id();
+            $table->morphs('tokenable');
+            $table->string('name');
+            $table->string('token', 64)->unique();
+            $table->text('abilities')->nullable();
+            $table->timestamp('last_used_at')->nullable();
+            $table->timestamp('expires_at')->nullable();
+            $table->timestamps();
+        });
     }
 }
