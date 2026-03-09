@@ -343,11 +343,27 @@ CREATE TABLE `usuarios` (
 --
 
 CREATE TABLE `ventas` (
-  `venta_id` int(11) NOT NULL,
-  `cliente_id` int(11) NOT NULL,
-  `usuario_id` int(11) NOT NULL,
-  `fecha_hora` datetime NOT NULL DEFAULT current_timestamp(),
-  `total` decimal(10,2) NOT NULL DEFAULT 0.00
+  `comprobante_venta_id` bigint(20) UNSIGNED NOT NULL,
+  `usuario_id` bigint(20) UNSIGNED NOT NULL,
+  `tipo_comprobante` varchar(20) NOT NULL,
+  `serie` varchar(10) NOT NULL,
+  `numero` varchar(20) NOT NULL,
+  `fecha_emision` date NOT NULL,
+  `moneda` varchar(10) NOT NULL DEFAULT 'PEN',
+  `forma_pago` varchar(40) NOT NULL DEFAULT 'Contado',
+  `metodo_pago` varchar(30) NOT NULL DEFAULT 'efectivo',
+  `cliente_tipo_documento` varchar(10) DEFAULT NULL,
+  `cliente_documento` varchar(20) DEFAULT NULL,
+  `cliente_nombre` varchar(150) DEFAULT NULL,
+  `cliente_direccion` varchar(255) DEFAULT NULL,
+  `subtotal` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `total` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `monto_recibido` decimal(12,2) DEFAULT NULL,
+  `vuelto` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `referencia_serie` varchar(10) DEFAULT NULL,
+  `referencia_numero` varchar(20) DEFAULT NULL,
+  `referencia_motivo` varchar(255) DEFAULT NULL,
+  `creado_en` timestamp NOT NULL DEFAULT current_timestamp()
 ) ;
 
 -- --------------------------------------------------------
@@ -357,12 +373,13 @@ CREATE TABLE `ventas` (
 --
 
 CREATE TABLE `venta_detalle` (
-  `venta_detalle_id` int(11) NOT NULL,
-  `venta_id` int(11) NOT NULL,
-  `producto_id` int(11) NOT NULL,
-  `cantidad` decimal(10,2) NOT NULL,
-  `precio_unitario` decimal(10,2) NOT NULL,
-  `subtotal` decimal(10,2) NOT NULL
+  `comprobante_venta_detalle_id` bigint(20) UNSIGNED NOT NULL,
+  `comprobante_venta_id` bigint(20) UNSIGNED NOT NULL,
+  `descripcion` varchar(120) NOT NULL,
+  `unidad` varchar(10) NOT NULL DEFAULT 'UND',
+  `cantidad` decimal(12,2) NOT NULL,
+  `precio_unitario` decimal(12,2) NOT NULL,
+  `total_linea` decimal(12,2) NOT NULL
 ) ;
 
 --
@@ -521,17 +538,17 @@ ALTER TABLE `usuarios`
 -- Indices de la tabla `ventas`
 --
 ALTER TABLE `ventas`
-  ADD PRIMARY KEY (`venta_id`),
-  ADD KEY `fk_venta_cliente` (`cliente_id`),
+  ADD PRIMARY KEY (`comprobante_venta_id`),
+  ADD KEY `idx_ventas_serie_numero` (`serie`,`numero`),
+  ADD KEY `idx_ventas_fecha_emision` (`fecha_emision`),
   ADD KEY `fk_venta_usuario` (`usuario_id`);
 
 --
 -- Indices de la tabla `venta_detalle`
 --
 ALTER TABLE `venta_detalle`
-  ADD PRIMARY KEY (`venta_detalle_id`),
-  ADD KEY `fk_vdet_venta` (`venta_id`),
-  ADD KEY `fk_vdet_producto` (`producto_id`);
+  ADD PRIMARY KEY (`comprobante_venta_detalle_id`),
+  ADD KEY `fk_vdet_venta` (`comprobante_venta_id`);
 
 --
 -- AUTO_INCREMENT de las tablas volcadas
@@ -655,13 +672,13 @@ ALTER TABLE `usuarios`
 -- AUTO_INCREMENT de la tabla `ventas`
 --
 ALTER TABLE `ventas`
-  MODIFY `venta_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `comprobante_venta_id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT de la tabla `venta_detalle`
 --
 ALTER TABLE `venta_detalle`
-  MODIFY `venta_detalle_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `comprobante_venta_detalle_id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- Restricciones para tablas volcadas
@@ -761,15 +778,13 @@ ALTER TABLE `usuarios`
 -- Filtros para la tabla `ventas`
 --
 ALTER TABLE `ventas`
-  ADD CONSTRAINT `fk_venta_cliente` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`cliente_id`),
   ADD CONSTRAINT `fk_venta_usuario` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`usuario_id`);
 
 --
 -- Filtros para la tabla `venta_detalle`
 --
 ALTER TABLE `venta_detalle`
-  ADD CONSTRAINT `fk_vdet_producto` FOREIGN KEY (`producto_id`) REFERENCES `productos` (`producto_id`),
-  ADD CONSTRAINT `fk_vdet_venta` FOREIGN KEY (`venta_id`) REFERENCES `ventas` (`venta_id`);
+  ADD CONSTRAINT `fk_vdet_venta` FOREIGN KEY (`comprobante_venta_id`) REFERENCES `ventas` (`comprobante_venta_id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
