@@ -19,7 +19,7 @@ class VentaController extends Controller
         $fechaDesde = trim((string) $request->query('fecha_desde', ''));
         $fechaHasta = trim((string) $request->query('fecha_hasta', ''));
 
-        $query = DB::table('comprobantes_venta');
+        $query = DB::table('ventas');
 
         if ($buscar !== '') {
             $query->where(function ($builder) use ($buscar) {
@@ -109,7 +109,7 @@ class VentaController extends Controller
         try {
             $this->guardarClienteDesdeVenta($request);
 
-            $ventaId = DB::table('comprobantes_venta')->insertGetId([
+            $ventaId = DB::table('ventas')->insertGetId([
                 'usuario_id' => $usuario->usuario_id,
                 'tipo_comprobante' => $request->input('tipo_comprobante'),
                 'serie' => $request->input('serie'),
@@ -133,7 +133,7 @@ class VentaController extends Controller
             ]);
 
             foreach ($detalles as $detalle) {
-                DB::table('comprobantes_venta_detalle')->insert([
+                DB::table('venta_detalle')->insert([
                     'comprobante_venta_id' => $ventaId,
                     'descripcion' => $detalle['descripcion'],
                     'unidad' => $detalle['unidad'],
@@ -152,7 +152,7 @@ class VentaController extends Controller
             ], 500);
         }
 
-        $venta = DB::table('comprobantes_venta')->where('comprobante_venta_id', $ventaId)->first();
+        $venta = DB::table('ventas')->where('comprobante_venta_id', $ventaId)->first();
 
         return response()->json($venta, 201);
     }
@@ -259,9 +259,9 @@ class VentaController extends Controller
 
     private function obtenerVentaConDetalles(int $ventaId): array
     {
-        $venta = DB::table('comprobantes_venta')->where('comprobante_venta_id', $ventaId)->first();
+        $venta = DB::table('ventas')->where('comprobante_venta_id', $ventaId)->first();
 
-        $detalles = DB::table('comprobantes_venta_detalle')
+        $detalles = DB::table('venta_detalle')
             ->where('comprobante_venta_id', $ventaId)
             ->orderBy('comprobante_venta_detalle_id')
             ->get();
@@ -374,10 +374,10 @@ class VentaController extends Controller
 
     private function asegurarTablasVenta(): void
     {
-        if (!Schema::hasTable('comprobantes_venta')) {
-            Schema::create('comprobantes_venta', function (Blueprint $table) {
+        if (!Schema::hasTable('ventas')) {
+            Schema::create('ventas', function (Blueprint $table) {
                 $table->bigIncrements('comprobante_venta_id');
-                $table->unsignedBigInteger('usuario_id');
+                $table->unsignedInteger('usuario_id');
                 $table->string('tipo_comprobante', 20);
                 $table->string('serie', 10);
                 $table->string('numero', 20);
@@ -403,8 +403,8 @@ class VentaController extends Controller
             });
         }
 
-        if (!Schema::hasTable('comprobantes_venta_detalle')) {
-            Schema::create('comprobantes_venta_detalle', function (Blueprint $table) {
+        if (!Schema::hasTable('venta_detalle')) {
+            Schema::create('venta_detalle', function (Blueprint $table) {
                 $table->bigIncrements('comprobante_venta_detalle_id');
                 $table->unsignedBigInteger('comprobante_venta_id');
                 $table->string('descripcion', 120);
@@ -415,7 +415,7 @@ class VentaController extends Controller
 
                 $table->foreign('comprobante_venta_id', 'fk_cvdet_comprobante')
                     ->references('comprobante_venta_id')
-                    ->on('comprobantes_venta')
+                    ->on('ventas')
                     ->cascadeOnDelete();
             });
         }
