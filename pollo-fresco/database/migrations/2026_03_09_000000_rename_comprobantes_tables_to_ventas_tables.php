@@ -33,7 +33,6 @@ return new class extends Migration
             DB::statement('ALTER TABLE ventas MODIFY usuario_id INT UNSIGNED NOT NULL');
         }
 
-
         Schema::enableForeignKeyConstraints();
     }
 
@@ -47,6 +46,7 @@ return new class extends Migration
 
         if (Schema::hasTable('ventas')) {
             Schema::rename('ventas', 'comprobantes_venta');
+
 
             DB::statement('ALTER TABLE comprobantes_venta MODIFY usuario_id BIGINT UNSIGNED NOT NULL');
 
