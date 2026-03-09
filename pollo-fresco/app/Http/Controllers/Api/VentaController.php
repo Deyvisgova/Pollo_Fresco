@@ -377,7 +377,7 @@ class VentaController extends Controller
         if (!Schema::hasTable('ventas')) {
             Schema::create('ventas', function (Blueprint $table) {
                 $table->bigIncrements('comprobante_venta_id');
-                $table->unsignedBigInteger('usuario_id');
+                $table->unsignedInteger('usuario_id');
                 $table->string('tipo_comprobante', 20);
                 $table->string('serie', 10);
                 $table->string('numero', 20);

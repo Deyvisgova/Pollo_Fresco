@@ -1,6 +1,9 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
+
+use Illuminate\Support\Facades\DB;
+
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -25,6 +28,12 @@ return new class extends Migration
             Schema::rename('comprobantes_venta_detalle', 'venta_detalle');
         }
 
+
+        if (Schema::hasTable('ventas')) {
+            DB::statement('ALTER TABLE ventas MODIFY usuario_id INT UNSIGNED NOT NULL');
+        }
+
+
         Schema::enableForeignKeyConstraints();
     }
 
@@ -38,6 +47,9 @@ return new class extends Migration
 
         if (Schema::hasTable('ventas')) {
             Schema::rename('ventas', 'comprobantes_venta');
+
+            DB::statement('ALTER TABLE comprobantes_venta MODIFY usuario_id BIGINT UNSIGNED NOT NULL');
+
         }
 
         Schema::enableForeignKeyConstraints();

@@ -344,7 +344,11 @@ CREATE TABLE `usuarios` (
 
 CREATE TABLE `ventas` (
   `comprobante_venta_id` bigint(20) UNSIGNED NOT NULL,
+
+  `usuario_id` int(11) NOT NULL,
+
   `usuario_id` bigint(20) UNSIGNED NOT NULL,
+
   `tipo_comprobante` varchar(20) NOT NULL,
   `serie` varchar(10) NOT NULL,
   `numero` varchar(20) NOT NULL,
