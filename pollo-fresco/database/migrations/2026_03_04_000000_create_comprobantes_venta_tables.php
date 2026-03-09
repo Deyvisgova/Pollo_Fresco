@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('comprobantes_venta', function (Blueprint $table) {
+        Schema::create('ventas', function (Blueprint $table) {
             $table->bigIncrements('comprobante_venta_id');
             $table->unsignedBigInteger('usuario_id');
             $table->string('tipo_comprobante', 20);
@@ -35,7 +35,7 @@ return new class extends Migration
             $table->index('fecha_emision');
         });
 
-        Schema::create('comprobantes_venta_detalle', function (Blueprint $table) {
+        Schema::create('venta_detalle', function (Blueprint $table) {
             $table->bigIncrements('comprobante_venta_detalle_id');
             $table->unsignedBigInteger('comprobante_venta_id');
             $table->string('descripcion', 120);
@@ -46,14 +46,14 @@ return new class extends Migration
 
             $table->foreign('comprobante_venta_id', 'fk_cvdet_comprobante')
                 ->references('comprobante_venta_id')
-                ->on('comprobantes_venta')
+                ->on('ventas')
                 ->cascadeOnDelete();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('comprobantes_venta_detalle');
-        Schema::dropIfExists('comprobantes_venta');
+        Schema::dropIfExists('venta_detalle');
+        Schema::dropIfExists('ventas');
     }
 };
