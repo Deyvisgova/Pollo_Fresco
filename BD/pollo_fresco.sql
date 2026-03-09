@@ -290,6 +290,7 @@ CREATE TABLE `proveedores` (
   `nombres` varchar(80) NOT NULL,
   `apellidos` varchar(80) NOT NULL,
   `ruc` char(11) DEFAULT NULL,
+  `nombre_empresa` varchar(100) DEFAULT NULL,
   `direccion` varchar(200) DEFAULT NULL,
   `telefono` char(9) DEFAULT NULL,
   `creado_en` datetime NOT NULL DEFAULT current_timestamp(),
