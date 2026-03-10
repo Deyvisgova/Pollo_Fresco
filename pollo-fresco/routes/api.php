@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\ClienteController;
 use App\Http\Controllers\Api\ConfiguracionController;
 use App\Http\Controllers\Api\EntregaProveedorController;
 use App\Http\Controllers\Api\OtrosProductosController;
+use App\Http\Controllers\Api\PagoProveedorController;
 use App\Http\Controllers\Api\ProveedorController;
 use App\Http\Controllers\Api\VentaController;
 
@@ -85,6 +86,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('entregas-proveedor', [EntregaProveedorController::class, 'store']);
     Route::put('entregas-proveedor/{entregaProveedor}', [EntregaProveedorController::class, 'update']);
     Route::delete('entregas-proveedor/{entregaProveedor}', [EntregaProveedorController::class, 'destroy']);
+    Route::get('pagos-proveedor', [PagoProveedorController::class, 'index']);
+    Route::post('pagos-proveedor', [PagoProveedorController::class, 'store']);
 
     Route::get('otros-productos/productos', [OtrosProductosController::class, 'productosIndex']);
     Route::post('otros-productos/productos', [OtrosProductosController::class, 'productosStore']);

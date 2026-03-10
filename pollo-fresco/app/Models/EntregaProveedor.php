@@ -32,6 +32,7 @@ class EntregaProveedor extends Model
         'merma_kg',
         'costo_total',
         'tipo',
+        'estado_pago',
     ];
 
     /**
@@ -45,6 +46,7 @@ class EntregaProveedor extends Model
         'peso_total_kg' => 'decimal:2',
         'merma_kg' => 'decimal:2',
         'costo_total' => 'decimal:2',
+        'estado_pago' => 'string',
         'creado_en' => 'datetime',
     ];
 

@@ -8,7 +8,7 @@ import { SesionServicio } from '../../../../servicios/sesion.servicio';
 interface RegistroEntrega {
   entrega_id: number;
   proveedor_id: number;
-  proveedor?: { nombres: string; apellidos: string | null; ruc: string | null; dni: string | null };
+  proveedor?: { nombres: string; apellidos: string | null; ruc: string | null; dni: string | null; nombre_empresa: string | null };
   usuario_id: number;
   fecha_hora: string;
   cantidad_pollos: number;
@@ -16,6 +16,7 @@ interface RegistroEntrega {
   merma_kg: number;
   costo_total: number;
   tipo: string | null;
+  estado_pago: 'PENDIENTE' | 'PAGADO';
   creado_en: string;
 }
 
@@ -25,6 +26,7 @@ interface ProveedorApi {
   apellidos: string | null;
   ruc: string | null;
   dni: string | null;
+  nombre_empresa: string | null;
 }
 
 interface RegistroLinea {
@@ -39,6 +41,7 @@ interface RegistroLinea {
 interface TarjetaProveedor {
   proveedor: ProveedorApi;
   lineas: RegistroLinea[];
+  estadoPago: 'PENDIENTE' | 'PAGADO';
   guardando: boolean;
   error: string;
   expandida: boolean;
@@ -48,7 +51,19 @@ interface FiltrosHistorial {
   texto: string;
   proveedorId: string;
   tipo: string;
-  fecha: string;
+  fechaDesde: string;
+  fechaHasta: string;
+}
+
+interface PagoProveedor {
+  pago_id: number;
+  total: number;
+  monto_transferencia: number;
+  monto_efectivo: number;
+  saldo: number;
+  estado: string;
+  cantidad_entregas: number;
+  creado_en: string;
 }
 
 @Component({
@@ -76,8 +91,15 @@ export class PrivadoProveedoresRegistros implements OnInit {
     texto: '',
     proveedorId: '',
     tipo: '',
-    fecha: ''
+    fechaDesde: '',
+    fechaHasta: ''
   };
+
+  totalFiltrado = 0;
+  modalPagoAbierto = false;
+  montoTransferencia: number | null = null;
+  montoEfectivo: number | null = null;
+  procesandoPago = false;
 
   editandoEntregaId: number | null = null;
   formularioEdicion: {
@@ -144,6 +166,7 @@ export class PrivadoProveedoresRegistros implements OnInit {
         {
           proveedor,
           lineas: [this.crearLineaInicial()],
+          estadoPago: 'PENDIENTE',
           guardando: false,
           error: '',
           expandida: true
@@ -236,6 +259,7 @@ export class PrivadoProveedoresRegistros implements OnInit {
         merma_kg: mermaTotal,
         costo_total: (peso + mermaTotal) * precio,
         tipo: linea.tipoAve
+        ,estado_pago: tarjeta.estadoPago
       };
 
       return this.http.post<RegistroEntrega>('/api/entregas-proveedor', payload, { headers });
@@ -287,10 +311,13 @@ export class PrivadoProveedoresRegistros implements OnInit {
       const pasaTipo = !this.filtros.tipo || (registro.tipo || '') === this.filtros.tipo;
 
       const fechaRegistro = registro.fecha_hora.slice(0, 10);
-      const pasaFecha = !this.filtros.fecha || fechaRegistro === this.filtros.fecha;
+      const pasaFechaDesde = !this.filtros.fechaDesde || fechaRegistro >= this.filtros.fechaDesde;
+      const pasaFechaHasta = !this.filtros.fechaHasta || fechaRegistro <= this.filtros.fechaHasta;
 
-      return pasaTexto && pasaProveedor && pasaTipo && pasaFecha;
+      return pasaTexto && pasaProveedor && pasaTipo && pasaFechaDesde && pasaFechaHasta;
     });
+
+    this.totalFiltrado = this.registrosFiltrados.reduce((acumulado, registro) => acumulado + Number(registro.costo_total), 0);
   }
 
   limpiarFiltros(): void {
@@ -298,9 +325,82 @@ export class PrivadoProveedoresRegistros implements OnInit {
       texto: '',
       proveedorId: '',
       tipo: '',
-      fecha: ''
+      fechaDesde: '',
+      fechaHasta: ''
     };
     this.aplicarFiltros();
+  }
+
+  alternarEstadoRegistro(registro: RegistroEntrega): void {
+    const headers = this.obtenerHeaders();
+    const nuevoEstado = registro.estado_pago === 'PAGADO' ? 'PENDIENTE' : 'PAGADO';
+
+    const payload = {
+      tipo: registro.tipo || 'POLLO',
+      cantidad_pollos: registro.cantidad_pollos,
+      peso_total_kg: registro.peso_total_kg,
+      merma_kg: registro.merma_kg,
+      costo_total: registro.costo_total,
+      fecha_hora: this.formatearFechaHoraInput(registro.fecha_hora).replace('T', ' ') + ':00',
+      estado_pago: nuevoEstado
+    };
+
+    this.http.put(`/api/entregas-proveedor/${registro.entrega_id}`, payload, { headers }).subscribe({
+      next: () => this.cargarRegistros(),
+      error: () => {
+        this.error = 'No se pudo actualizar el estado del registro.';
+      }
+    });
+  }
+
+  abrirModalPago(): void {
+    this.modalPagoAbierto = true;
+    this.montoTransferencia = null;
+    this.montoEfectivo = null;
+  }
+
+  cerrarModalPago(): void {
+    this.modalPagoAbierto = false;
+  }
+
+  saldoPago(): number {
+    const transferencia = Number(this.montoTransferencia ?? 0);
+    const efectivo = Number(this.montoEfectivo ?? 0);
+    return Number((this.totalFiltrado - transferencia - efectivo).toFixed(2));
+  }
+
+  puedePagarTodo(): boolean {
+    return this.saldoPago() === 0 && this.registrosFiltrados.length > 0;
+  }
+
+  pagarTodo(): void {
+    if (!this.puedePagarTodo() || this.usuarioId === 0) {
+      return;
+    }
+
+    const headers = this.obtenerHeaders();
+    const payload = {
+      usuario_id: this.usuarioId,
+      entregas_ids: this.registrosFiltrados.map((registro) => registro.entrega_id),
+      monto_transferencia: Number(this.montoTransferencia ?? 0),
+      monto_efectivo: Number(this.montoEfectivo ?? 0),
+      fecha_desde: this.filtros.fechaDesde || null,
+      fecha_hasta: this.filtros.fechaHasta || null
+    };
+
+    this.procesandoPago = true;
+    this.http.post<PagoProveedor>('/api/pagos-proveedor', payload, { headers }).subscribe({
+      next: () => {
+        this.cerrarModalPago();
+        this.cargarRegistros();
+      },
+      error: () => {
+        this.error = 'No se pudo registrar el pago total.';
+      },
+      complete: () => {
+        this.procesandoPago = false;
+      }
+    });
   }
 
   proveedoresEnHistorial(): ProveedorApi[] {
@@ -317,7 +417,8 @@ export class PrivadoProveedoresRegistros implements OnInit {
           nombres: registro.proveedor.nombres,
           apellidos: registro.proveedor.apellidos,
           ruc: registro.proveedor.ruc,
-          dni: registro.proveedor.dni
+          dni: registro.proveedor.dni,
+          nombre_empresa: registro.proveedor.nombre_empresa
         });
       }
     });
@@ -356,7 +457,8 @@ export class PrivadoProveedoresRegistros implements OnInit {
       peso_total_kg: this.formularioEdicion.peso_total_kg ?? 0,
       merma_kg: this.formularioEdicion.merma_kg ?? 0,
       costo_total: this.formularioEdicion.costo_total ?? 0,
-      fecha_hora: this.formularioEdicion.fecha_hora.replace('T', ' ') + ':00'
+      fecha_hora: this.formularioEdicion.fecha_hora.replace('T', ' ') + ':00',
+      estado_pago: this.registros.find((registro) => registro.entrega_id === entregaId)?.estado_pago ?? 'PENDIENTE'
     };
 
     this.http.put(`/api/entregas-proveedor/${entregaId}`, payload, { headers }).subscribe({
@@ -394,7 +496,10 @@ export class PrivadoProveedoresRegistros implements OnInit {
     const headers = this.obtenerHeaders();
     this.http.get<RegistroEntrega[]>('/api/entregas-proveedor', { headers }).subscribe({
       next: (registros) => {
-        this.registros = registros;
+        this.registros = registros.map((registro) => ({
+          ...registro,
+          estado_pago: registro.estado_pago ?? 'PENDIENTE'
+        }));
         this.aplicarFiltros();
       },
       error: () => {
@@ -453,6 +558,7 @@ export class PrivadoProveedoresRegistros implements OnInit {
         guardando: false,
         error: tarjeta.error ?? '',
         expandida: tarjeta.expandida !== false,
+        estadoPago: tarjeta.estadoPago ?? 'PENDIENTE',
         lineas: (tarjeta.lineas && tarjeta.lineas.length > 0 ? tarjeta.lineas : [this.crearLineaInicial()])
       }));
     } catch {
