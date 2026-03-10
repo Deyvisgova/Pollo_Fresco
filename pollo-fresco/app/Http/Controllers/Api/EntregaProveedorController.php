@@ -15,6 +15,8 @@ class EntregaProveedorController extends Controller
     {
         $proveedorId = $request->query('proveedor_id');
         $fechaHora = $request->query('fecha_hora');
+        $fechaDesde = $request->query('fecha_desde');
+        $fechaHasta = $request->query('fecha_hasta');
 
         $query = EntregaProveedor::with('proveedor')
             ->orderByDesc('fecha_hora')
@@ -26,6 +28,14 @@ class EntregaProveedorController extends Controller
 
         if ($fechaHora) {
             $query->whereDate('fecha_hora', $fechaHora);
+        }
+
+        if ($fechaDesde) {
+            $query->whereDate('fecha_hora', '>=', $fechaDesde);
+        }
+
+        if ($fechaHasta) {
+            $query->whereDate('fecha_hora', '<=', $fechaHasta);
         }
 
         return response()->json($query->get());
@@ -46,6 +56,7 @@ class EntregaProveedorController extends Controller
             'costo_total' => ['nullable', 'numeric', 'min:0'],
             'precio_kg' => ['nullable', 'numeric', 'min:0'],
             'tipo' => ['required', 'string', 'max:50'],
+            'estado_pago' => ['nullable', 'string', 'in:PENDIENTE,PAGADO'],
         ]);
 
         $entrega = EntregaProveedor::create([
@@ -57,6 +68,7 @@ class EntregaProveedorController extends Controller
             'merma_kg' => $validated['merma_kg'],
             'costo_total' => $validated['costo_total'] ?? 0.0,
             'tipo' => $validated['tipo'],
+            'estado_pago' => $validated['estado_pago'] ?? 'PENDIENTE',
         ]);
 
         return response()->json($entrega->load('proveedor'), 201);
@@ -74,6 +86,7 @@ class EntregaProveedorController extends Controller
             'merma_kg' => ['required', 'numeric', 'min:0'],
             'costo_total' => ['required', 'numeric', 'min:0'],
             'tipo' => ['required', 'string', 'max:50'],
+            'estado_pago' => ['sometimes', 'string', 'in:PENDIENTE,PAGADO'],
         ]);
 
         $entregaProveedor->update($validated);
