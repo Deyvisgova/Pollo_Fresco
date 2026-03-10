@@ -131,6 +131,8 @@
 
     <p class="mensaje mensaje--error" *ngIf="tarjeta.error">{{ tarjeta.error }}</p>
 
+
+    <p class="mensaje mensaje--error" *ngIf="entregasParaPagarIds.length === 0">No hay entregas pendientes para pagar con el filtro actual.</p>
     <div class="acciones">
       <button class="boton boton--secundario boton--compacto" type="button" (click)="agregarLinea(tarjeta.proveedor.proveedor_id)">
         Agregar línea
@@ -195,7 +197,7 @@
 
   <div class="resumen-pagos">
     <p>Total filtrado: <strong>S/ {{ totalFiltrado | number: '1.2-2' }}</strong></p>
-    <button class="boton boton--primario boton--compacto" type="button" [disabled]="registrosFiltrados.length === 0" (click)="abrirModalPago()">
+    <button class="boton boton--primario boton--compacto" type="button" (click)="abrirModalPago()">
       Pagar todo
     </button>
   </div>
@@ -230,11 +232,12 @@
             <td data-label="Merma">{{ registro.merma_kg | number: '1.2-2' }}</td>
             <td data-label="Costo">S/ {{ registro.costo_total | number: '1.2-2' }}</td>
             <td data-label="Estado">
-              <button class="boton boton--compacto" [class.boton--primario]="registro.estado_pago === 'PAGADO'" [class.boton--secundario]="registro.estado_pago !== 'PAGADO'" type="button" (click)="alternarEstadoRegistro(registro)">
+              <span class="estado-chip" [class.estado-chip--pagado]="esPagado(registro)" [class.estado-chip--pendiente]="esPendiente(registro)">
                 {{ registro.estado_pago }}
-              </button>
+              </span>
             </td>
             <td data-label="Acciones" class="acciones-tabla">
+              <button class="boton boton--primario boton--compacto" type="button" (click)="abrirModalPago(registro)">Pagar</button>
               <button class="boton boton--secundario boton--compacto" type="button" (click)="iniciarEdicion(registro)">Editar</button>
               <button class="boton boton--peligro boton--compacto" type="button" (click)="eliminarRegistro(registro.entrega_id)">Eliminar</button>
             </td>
@@ -262,9 +265,9 @@
               <input [(ngModel)]="formularioEdicion.costo_total" name="editCosto{{ registro.entrega_id }}" type="number" min="0" step="0.01" />
             </td>
             <td data-label="Estado">
-              <button class="boton boton--compacto" [class.boton--primario]="registro.estado_pago === 'PAGADO'" [class.boton--secundario]="registro.estado_pago !== 'PAGADO'" type="button" disabled>
+              <span class="estado-chip" [class.estado-chip--pagado]="esPagado(registro)" [class.estado-chip--pendiente]="esPendiente(registro)">
                 {{ registro.estado_pago }}
-              </button>
+              </span>
             </td>
             <td data-label="Acciones" class="acciones-tabla">
               <button class="boton boton--primario boton--compacto" type="button" [disabled]="guardandoEdicion" (click)="guardarEdicion(registro.entrega_id)">Guardar</button>
@@ -283,7 +286,17 @@
 <section class="modal" *ngIf="modalPagoAbierto">
   <div class="modal__fondo" (click)="cerrarModalPago()"></div>
   <div class="modal__contenido">
-    <h3>Total a pagar: S/ {{ totalFiltrado | number: '1.2-2' }}</h3>
+    <h3 class="modal__titulo">Registrar pago</h3>
+    <p class="modal__subtitulo">Completa transferencia y efectivo para cerrar el pago.</p>
+
+    <div class="resumen-modal">
+      <p class="resumen-modal__etiqueta">Saldo por pagar</p>
+      <p class="resumen-modal__monto" [class.resumen-modal__monto--completo]="pagoCompleto()">
+        S/ {{ saldoPago() | number: '1.2-2' }}
+      </p>
+      <small>Total seleccionado: S/ {{ totalPagoActual() | number: '1.2-2' }}</small>
+    </div>
+
     <label class="campo">
       <span>Transferencia</span>
       <input [(ngModel)]="montoTransferencia" type="number" min="0" step="0.01" />
@@ -293,8 +306,7 @@
       <input [(ngModel)]="montoEfectivo" type="number" min="0" step="0.01" />
     </label>
 
-    <p>Resultado: <strong>S/ {{ saldoPago() | number: '1.2-2' }}</strong></p>
-    <p *ngIf="saldoPago() === 0" class="estado-pagado">PAGADO</p>
+    <p *ngIf="pagoCompleto()" class="estado-pagado">PAGO COMPLETO</p>
 
     <div class="acciones">
       <button class="boton boton--secundario boton--compacto" type="button" (click)="cerrarModalPago()">Cancelar</button>
