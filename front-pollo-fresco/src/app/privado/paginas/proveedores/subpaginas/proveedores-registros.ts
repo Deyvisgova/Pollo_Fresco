@@ -79,6 +79,7 @@ export class PrivadoProveedoresRegistros implements OnInit {
 
   registros: RegistroEntrega[] = [];
   registrosFiltrados: RegistroEntrega[] = [];
+  registrosPendientesFiltrados: RegistroEntrega[] = [];
   proveedores: ProveedorApi[] = [];
   busquedaProveedor = '';
   tarjetasProveedor: TarjetaProveedor[] = [];
@@ -317,7 +318,14 @@ export class PrivadoProveedoresRegistros implements OnInit {
       return pasaTexto && pasaProveedor && pasaTipo && pasaFechaDesde && pasaFechaHasta;
     });
 
-    this.totalFiltrado = this.registrosFiltrados.reduce((acumulado, registro) => acumulado + Number(registro.costo_total), 0);
+    this.registrosPendientesFiltrados = this.registrosFiltrados.filter(
+      (registro) => registro.estado_pago === 'PENDIENTE'
+    );
+
+    this.totalFiltrado = this.registrosPendientesFiltrados.reduce(
+      (acumulado, registro) => acumulado + Number(registro.costo_total),
+      0
+    );
   }
 
   limpiarFiltros(): void {
@@ -329,6 +337,14 @@ export class PrivadoProveedoresRegistros implements OnInit {
       fechaHasta: ''
     };
     this.aplicarFiltros();
+  }
+
+  abrirModalPagoDesdeEstado(registro: RegistroEntrega): void {
+    if (registro.estado_pago !== 'PENDIENTE') {
+      return;
+    }
+
+    this.abrirModalPago();
   }
 
   alternarEstadoRegistro(registro: RegistroEntrega): void {
@@ -370,7 +386,7 @@ export class PrivadoProveedoresRegistros implements OnInit {
   }
 
   puedePagarTodo(): boolean {
-    return this.saldoPago() === 0 && this.registrosFiltrados.length > 0;
+    return this.saldoPago() === 0 && this.registrosPendientesFiltrados.length > 0;
   }
 
   pagarTodo(): void {
@@ -381,7 +397,7 @@ export class PrivadoProveedoresRegistros implements OnInit {
     const headers = this.obtenerHeaders();
     const payload = {
       usuario_id: this.usuarioId,
-      entregas_ids: this.registrosFiltrados.map((registro) => registro.entrega_id),
+      entregas_ids: this.registrosPendientesFiltrados.map((registro) => registro.entrega_id),
       monto_transferencia: Number(this.montoTransferencia ?? 0),
       monto_efectivo: Number(this.montoEfectivo ?? 0),
       fecha_desde: this.filtros.fechaDesde || null,
