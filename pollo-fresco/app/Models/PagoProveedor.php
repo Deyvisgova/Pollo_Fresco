@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PagoProveedor extends Model
 {
@@ -39,4 +40,9 @@ class PagoProveedor extends Model
         'cantidad_entregas' => 'integer',
         'creado_en' => 'datetime',
     ];
+
+    public function detalles(): HasMany
+    {
+        return $this->hasMany(PagoProveedorDetalle::class, 'pago_id', 'pago_id');
+    }
 }

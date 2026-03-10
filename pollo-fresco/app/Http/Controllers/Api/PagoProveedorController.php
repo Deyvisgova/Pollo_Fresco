@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\EntregaProveedor;
 use App\Models\PagoProveedor;
+use App\Models\PagoProveedorDetalle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -15,7 +16,10 @@ class PagoProveedorController extends Controller
     {
         $search = mb_strtolower(trim((string) $request->query('search', '')));
 
-        $query = PagoProveedor::query()->orderByDesc('creado_en')->orderByDesc('pago_id');
+        $query = PagoProveedor::query()
+            ->with(['detalles.entrega.proveedor'])
+            ->orderByDesc('creado_en')
+            ->orderByDesc('pago_id');
 
         if ($search !== '') {
             $query->where(function ($subquery) use ($search) {
@@ -41,8 +45,21 @@ class PagoProveedorController extends Controller
         ]);
 
         return DB::transaction(function () use ($validated) {
-            $entregas = EntregaProveedor::whereIn('entrega_id', $validated['entregas_ids'])->lockForUpdate()->get();
-            $total = (float) $entregas->sum(fn (EntregaProveedor $entrega) => (float) $entrega->costo_total);
+            $entregas = EntregaProveedor::whereIn('entrega_id', $validated['entregas_ids'])
+                ->lockForUpdate()
+                ->get();
+
+            $entregasPendientes = $entregas->filter(
+                fn (EntregaProveedor $entrega) => ($entrega->estado_pago ?? 'PENDIENTE') === 'PENDIENTE'
+            )->values();
+
+            if ($entregasPendientes->isEmpty()) {
+                return response()->json([
+                    'message' => 'No hay entregas pendientes para pagar en la selección enviada.',
+                ], 422);
+            }
+
+            $total = (float) $entregasPendientes->sum(fn (EntregaProveedor $entrega) => (float) $entrega->costo_total);
             $pagado = (float) $validated['monto_transferencia'] + (float) $validated['monto_efectivo'];
             $saldo = round($total - $pagado, 2);
             $estado = abs($saldo) < 0.0001 ? 'PAGADO' : 'PENDIENTE';
@@ -56,14 +73,25 @@ class PagoProveedorController extends Controller
                 'estado' => $estado,
                 'fecha_desde' => $validated['fecha_desde'] ?? null,
                 'fecha_hasta' => $validated['fecha_hasta'] ?? null,
-                'cantidad_entregas' => $entregas->count(),
+                'cantidad_entregas' => $entregasPendientes->count(),
             ]);
 
-            if ($estado === 'PAGADO' && Schema::hasColumn('entregas_proveedor', 'estado_pago')) {
-                EntregaProveedor::whereIn('entrega_id', $validated['entregas_ids'])->update(['estado_pago' => 'PAGADO']);
+            foreach ($entregasPendientes as $entrega) {
+                PagoProveedorDetalle::create([
+                    'pago_id' => $pago->pago_id,
+                    'entrega_id' => $entrega->entrega_id,
+                    'monto_entrega' => $entrega->costo_total,
+                    'estado_pago_anterior' => $entrega->estado_pago ?? 'PENDIENTE',
+                    'estado_pago_nuevo' => $estado === 'PAGADO' ? 'PAGADO' : ($entrega->estado_pago ?? 'PENDIENTE'),
+                ]);
             }
 
-            return response()->json($pago, 201);
+            if ($estado === 'PAGADO' && Schema::hasColumn('entregas_proveedor', 'estado_pago')) {
+                EntregaProveedor::whereIn('entrega_id', $entregasPendientes->pluck('entrega_id')->all())
+                    ->update(['estado_pago' => 'PAGADO']);
+            }
+
+            return response()->json($pago->load(['detalles.entrega.proveedor']), 201);
         });
     }
 }

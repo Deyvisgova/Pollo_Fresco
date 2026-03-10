@@ -22,6 +22,7 @@
           <th>Saldo</th>
           <th>Estado</th>
           <th>Entregas</th>
+          <th>Detalle entregas</th>
           <th>Rango fechas</th>
           <th>Creado en</th>
         </tr>
@@ -35,11 +36,12 @@
           <td>S/ {{ pago.saldo | number: '1.2-2' }}</td>
           <td>{{ pago.estado }}</td>
           <td>{{ pago.cantidad_entregas }}</td>
+          <td>{{ resumenDetalle(pago) }}</td>
           <td>{{ pago.fecha_desde || '-' }} a {{ pago.fecha_hasta || '-' }}</td>
           <td>{{ pago.creado_en | date: 'short' }}</td>
         </tr>
         <tr *ngIf="!cargando && pagos.length === 0">
-          <td colspan="9">Sin pagos registrados.</td>
+          <td colspan="10">Sin pagos registrados.</td>
         </tr>
       </tbody>
     </table>

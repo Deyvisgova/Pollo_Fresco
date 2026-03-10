@@ -195,7 +195,7 @@
 
   <div class="resumen-pagos">
     <p>Total filtrado: <strong>S/ {{ totalFiltrado | number: '1.2-2' }}</strong></p>
-    <button class="boton boton--primario boton--compacto" type="button" [disabled]="registrosFiltrados.length === 0" (click)="abrirModalPago()">
+    <button class="boton boton--primario boton--compacto" type="button" [disabled]="registrosPendientesFiltrados.length === 0" (click)="abrirModalPago()">
       Pagar todo
     </button>
   </div>
@@ -230,7 +230,7 @@
             <td data-label="Merma">{{ registro.merma_kg | number: '1.2-2' }}</td>
             <td data-label="Costo">S/ {{ registro.costo_total | number: '1.2-2' }}</td>
             <td data-label="Estado">
-              <button class="boton boton--compacto" [class.boton--primario]="registro.estado_pago === 'PAGADO'" [class.boton--secundario]="registro.estado_pago !== 'PAGADO'" type="button" (click)="alternarEstadoRegistro(registro)">
+              <button class="boton boton--compacto" [class.boton--primario]="registro.estado_pago === 'PAGADO'" [class.boton--secundario]="registro.estado_pago !== 'PAGADO'" type="button" (click)="registro.estado_pago === 'PENDIENTE' ? abrirModalPagoDesdeEstado(registro) : alternarEstadoRegistro(registro)">
                 {{ registro.estado_pago }}
               </button>
             </td>
@@ -283,7 +283,8 @@
 <section class="modal" *ngIf="modalPagoAbierto">
   <div class="modal__fondo" (click)="cerrarModalPago()"></div>
   <div class="modal__contenido">
-    <h3>Total a pagar: S/ {{ totalFiltrado | number: '1.2-2' }}</h3>
+    <h3>Total seleccionado: S/ {{ totalSeleccionadoPago() | number: '1.2-2' }}</h3>
+    <p>{{ registrosSeleccionadosPago.length }} entrega(s) pendiente(s) en este pago.</p>
     <label class="campo">
       <span>Transferencia</span>
       <input [(ngModel)]="montoTransferencia" type="number" min="0" step="0.01" />

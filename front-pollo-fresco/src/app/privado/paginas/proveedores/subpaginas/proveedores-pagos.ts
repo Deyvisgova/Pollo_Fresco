@@ -4,6 +4,21 @@ import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { SesionServicio } from '../../../../servicios/sesion.servicio';
 
+interface PagoDetalleProveedor {
+  detalle_id: number;
+  entrega_id: number;
+  monto_entrega: number;
+  estado_pago_anterior: string;
+  estado_pago_nuevo: string;
+  entrega?: {
+    fecha_hora: string;
+    proveedor?: {
+      nombres: string;
+      apellidos: string | null;
+    };
+  };
+}
+
 interface PagoProveedor {
   pago_id: number;
   total: number;
@@ -15,6 +30,7 @@ interface PagoProveedor {
   fecha_desde: string | null;
   fecha_hasta: string | null;
   creado_en: string;
+  detalles?: PagoDetalleProveedor[];
 }
 
 @Component({
@@ -38,6 +54,7 @@ export class PrivadoProveedoresPagos implements OnInit {
 
   cargarPagos(): void {
     this.cargando = true;
+    this.error = '';
     const headers = this.obtenerHeaders();
     const query = this.busqueda.trim();
     const params = query ? `?search=${encodeURIComponent(query)}` : '';
@@ -53,6 +70,20 @@ export class PrivadoProveedoresPagos implements OnInit {
         this.cargando = false;
       }
     });
+  }
+
+  resumenDetalle(pago: PagoProveedor): string {
+    if (!pago.detalles || pago.detalles.length === 0) {
+      return '-';
+    }
+
+    return pago.detalles
+      .map((detalle) => {
+        const proveedor = detalle.entrega?.proveedor;
+        const nombreProveedor = proveedor ? `${proveedor.nombres} ${proveedor.apellidos ?? ''}`.trim() : 'Sin proveedor';
+        return `#${detalle.entrega_id} (${nombreProveedor})`;
+      })
+      .join(', ');
   }
 
   private obtenerHeaders(): HttpHeaders {
