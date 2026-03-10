@@ -79,6 +79,7 @@ export class PrivadoProveedoresRegistros implements OnInit {
 
   registros: RegistroEntrega[] = [];
   registrosFiltrados: RegistroEntrega[] = [];
+  registrosPendientesFiltrados: RegistroEntrega[] = [];
   proveedores: ProveedorApi[] = [];
   busquedaProveedor = '';
   tarjetasProveedor: TarjetaProveedor[] = [];
@@ -100,6 +101,7 @@ export class PrivadoProveedoresRegistros implements OnInit {
   montoTransferencia: number | null = null;
   montoEfectivo: number | null = null;
   procesandoPago = false;
+  entregasParaPagarIds: number[] = [];
 
   editandoEntregaId: number | null = null;
   formularioEdicion: {
@@ -317,7 +319,8 @@ export class PrivadoProveedoresRegistros implements OnInit {
       return pasaTexto && pasaProveedor && pasaTipo && pasaFechaDesde && pasaFechaHasta;
     });
 
-    this.totalFiltrado = this.registrosFiltrados.reduce((acumulado, registro) => acumulado + Number(registro.costo_total), 0);
+    this.registrosPendientesFiltrados = this.registrosFiltrados.filter((registro) => this.normalizarEstadoPago(registro.estado_pago) === 'PENDIENTE');
+    this.totalFiltrado = this.registrosPendientesFiltrados.reduce((acumulado, registro) => acumulado + Number(registro.costo_total), 0);
   }
 
   limpiarFiltros(): void {
@@ -353,7 +356,15 @@ export class PrivadoProveedoresRegistros implements OnInit {
     });
   }
 
-  abrirModalPago(): void {
+  abrirModalPago(registro?: RegistroEntrega): void {
+    this.entregasParaPagarIds = registro
+      ? (this.normalizarEstadoPago(registro.estado_pago) === 'PENDIENTE' ? [registro.entrega_id] : [])
+      : this.registrosPendientesFiltrados.map((fila) => fila.entrega_id);
+
+    if (this.entregasParaPagarIds.length === 0) {
+      return;
+    }
+
     this.modalPagoAbierto = true;
     this.montoTransferencia = null;
     this.montoEfectivo = null;
@@ -361,16 +372,30 @@ export class PrivadoProveedoresRegistros implements OnInit {
 
   cerrarModalPago(): void {
     this.modalPagoAbierto = false;
+    this.entregasParaPagarIds = [];
+  }
+
+  totalPagoActual(): number {
+    const ids = new Set(this.entregasParaPagarIds);
+    const total = this.registros
+      .filter((registro) => ids.has(registro.entrega_id) && this.normalizarEstadoPago(registro.estado_pago) === 'PENDIENTE')
+      .reduce((acumulado, registro) => acumulado + Number(registro.costo_total), 0);
+
+    return Number(total.toFixed(2));
   }
 
   saldoPago(): number {
     const transferencia = Number(this.montoTransferencia ?? 0);
     const efectivo = Number(this.montoEfectivo ?? 0);
-    return Number((this.totalFiltrado - transferencia - efectivo).toFixed(2));
+    return Number((this.totalPagoActual() - transferencia - efectivo).toFixed(2));
+  }
+
+  pagoCompleto(): boolean {
+    return Math.abs(this.saldoPago()) < 0.01;
   }
 
   puedePagarTodo(): boolean {
-    return this.saldoPago() === 0 && this.registrosFiltrados.length > 0;
+    return this.pagoCompleto() && this.entregasParaPagarIds.length > 0;
   }
 
   pagarTodo(): void {
@@ -381,7 +406,7 @@ export class PrivadoProveedoresRegistros implements OnInit {
     const headers = this.obtenerHeaders();
     const payload = {
       usuario_id: this.usuarioId,
-      entregas_ids: this.registrosFiltrados.map((registro) => registro.entrega_id),
+      entregas_ids: this.entregasParaPagarIds,
       monto_transferencia: Number(this.montoTransferencia ?? 0),
       monto_efectivo: Number(this.montoEfectivo ?? 0),
       fecha_desde: this.filtros.fechaDesde || null,
@@ -498,7 +523,7 @@ export class PrivadoProveedoresRegistros implements OnInit {
       next: (registros) => {
         this.registros = registros.map((registro) => ({
           ...registro,
-          estado_pago: registro.estado_pago ?? 'PENDIENTE'
+          estado_pago: this.normalizarEstadoPago(registro.estado_pago),
         }));
         this.aplicarFiltros();
       },
@@ -558,13 +583,18 @@ export class PrivadoProveedoresRegistros implements OnInit {
         guardando: false,
         error: tarjeta.error ?? '',
         expandida: tarjeta.expandida !== false,
-        estadoPago: tarjeta.estadoPago ?? 'PENDIENTE',
+        estadoPago: this.normalizarEstadoPago(tarjeta.estadoPago),
         lineas: (tarjeta.lineas && tarjeta.lineas.length > 0 ? tarjeta.lineas : [this.crearLineaInicial()])
       }));
     } catch {
       this.tarjetasProveedor = [];
       localStorage.removeItem(this.storageTarjetasKey);
     }
+  }
+
+
+  private normalizarEstadoPago(estado: string | null | undefined): 'PENDIENTE' | 'PAGADO' {
+    return String(estado ?? '').toUpperCase() === 'PAGADO' ? 'PAGADO' : 'PENDIENTE';
   }
 
   private formatearFechaHoraInput(fechaHora: string): string {
