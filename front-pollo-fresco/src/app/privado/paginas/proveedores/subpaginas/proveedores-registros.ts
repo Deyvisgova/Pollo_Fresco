@@ -603,7 +603,8 @@ export class PrivadoProveedoresRegistros implements OnInit {
 
 
   private normalizarEstadoPago(estado: string | null | undefined): 'PENDIENTE' | 'PAGADO' {
-    return String(estado ?? '').toUpperCase() === 'PAGADO' ? 'PAGADO' : 'PENDIENTE';
+    const estadoNormalizado = String(estado ?? '').trim().toUpperCase();
+    return estadoNormalizado === 'PAGADO' ? 'PAGADO' : 'PENDIENTE';
   }
 
   private formatearFechaHoraInput(fechaHora: string): string {
