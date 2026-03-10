@@ -197,7 +197,7 @@
 
   <div class="resumen-pagos">
     <p>Total filtrado: <strong>S/ {{ totalFiltrado | number: '1.2-2' }}</strong></p>
-    <button class="boton boton--primario boton--compacto" type="button" (click)="abrirModalPago()">
+    <button class="boton boton--primario boton--compacto" type="button" (click)="abrirModalPago(undefined, $event)">
       Pagar todo
     </button>
   </div>
@@ -237,7 +237,7 @@
               </span>
             </td>
             <td data-label="Acciones" class="acciones-tabla">
-              <button class="boton boton--primario boton--compacto" type="button" (click)="abrirModalPago(registro)">Pagar</button>
+              <button class="boton boton--primario boton--compacto" type="button" (click)="abrirModalPago(registro, $event)">Pagar</button>
               <button class="boton boton--secundario boton--compacto" type="button" (click)="iniciarEdicion(registro)">Editar</button>
               <button class="boton boton--peligro boton--compacto" type="button" (click)="eliminarRegistro(registro.entrega_id)">Eliminar</button>
             </td>
@@ -283,7 +283,7 @@
   </div>
 </section>
 
-<section class="modal" *ngIf="modalPagoAbierto">
+<section class="modal" [class.modal--abierto]="modalPagoAbierto" [attr.aria-hidden]="!modalPagoAbierto">
   <div class="modal__fondo" (click)="cerrarModalPago()"></div>
   <div class="modal__contenido">
     <h3 class="modal__titulo">Registrar pago</h3>

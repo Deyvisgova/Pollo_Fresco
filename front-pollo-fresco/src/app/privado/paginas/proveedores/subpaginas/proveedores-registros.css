@@ -172,6 +172,11 @@
   color: #991b1b;
 }
 
+.boton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .tabla-contenedor {
   overflow-x: auto;
 }
@@ -227,7 +232,12 @@
 .modal {
   position: fixed;
   inset: 0;
-  z-index: 60;
+  z-index: 5000;
+  display: none;
+}
+
+.modal--abierto {
+  display: block;
 }
 
 .modal__fondo {
