@@ -359,14 +359,14 @@ export class PrivadoProveedoresRegistros implements OnInit {
   abrirModalPago(registro?: RegistroEntrega): void {
     this.error = '';
     this.entregasParaPagarIds = registro
-      ? (this.esPendiente(registro) ? [registro.entrega_id] : [])
-      : this.registrosPendientesFiltrados.map((fila) => fila.entrega_id);
+      ? [registro.entrega_id]
+      : this.registrosFiltrados.map((fila) => fila.entrega_id);
 
     this.modalPagoAbierto = true;
     this.montoTransferencia = null;
     this.montoEfectivo = null;
 
-    if (this.entregasParaPagarIds.length === 0) {
+    if (this.entregasParaPagarIds.length === 0 || this.totalPagoActual() === 0) {
       this.error = 'No hay entregas pendientes para pagar con el filtro actual.';
     }
   }
@@ -396,7 +396,7 @@ export class PrivadoProveedoresRegistros implements OnInit {
   }
 
   puedePagarTodo(): boolean {
-    return this.pagoCompleto() && this.entregasParaPagarIds.length > 0;
+    return this.pagoCompleto() && this.entregasParaPagarIds.length > 0 && this.totalPagoActual() > 0;
   }
 
   esPendiente(registro: RegistroEntrega): boolean {
@@ -603,7 +603,8 @@ export class PrivadoProveedoresRegistros implements OnInit {
 
 
   private normalizarEstadoPago(estado: string | null | undefined): 'PENDIENTE' | 'PAGADO' {
-    return String(estado ?? '').toUpperCase() === 'PAGADO' ? 'PAGADO' : 'PENDIENTE';
+    const estadoNormalizado = String(estado ?? '').trim().toUpperCase();
+    return estadoNormalizado === 'PAGADO' ? 'PAGADO' : 'PENDIENTE';
   }
 
   private formatearFechaHoraInput(fechaHora: string): string {
