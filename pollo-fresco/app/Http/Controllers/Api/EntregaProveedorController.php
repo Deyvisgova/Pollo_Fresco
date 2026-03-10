@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\EntregaProveedor;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class EntregaProveedorController extends Controller
 {
@@ -15,6 +16,8 @@ class EntregaProveedorController extends Controller
     {
         $proveedorId = $request->query('proveedor_id');
         $fechaHora = $request->query('fecha_hora');
+        $fechaDesde = $request->query('fecha_desde');
+        $fechaHasta = $request->query('fecha_hasta');
 
         $query = EntregaProveedor::with('proveedor')
             ->orderByDesc('fecha_hora')
@@ -28,6 +31,14 @@ class EntregaProveedorController extends Controller
             $query->whereDate('fecha_hora', $fechaHora);
         }
 
+        if ($fechaDesde) {
+            $query->whereDate('fecha_hora', '>=', $fechaDesde);
+        }
+
+        if ($fechaHasta) {
+            $query->whereDate('fecha_hora', '<=', $fechaHasta);
+        }
+
         return response()->json($query->get());
     }
 
@@ -36,7 +47,7 @@ class EntregaProveedorController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $rules = [
             'proveedor_id' => ['required', 'integer', 'exists:proveedores,proveedor_id'],
             'usuario_id' => ['required', 'integer', 'exists:usuarios,usuario_id'],
             'fecha_hora' => ['required', 'date'],
@@ -46,9 +57,15 @@ class EntregaProveedorController extends Controller
             'costo_total' => ['nullable', 'numeric', 'min:0'],
             'precio_kg' => ['nullable', 'numeric', 'min:0'],
             'tipo' => ['required', 'string', 'max:50'],
-        ]);
+        ];
 
-        $entrega = EntregaProveedor::create([
+        if ($this->soportaEstadoPago()) {
+            $rules['estado_pago'] = ['nullable', 'string', 'in:PENDIENTE,PAGADO'];
+        }
+
+        $validated = $request->validate($rules);
+
+        $data = [
             'proveedor_id' => $validated['proveedor_id'],
             'usuario_id' => $validated['usuario_id'],
             'fecha_hora' => $validated['fecha_hora'],
@@ -57,7 +74,13 @@ class EntregaProveedorController extends Controller
             'merma_kg' => $validated['merma_kg'],
             'costo_total' => $validated['costo_total'] ?? 0.0,
             'tipo' => $validated['tipo'],
-        ]);
+        ];
+
+        if ($this->soportaEstadoPago()) {
+            $data['estado_pago'] = $validated['estado_pago'] ?? 'PENDIENTE';
+        }
+
+        $entrega = EntregaProveedor::create($data);
 
         return response()->json($entrega->load('proveedor'), 201);
     }
@@ -67,14 +90,20 @@ class EntregaProveedorController extends Controller
      */
     public function update(Request $request, EntregaProveedor $entregaProveedor)
     {
-        $validated = $request->validate([
+        $rules = [
             'fecha_hora' => ['required', 'date'],
             'cantidad_pollos' => ['required', 'integer', 'min:0'],
             'peso_total_kg' => ['required', 'numeric', 'min:0'],
             'merma_kg' => ['required', 'numeric', 'min:0'],
             'costo_total' => ['required', 'numeric', 'min:0'],
             'tipo' => ['required', 'string', 'max:50'],
-        ]);
+        ];
+
+        if ($this->soportaEstadoPago()) {
+            $rules['estado_pago'] = ['sometimes', 'string', 'in:PENDIENTE,PAGADO'];
+        }
+
+        $validated = $request->validate($rules);
 
         $entregaProveedor->update($validated);
 
@@ -89,5 +118,10 @@ class EntregaProveedorController extends Controller
         $entregaProveedor->delete();
 
         return response()->json(['message' => 'Entrega eliminada']);
+    }
+
+    private function soportaEstadoPago(): bool
+    {
+        return Schema::hasColumn('entregas_proveedor', 'estado_pago');
     }
 }

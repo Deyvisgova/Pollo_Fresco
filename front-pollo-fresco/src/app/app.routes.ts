@@ -18,6 +18,7 @@ import { PrivadoOtrosProductosVentasDiarias } from './privado/paginas/otros-prod
 import { PrivadoPedidos } from './privado/paginas/pedidos/pedidos';
 import { PrivadoProveedores } from './privado/paginas/proveedores/proveedores';
 import { PrivadoProveedoresCrud } from './privado/paginas/proveedores/subpaginas/proveedores-crud';
+import { PrivadoProveedoresPagos } from './privado/paginas/proveedores/subpaginas/proveedores-pagos';
 import { PrivadoProveedoresRegistros } from './privado/paginas/proveedores/subpaginas/proveedores-registros';
 import { PrivadoReportes } from './privado/paginas/reportes/reportes';
 import { PrivadoUsuarios } from './privado/paginas/usuarios/usuarios';
@@ -84,6 +85,10 @@ export const routes: Routes = [
           {
             path: 'registros',
             component: PrivadoProveedoresRegistros
+          },
+          {
+            path: 'pagos',
+            component: PrivadoProveedoresPagos
           }
         ]
       },

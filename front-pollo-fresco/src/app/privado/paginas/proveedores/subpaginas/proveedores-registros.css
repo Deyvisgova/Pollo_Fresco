@@ -78,8 +78,18 @@
 .tarjeta-proveedor__encabezado {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
+}
+
+.tarjeta-proveedor__encabezado h3 {
+  font-size: 1rem;
+}
+
+.tarjeta-proveedor__nombre {
+  margin: 4px 0 0;
+  font-size: 0.82rem;
+  color: #475569;
 }
 
 .tarjeta-proveedor__iconos {
@@ -103,6 +113,10 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.campo--estado {
+  max-width: 220px;
 }
 
 .linea {
@@ -202,4 +216,39 @@
   padding: 6px 12px;
   font-size: 0.82rem;
   border-radius: 10px;
+}
+
+.resumen-pagos {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+}
+
+.modal__fondo {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.modal__contenido {
+  position: relative;
+  background: #fff;
+  width: min(460px, 92vw);
+  margin: 8vh auto;
+  border-radius: 14px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.estado-pagado {
+  color: #15803d;
+  font-weight: 700;
 }
