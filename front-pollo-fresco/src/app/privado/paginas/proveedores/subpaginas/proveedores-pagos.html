@@ -3,10 +3,27 @@
     <h3>Historial de Pago</h3>
   </header>
 
-  <label class="campo-busqueda">
-    <span>Búsqueda</span>
-    <input [(ngModel)]="busqueda" (ngModelChange)="cargarPagos()" type="text" placeholder="Buscar por ID o estado" />
-  </label>
+  <div class="filtros-pagos">
+    <label class="campo-busqueda">
+      <span>Búsqueda</span>
+      <input [(ngModel)]="busqueda" (ngModelChange)="cargarPagos()" type="text" placeholder="Buscar por ID o estado" />
+    </label>
+
+    <label class="campo-busqueda">
+      <span>Proveedor</span>
+      <select [(ngModel)]="filtroProveedorId" (ngModelChange)="cargarPagos()">
+        <option value="">Todos</option>
+        <option *ngFor="let proveedor of proveedoresFiltro" [value]="proveedor.proveedor_id">{{ proveedor.nombre }}</option>
+      </select>
+    </label>
+
+    <label class="campo-busqueda">
+      <span>Fecha de pago</span>
+      <input [(ngModel)]="filtroFecha" (ngModelChange)="cargarPagos()" type="date" />
+    </label>
+
+    <button class="boton-pdf" type="button" title="Descargar PDF filtrado" (click)="descargarPdfFiltrado()">📄 PDF</button>
+  </div>
 
   <p class="mensaje" *ngIf="cargando">Cargando historial...</p>
   <p class="mensaje mensaje--error" *ngIf="error">{{ error }}</p>
@@ -22,6 +39,7 @@
           <th>Saldo</th>
           <th>Estado</th>
           <th>Entregas</th>
+          <th>Proveedor pagado</th>
           <th>Rango fechas</th>
           <th>Creado en</th>
         </tr>
@@ -33,13 +51,14 @@
           <td>S/ {{ pago.monto_transferencia | number: '1.2-2' }}</td>
           <td>S/ {{ pago.monto_efectivo | number: '1.2-2' }}</td>
           <td>S/ {{ pago.saldo | number: '1.2-2' }}</td>
-          <td>{{ pago.estado }}</td>
+          <td><span class="estado-badge" [class.estado-badge--pagado]="estadoEsPagado(pago.estado)">{{ pago.estado }}</span></td>
           <td>{{ pago.cantidad_entregas }}</td>
-          <td>{{ pago.fecha_desde || '-' }} a {{ pago.fecha_hasta || '-' }}</td>
+          <td>{{ proveedorPagadoTexto(pago) }}</td>
+          <td>{{ formatearRangoFechas(pago.fecha_desde, pago.fecha_hasta) }}</td>
           <td>{{ pago.creado_en | date: 'short' }}</td>
         </tr>
         <tr *ngIf="!cargando && pagos.length === 0">
-          <td colspan="9">Sin pagos registrados.</td>
+          <td colspan="10">Sin pagos registrados.</td>
         </tr>
       </tbody>
     </table>

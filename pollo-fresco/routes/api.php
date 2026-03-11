@@ -87,6 +87,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('entregas-proveedor/{entregaProveedor}', [EntregaProveedorController::class, 'update']);
     Route::delete('entregas-proveedor/{entregaProveedor}', [EntregaProveedorController::class, 'destroy']);
     Route::get('pagos-proveedor', [PagoProveedorController::class, 'index']);
+    Route::get('pagos-proveedor/pdf', [PagoProveedorController::class, 'pdf']);
     Route::post('pagos-proveedor', [PagoProveedorController::class, 'store']);
 
     Route::get('otros-productos/productos', [OtrosProductosController::class, 'productosIndex']);
