@@ -340,4 +340,285 @@ class OtrosProductosController extends Controller
 
         return response()->json(['message' => 'Lote eliminado']);
     }
+
+    public function ventasDiariasEstado(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'fecha' => ['required', 'date'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['message' => 'Fecha inválida', 'errors' => $validator->errors()], 422);
+        }
+
+        $usuario = $request->user();
+        if (!$usuario) {
+            return response()->json(['message' => 'No autenticado'], 401);
+        }
+
+        $fecha = $request->query('fecha');
+        $filas = DB::table('otros_productos_ventas_diarias as opvd')
+            ->join('productos as p', 'p.producto_id', '=', 'opvd.producto_id')
+            ->select([
+                'opvd.venta_op_diaria_id',
+                'opvd.producto_id',
+                'opvd.compra_lote_detalle_id',
+                'opvd.cantidad',
+                'opvd.precio',
+                'opvd.total',
+                'opvd.total_huevos',
+                'opvd.total_congelados',
+                'opvd.cerrado_en',
+                'p.nombre as producto_nombre',
+                'p.grupo_venta',
+            ])
+            ->where('opvd.usuario_id', $usuario->usuario_id)
+            ->whereDate('opvd.fecha', $fecha)
+            ->orderBy('opvd.venta_op_diaria_id')
+            ->get();
+
+        return response()->json([
+            'fecha' => $fecha,
+            'cerrado' => $filas->contains(fn ($item) => !is_null($item->cerrado_en)),
+            'filas' => $filas,
+        ]);
+    }
+
+    public function ventasDiariasGuardar(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'fecha' => ['required', 'date'],
+            'filas' => ['array'],
+            'filas.*.producto_id' => ['required', 'integer', 'exists:productos,producto_id'],
+            'filas.*.cantidad' => ['required', 'numeric', 'min:0.01'],
+            'filas.*.precio' => ['required', 'numeric', 'min:0'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['message' => 'Datos inválidos', 'errors' => $validator->errors()], 422);
+        }
+
+        $usuario = $request->user();
+        if (!$usuario) {
+            return response()->json(['message' => 'No autenticado'], 401);
+        }
+
+        $fecha = $request->input('fecha');
+        $filas = collect($request->input('filas', []));
+
+        $hayCierre = DB::table('otros_productos_ventas_diarias')
+            ->where('usuario_id', $usuario->usuario_id)
+            ->whereDate('fecha', $fecha)
+            ->whereNotNull('cerrado_en')
+            ->exists();
+
+        if ($hayCierre) {
+            return response()->json(['message' => 'El día ya está cerrado. Reabre para editar.'], 409);
+        }
+
+        $totales = $this->calcularTotalesPorFilas($filas);
+
+        DB::beginTransaction();
+        try {
+            DB::table('otros_productos_ventas_diarias')
+                ->where('usuario_id', $usuario->usuario_id)
+                ->whereDate('fecha', $fecha)
+                ->whereNull('cerrado_en')
+                ->delete();
+
+            foreach ($filas as $fila) {
+                DB::table('otros_productos_ventas_diarias')->insert([
+                    'usuario_id' => $usuario->usuario_id,
+                    'producto_id' => (int) $fila['producto_id'],
+                    'compra_lote_detalle_id' => null,
+                    'cantidad' => (float) $fila['cantidad'],
+                    'precio' => (float) $fila['precio'],
+                    'fecha' => $fecha,
+                    'total' => (float) $fila['cantidad'] * (float) $fila['precio'],
+                    'total_huevos' => $totales['huevos'],
+                    'total_congelados' => $totales['congelados'],
+                    'cerrado_en' => null,
+                    'creado_en' => now(),
+                ]);
+            }
+
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'No se pudo guardar el borrador'], 500);
+        }
+
+        return response()->json(['message' => 'Borrador guardado']);
+    }
+
+    public function ventasDiariasCerrar(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'fecha' => ['required', 'date'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['message' => 'Fecha inválida', 'errors' => $validator->errors()], 422);
+        }
+
+        $usuario = $request->user();
+        if (!$usuario) {
+            return response()->json(['message' => 'No autenticado'], 401);
+        }
+
+        $fecha = $request->input('fecha');
+
+        $filas = DB::table('otros_productos_ventas_diarias')
+            ->where('usuario_id', $usuario->usuario_id)
+            ->whereDate('fecha', $fecha)
+            ->whereNull('cerrado_en')
+            ->orderBy('venta_op_diaria_id')
+            ->get();
+
+        if ($filas->isEmpty()) {
+            return response()->json(['message' => 'No hay filas para cerrar en esta fecha'], 422);
+        }
+
+        $ahora = now();
+
+        DB::beginTransaction();
+        try {
+            foreach ($filas as $fila) {
+                $detalleLote = DB::table('compras_lote_detalle as cld')
+                    ->join('compras_lote as cl', 'cl.compra_lote_id', '=', 'cld.compra_lote_id')
+                    ->where('cld.producto_id', $fila->producto_id)
+                    ->where('cld.cantidad', '>=', $fila->cantidad)
+                    ->where('cl.estado', 'ABIERTO')
+                    ->orderBy('cl.fecha_ingreso')
+                    ->orderBy('cld.compra_lote_detalle_id')
+                    ->lockForUpdate()
+                    ->first(['cld.compra_lote_detalle_id', 'cld.cantidad']);
+
+                if (!$detalleLote) {
+                    throw new \RuntimeException('Stock insuficiente para cerrar el día.');
+                }
+
+                DB::table('compras_lote_detalle')
+                    ->where('compra_lote_detalle_id', $detalleLote->compra_lote_detalle_id)
+                    ->update([
+                        'cantidad' => (float) $detalleLote->cantidad - (float) $fila->cantidad,
+                    ]);
+
+                DB::table('otros_productos_ventas_diarias')
+                    ->where('venta_op_diaria_id', $fila->venta_op_diaria_id)
+                    ->update([
+                        'compra_lote_detalle_id' => $detalleLote->compra_lote_detalle_id,
+                        'cerrado_en' => $ahora,
+                    ]);
+            }
+
+            DB::commit();
+        } catch (\RuntimeException $e) {
+            DB::rollBack();
+            return response()->json(['message' => $e->getMessage()], 422);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'No se pudo cerrar el día'], 500);
+        }
+
+        return response()->json(['message' => 'Día cerrado correctamente']);
+    }
+
+    public function ventasDiariasReabrir(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'fecha' => ['required', 'date'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['message' => 'Fecha inválida', 'errors' => $validator->errors()], 422);
+        }
+
+        $usuario = $request->user();
+        if (!$usuario) {
+            return response()->json(['message' => 'No autenticado'], 401);
+        }
+
+        $fecha = $request->input('fecha');
+
+        $filas = DB::table('otros_productos_ventas_diarias')
+            ->where('usuario_id', $usuario->usuario_id)
+            ->whereDate('fecha', $fecha)
+            ->whereNotNull('cerrado_en')
+            ->get();
+
+        if ($filas->isEmpty()) {
+            return response()->json(['message' => 'No hay cierre para reabrir en esta fecha'], 422);
+        }
+
+        DB::beginTransaction();
+        try {
+            foreach ($filas as $fila) {
+                if ($fila->compra_lote_detalle_id) {
+                    $detalle = DB::table('compras_lote_detalle')
+                        ->where('compra_lote_detalle_id', $fila->compra_lote_detalle_id)
+                        ->lockForUpdate()
+                        ->first();
+
+                    if ($detalle) {
+                        DB::table('compras_lote_detalle')
+                            ->where('compra_lote_detalle_id', $fila->compra_lote_detalle_id)
+                            ->update([
+                                'cantidad' => (float) $detalle->cantidad + (float) $fila->cantidad,
+                            ]);
+                    }
+                }
+            }
+
+            DB::table('otros_productos_ventas_diarias')
+                ->where('usuario_id', $usuario->usuario_id)
+                ->whereDate('fecha', $fecha)
+                ->update([
+                    'cerrado_en' => null,
+                    'compra_lote_detalle_id' => null,
+                ]);
+
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'No se pudo reabrir el día'], 500);
+        }
+
+        return response()->json(['message' => 'Día reabierto correctamente']);
+    }
+
+    private function calcularTotalesPorFilas($filas): array
+    {
+        $productoIds = collect($filas)->pluck('producto_id')->filter()->values();
+        if ($productoIds->isEmpty()) {
+            return ['huevos' => 0, 'congelados' => 0];
+        }
+
+        $productos = DB::table('productos')
+            ->whereIn('producto_id', $productoIds)
+            ->pluck('grupo_venta', 'producto_id');
+
+        $huevos = 0;
+        $congelados = 0;
+
+        foreach ($filas as $fila) {
+            $productoId = (int) ($fila['producto_id'] ?? 0);
+            $subtotal = (float) ($fila['cantidad'] ?? 0) * (float) ($fila['precio'] ?? 0);
+            $grupo = $productos[$productoId] ?? 'OTROS';
+
+            if ($grupo === 'HUEVOS') {
+                $huevos += $subtotal;
+            }
+
+            if ($grupo === 'CONGELADO') {
+                $congelados += $subtotal;
+            }
+        }
+
+        return [
+            'huevos' => $huevos,
+            'congelados' => $congelados,
+        ];
+    }
+
 }

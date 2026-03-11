@@ -2,23 +2,20 @@
   <header class="seccion__encabezado">
     <div>
       <h3>Registro manual de ventas diarias</h3>
-      <p class="seccion__descripcion">
-        Agrega líneas durante el día. Selecciona producto, cantidad y precio.
-      </p>
+      <p class="seccion__descripcion">Agrega líneas durante el día. Selecciona producto, cantidad y precio.</p>
     </div>
-    <div class="seccion__acciones" *ngIf="!cerrado">
-      <button type="button" class="boton boton--primario" (click)="cerrarDia()" [disabled]="cerrado">
-        Cerrar día
-      </button>
+    <div class="seccion__acciones">
+      <button type="button" class="boton boton--primario" (click)="cerrarDia()">Cerrar día</button>
     </div>
   </header>
 
   <p class="seccion__error" *ngIf="mensajeError">{{ mensajeError }}</p>
 
-  <div class="seccion__tabla" *ngIf="!cerrado">
+  <div class="seccion__tabla">
     <table>
       <thead>
         <tr>
+          <th>Fecha</th>
           <th>Productos</th>
           <th>Cantidad</th>
           <th>Precio (S/)</th>
@@ -27,14 +24,18 @@
       </thead>
       <tbody>
         <tr *ngFor="let venta of ventas; let i = index">
+          <td data-label="Fecha">
+            <input
+              type="date"
+              [value]="fechaHoy"
+              (ngModelChange)="cambiarFecha($event)"
+              [ngModel]="fechaHoy"
+              name="fecha-{{ i }}"
+            />
+          </td>
           <td data-label="Productos">
             <div class="selector-producto">
-              <button
-                type="button"
-                class="selector-producto__boton"
-                (click)="toggleDropdownProducto(i)"
-                [disabled]="cerrado"
-              >
+              <button type="button" class="selector-producto__boton" (click)="toggleDropdownProducto(i)">
                 <span>{{ venta.productoNombre || 'Selecciona producto...' }}</span>
                 <span class="selector-producto__icono">▾</span>
               </button>
@@ -61,54 +62,36 @@
           </td>
           <td data-label="Cantidad">
             <input
-              type="number"
+              type="text"
+              inputmode="decimal"
               placeholder="0.00"
               [(ngModel)]="venta.cantidad"
+              (ngModelChange)="onFilaCambio()"
               name="cantidad-{{ i }}"
-              [disabled]="cerrado"
             />
           </td>
           <td data-label="Precio (S/)">
             <input
-              type="number"
+              type="text"
+              inputmode="decimal"
               placeholder="0.00"
               [(ngModel)]="venta.precio"
+              (ngModelChange)="onFilaCambio()"
               name="precio-{{ i }}"
-              [disabled]="cerrado"
             />
           </td>
           <td data-label="Acciones" class="seccion__acciones-fila">
-            <button
-              type="button"
-              class="boton boton--texto boton--peligro"
-              (click)="quitarFila(i)"
-              [disabled]="cerrado"
-            >
-              Quitar fila
-            </button>
-            <button
-              type="button"
-              class="boton boton--texto"
-              (click)="limpiarFila(i)"
-              [disabled]="cerrado"
-            >
-              Limpiar fila
-            </button>
+            <button type="button" class="boton boton--texto boton--peligro" (click)="quitarFila(i)">Quitar fila</button>
+            <button type="button" class="boton boton--texto" (click)="limpiarFila(i)">Limpiar fila</button>
           </td>
         </tr>
       </tbody>
     </table>
   </div>
 
-  <div class="seccion__pie" *ngIf="!cerrado">
+  <div class="seccion__pie">
     <div class="seccion__pie-izquierda">
-      <div class="seccion__campo seccion__campo--fecha">
-        <label for="fecha">Fecha</label>
-        <input id="fecha" type="date" [value]="fechaHoy" disabled />
-      </div>
-      <button type="button" class="boton boton--secundario" (click)="agregarFila()" [disabled]="cerrado">
-        + Agregar línea
-      </button>
+      <button type="button" class="boton boton--secundario" (click)="agregarFila()">+ Agregar línea</button>
     </div>
 
     <div class="seccion__totales">
@@ -123,8 +106,9 @@
     </div>
   </div>
 
-  <section *ngIf="cerrado" class="seccion__cierre">
+  <section *ngIf="registrosCerrados.length > 0" class="seccion__cierre">
     <div class="seccion__cierre-encabezado">
+      <strong>Cierre {{ fechaUltimoCierre }}</strong>
       <button type="button" class="boton boton--texto" (click)="reabrirDia()">Reabrir</button>
     </div>
 
@@ -147,22 +131,8 @@
             <td>{{ item.total | number : '1.2-2' }}</td>
             <td>{{ item.categoria }}</td>
           </tr>
-          <tr *ngIf="registrosCerrados.length === 0">
-            <td colspan="5">No hay registros para mostrar.</td>
-          </tr>
         </tbody>
       </table>
-    </div>
-
-    <div class="seccion__totales seccion__totales--cerrado">
-      <div>
-        <span>Total Huevos</span>
-        <strong>S/ {{ totalHuevosCerrado | number : '1.2-2' }}</strong>
-      </div>
-      <div>
-        <span>Total Congelados</span>
-        <strong>S/ {{ totalCongeladosCerrado | number : '1.2-2' }}</strong>
-      </div>
     </div>
   </section>
 </section>

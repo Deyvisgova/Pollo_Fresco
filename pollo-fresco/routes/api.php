@@ -98,6 +98,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('otros-productos/lotes', [OtrosProductosController::class, 'lotesStore']);
     Route::put('otros-productos/lotes/{compraLoteId}', [OtrosProductosController::class, 'lotesUpdate']);
     Route::delete('otros-productos/lotes/{compraLoteId}', [OtrosProductosController::class, 'lotesDestroy']);
+    Route::get('otros-productos/ventas-diarias', [OtrosProductosController::class, 'ventasDiariasEstado']);
+    Route::put('otros-productos/ventas-diarias', [OtrosProductosController::class, 'ventasDiariasGuardar']);
+    Route::post('otros-productos/ventas-diarias/cerrar', [OtrosProductosController::class, 'ventasDiariasCerrar']);
+    Route::post('otros-productos/ventas-diarias/reabrir', [OtrosProductosController::class, 'ventasDiariasReabrir']);
 
     Route::post('configuracion/logo', [ConfiguracionController::class, 'subirLogo']);
     Route::delete('configuracion/logo', [ConfiguracionController::class, 'eliminarLogo']);
