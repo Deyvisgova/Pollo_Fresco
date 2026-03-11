@@ -362,8 +362,8 @@ export class PrivadoProveedoresRegistros implements OnInit {
 
     this.error = '';
     this.entregasParaPagarIds = registro
-      ? [registro.entrega_id]
-      : this.registrosFiltrados.map((fila) => fila.entrega_id);
+      ? (this.esPendiente(registro) ? [registro.entrega_id] : [])
+      : this.registrosPendientesFiltrados.map((fila) => fila.entrega_id);
 
     this.modalPagoAbierto = true;
     this.montoTransferencia = null;
@@ -585,7 +585,28 @@ export class PrivadoProveedoresRegistros implements OnInit {
   }
 
   private obtenerFechaActual(): string {
-    return new Date().toISOString().slice(0, 10);
+    const fecha = new Date();
+    const year = fecha.getFullYear();
+    const month = String(fecha.getMonth() + 1).padStart(2, '0');
+    const day = String(fecha.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  formatearFechaExacta(fechaHora: string): string {
+    const fecha = new Date(fechaHora);
+    if (Number.isNaN(fecha.getTime())) {
+      return '-';
+    }
+
+    return new Intl.DateTimeFormat('es-PE', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    }).format(fecha);
   }
 
   persistirTarjetas(): void {

@@ -226,7 +226,7 @@
 
           <ng-container *ngIf="editandoEntregaId !== registro.entrega_id; else modoEdicion">
             <td data-label="Tipo">{{ registro.tipo || '-' }}</td>
-            <td data-label="Fecha">{{ registro.fecha_hora | date: 'short' }}</td>
+            <td data-label="Fecha">{{ formatearFechaExacta(registro.fecha_hora) }}</td>
             <td data-label="Cantidad">{{ registro.cantidad_pollos }}</td>
             <td data-label="Peso total">{{ registro.peso_total_kg | number: '1.2-2' }} kg</td>
             <td data-label="Merma">{{ registro.merma_kg | number: '1.2-2' }}</td>
