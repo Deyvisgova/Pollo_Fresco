@@ -17,6 +17,11 @@ interface ProductoApi {
   grupo_venta: 'HUEVOS' | 'CONGELADO' | 'OTROS';
 }
 
+interface LoteApi {
+  producto_id: number;
+  estado: 'ABIERTO' | 'CERRADO';
+}
+
 interface VentaDiariaItem {
   ventaId: number | null;
   fecha: string;
@@ -28,6 +33,8 @@ interface VentaDiariaItem {
   cantidad: string;
   precio: string;
 }
+
+type CampoNumerico = 'cantidad' | 'precio';
 
 interface VentaCerradaItem {
   productoNombre: string;
@@ -60,6 +67,7 @@ interface EstadoVentaApi {
 })
 export class PrivadoOtrosProductosVentasDiarias implements OnInit {
   fechaHoy = this.obtenerFechaLocalISO();
+  usuarioActual = '-';
   cerrado = false;
   productos: Producto[] = [];
   mensajeError = '';
@@ -70,6 +78,7 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit {
   fechaUltimoCierre: string | null = null;
 
   private readonly guardado$ = new Subject<void>();
+  private productoIdsConLote = new Set<number>();
 
   constructor(
     private readonly http: HttpClient,
@@ -77,7 +86,9 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.usuarioActual = this.obtenerNombreUsuario();
     this.cargarProductos();
+    this.cargarLotesDisponibles();
     this.cargarEstadoFecha();
     this.guardado$.pipe(debounceTime(500)).subscribe(() => {
       this.guardarBorrador();
@@ -102,18 +113,6 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit {
     }, 0);
   }
 
-  get totalHuevosCerrado(): number {
-    return this.registrosCerrados
-      .filter((item) => item.categoria === 'HUEVOS')
-      .reduce((acc, item) => acc + item.total, 0);
-  }
-
-  get totalCongeladosCerrado(): number {
-    return this.registrosCerrados
-      .filter((item) => item.categoria === 'CONGELADO')
-      .reduce((acc, item) => acc + item.total, 0);
-  }
-
   crearFilaVacia(fecha: string): VentaDiariaItem {
     return {
       ventaId: null,
@@ -126,11 +125,6 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit {
       cantidad: '',
       precio: ''
     };
-  }
-
-  cambiarFecha(valor: string): void {
-    this.fechaHoy = valor || this.obtenerFechaLocalISO();
-    this.cargarEstadoFecha();
   }
 
   agregarFila(): void {
@@ -152,7 +146,14 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit {
     this.programarGuardado();
   }
 
-  onFilaCambio(): void {
+  actualizarCampoNumerico(index: number, campo: CampoNumerico, valor: string): void {
+    const fila = this.ventas[index];
+    if (!fila) {
+      return;
+    }
+
+    fila[campo] = this.normalizarEntradaDecimal(valor);
+    this.ventas = [...this.ventas];
     this.programarGuardado();
   }
 
@@ -209,6 +210,11 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit {
       return;
     }
 
+    if (!this.tieneLoteRegistrado(producto.id)) {
+      window.alert(`El producto "${producto.nombre}" no tiene lote registrado. Registra un lote antes de vender.`);
+      return;
+    }
+
     fila.productoId = producto.id;
     fila.productoNombre = producto.nombre;
     fila.grupoVenta = producto.grupo_venta;
@@ -219,17 +225,18 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit {
   }
 
   productosFiltrados(index: number): Producto[] {
+    const productosConLote = this.productos.filter((producto) => this.tieneLoteRegistrado(producto.id));
     const fila = this.ventas[index];
     if (!fila) {
-      return this.productos;
+      return productosConLote;
     }
 
     const valor = fila.filtroProducto.trim().toLowerCase();
     if (!valor) {
-      return this.productos;
+      return productosConLote;
     }
 
-    return this.productos.filter((producto) => producto.nombre.toLowerCase().includes(valor));
+    return productosConLote.filter((producto) => producto.nombre.toLowerCase().includes(valor));
   }
 
   @HostListener('document:click', ['$event'])
@@ -250,6 +257,18 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit {
       },
       error: () => {
         this.mensajeError = 'No pudimos cargar los productos para ventas diarias.';
+      }
+    });
+  }
+
+  private cargarLotesDisponibles(): void {
+    const headers = this.obtenerHeaders();
+    this.http.get<LoteApi[]>('/api/otros-productos/lotes', { headers }).subscribe({
+      next: (lotes) => {
+        this.productoIdsConLote = new Set(lotes.map((lote) => lote.producto_id));
+      },
+      error: () => {
+        this.productoIdsConLote = new Set();
       }
     });
   }
@@ -299,6 +318,12 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit {
       return;
     }
 
+    const filasSinLote = this.ventas.filter((fila) => fila.productoId && !this.tieneLoteRegistrado(fila.productoId));
+    if (filasSinLote.length > 0) {
+      window.alert('Hay productos sin lote registrado. No se guardó el registro de ventas diarias.');
+      return;
+    }
+
     const filasValidas = this.ventas
       .filter((fila) => fila.productoId && this.parseNumero(fila.cantidad) > 0 && this.parseNumero(fila.precio) >= 0)
       .map((fila) => ({
@@ -335,6 +360,32 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit {
     const normalizado = String(valor).replace(',', '.');
     const numero = Number(normalizado);
     return Number.isFinite(numero) ? numero : 0;
+  }
+
+  private normalizarEntradaDecimal(valor: string | null | undefined): string {
+    if (valor == null) {
+      return '';
+    }
+
+    const soloCaracteresValidos = valor.replace(/[^\d.,]/g, '');
+    const conPuntoDecimal = soloCaracteresValidos.replace(',', '.');
+    const [parteEntera = '', ...restoDecimales] = conPuntoDecimal.split('.');
+    const parteDecimal = restoDecimales.join('');
+
+    if (restoDecimales.length === 0) {
+      return parteEntera;
+    }
+
+    return `${parteEntera}.${parteDecimal}`;
+  }
+
+  private tieneLoteRegistrado(productoId: number): boolean {
+    return this.productoIdsConLote.has(productoId);
+  }
+
+  private obtenerNombreUsuario(): string {
+    const usuario = this.sesionServicio.obtenerUsuario();
+    return usuario?.name?.trim() || usuario?.usuario?.trim() || usuario?.email?.trim() || 'Usuario';
   }
 
   private siguienteDia(fecha: string): string {
