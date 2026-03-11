@@ -143,6 +143,15 @@
   align-items: center;
 }
 
+.acciones-tabla {
+  justify-content: center;
+}
+
+.tabla th:last-child,
+.tabla td:last-child {
+  text-align: center;
+}
+
 .boton {
   border: none;
   border-radius: 999px;

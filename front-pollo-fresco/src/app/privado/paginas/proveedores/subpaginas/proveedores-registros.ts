@@ -51,6 +51,7 @@ interface FiltrosHistorial {
   texto: string;
   proveedorId: string;
   tipo: string;
+  estado: string;
   fechaDesde: string;
   fechaHasta: string;
 }
@@ -92,6 +93,7 @@ export class PrivadoProveedoresRegistros implements OnInit {
     texto: '',
     proveedorId: '',
     tipo: '',
+    estado: '',
     fechaDesde: '',
     fechaHasta: ''
   };
@@ -102,6 +104,7 @@ export class PrivadoProveedoresRegistros implements OnInit {
   montoEfectivo: number | null = null;
   procesandoPago = false;
   entregasParaPagarIds: number[] = [];
+  errorPagoModal = '';
 
   editandoEntregaId: number | null = null;
   formularioEdicion: {
@@ -311,12 +314,13 @@ export class PrivadoProveedoresRegistros implements OnInit {
         String(registro.proveedor_id) === this.filtros.proveedorId;
 
       const pasaTipo = !this.filtros.tipo || (registro.tipo || '') === this.filtros.tipo;
+      const pasaEstado = !this.filtros.estado || this.normalizarEstadoPago(registro.estado_pago) === this.filtros.estado;
 
       const fechaRegistro = registro.fecha_hora.slice(0, 10);
       const pasaFechaDesde = !this.filtros.fechaDesde || fechaRegistro >= this.filtros.fechaDesde;
       const pasaFechaHasta = !this.filtros.fechaHasta || fechaRegistro <= this.filtros.fechaHasta;
 
-      return pasaTexto && pasaProveedor && pasaTipo && pasaFechaDesde && pasaFechaHasta;
+      return pasaTexto && pasaProveedor && pasaTipo && pasaEstado && pasaFechaDesde && pasaFechaHasta;
     });
 
     this.registrosPendientesFiltrados = this.registrosFiltrados.filter((registro) => this.normalizarEstadoPago(registro.estado_pago) === 'PENDIENTE');
@@ -328,6 +332,7 @@ export class PrivadoProveedoresRegistros implements OnInit {
       texto: '',
       proveedorId: '',
       tipo: '',
+      estado: '',
       fechaDesde: '',
       fechaHasta: ''
     };
@@ -361,22 +366,29 @@ export class PrivadoProveedoresRegistros implements OnInit {
     evento?.stopPropagation();
 
     this.error = '';
+    this.errorPagoModal = '';
     this.entregasParaPagarIds = registro
-      ? [registro.entrega_id]
-      : this.registrosFiltrados.map((fila) => fila.entrega_id);
+      ? (this.esPendiente(registro) ? [registro.entrega_id] : [])
+      : this.registrosPendientesFiltrados.map((fila) => fila.entrega_id);
+
+    if (!registro && this.contarProveedoresSeleccionados() > 1) {
+      this.mostrarAlertaProveedorUnico();
+      return;
+    }
 
     this.modalPagoAbierto = true;
     this.montoTransferencia = null;
     this.montoEfectivo = null;
 
     if (this.entregasParaPagarIds.length === 0 || this.totalPagoActual() === 0) {
-      this.error = 'No hay entregas pendientes para pagar con el filtro actual.';
+      this.errorPagoModal = 'No hay entregas pendientes para pagar con el filtro actual.';
     }
   }
 
   cerrarModalPago(): void {
     this.modalPagoAbierto = false;
     this.entregasParaPagarIds = [];
+    this.errorPagoModal = '';
   }
 
 
@@ -425,6 +437,11 @@ export class PrivadoProveedoresRegistros implements OnInit {
       return;
     }
 
+    if (this.contarProveedoresSeleccionados() > 1) {
+      this.errorPagoModal = 'Solo se permite pagar de un solo proveedor.';
+      return;
+    }
+
     const headers = this.obtenerHeaders();
     const payload = {
       usuario_id: this.usuarioId,
@@ -442,12 +459,40 @@ export class PrivadoProveedoresRegistros implements OnInit {
         this.cargarRegistros();
       },
       error: () => {
-        this.error = 'No se pudo registrar el pago total.';
+        this.errorPagoModal = 'No se pudo registrar el pago total.';
       },
       complete: () => {
         this.procesandoPago = false;
       }
     });
+  }
+
+
+  private mostrarAlertaProveedorUnico(): void {
+    const swal = (window as unknown as { Swal?: { fire: (options: Record<string, unknown>) => Promise<{ isConfirmed: boolean }> } }).Swal;
+
+    if (!swal) {
+      this.error = 'Solo se permite pagar de un solo proveedor.';
+      return;
+    }
+
+    swal.fire({
+      title: 'Atención',
+      text: 'Solo se permite pagar de un solo proveedor.',
+      icon: 'warning',
+      confirmButtonText: 'OK'
+    });
+  }
+
+  private contarProveedoresSeleccionados(): number {
+    const ids = new Set(this.entregasParaPagarIds);
+    const proveedores = new Set(
+      this.registros
+        .filter((registro) => ids.has(registro.entrega_id))
+        .map((registro) => registro.proveedor_id)
+    );
+
+    return proveedores.size;
   }
 
   proveedoresEnHistorial(): ProveedorApi[] {
@@ -585,7 +630,32 @@ export class PrivadoProveedoresRegistros implements OnInit {
   }
 
   private obtenerFechaActual(): string {
-    return new Date().toISOString().slice(0, 10);
+    const fecha = new Date();
+    const year = fecha.getFullYear();
+    const month = String(fecha.getMonth() + 1).padStart(2, '0');
+    const day = String(fecha.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  formatearFechaExacta(fechaHora: string): string {
+    const valor = String(fechaHora ?? '').trim();
+    if (!valor) {
+      return '-';
+    }
+
+    const coincidencia = valor.match(/(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
+    if (!coincidencia) {
+      return valor;
+    }
+
+    const [, year, month, day, hourRaw, minute, secondRaw] = coincidencia;
+    const hour = Number(hourRaw);
+    const second = secondRaw ?? '00';
+    const periodo = hour >= 12 ? 'p. m.' : 'a. m.';
+    const hour12 = ((hour + 11) % 12) + 1;
+    const hora = String(hour12).padStart(2, '0');
+
+    return `${day}/${month}/${year}, ${hora}:${minute}:${second} ${periodo}`;
   }
 
   persistirTarjetas(): void {

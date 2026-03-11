@@ -183,6 +183,15 @@
     </label>
 
     <label class="campo">
+      <span>Estado</span>
+      <select [(ngModel)]="filtros.estado" (ngModelChange)="aplicarFiltros()" name="filtroEstado">
+        <option value="">Todos</option>
+        <option value="PENDIENTE">Pendiente</option>
+        <option value="PAGADO">Pagado</option>
+      </select>
+    </label>
+
+    <label class="campo">
       <span>Fecha desde</span>
       <input [(ngModel)]="filtros.fechaDesde" (ngModelChange)="aplicarFiltros()" name="filtroFechaDesde" type="date" />
     </label>
@@ -226,7 +235,7 @@
 
           <ng-container *ngIf="editandoEntregaId !== registro.entrega_id; else modoEdicion">
             <td data-label="Tipo">{{ registro.tipo || '-' }}</td>
-            <td data-label="Fecha">{{ registro.fecha_hora | date: 'short' }}</td>
+            <td data-label="Fecha">{{ formatearFechaExacta(registro.fecha_hora) }}</td>
             <td data-label="Cantidad">{{ registro.cantidad_pollos }}</td>
             <td data-label="Peso total">{{ registro.peso_total_kg | number: '1.2-2' }} kg</td>
             <td data-label="Merma">{{ registro.merma_kg | number: '1.2-2' }}</td>
@@ -307,6 +316,8 @@
     </label>
 
     <p *ngIf="pagoCompleto()" class="estado-pagado">PAGO COMPLETO</p>
+
+    <p class="mensaje mensaje--error" *ngIf="errorPagoModal">{{ errorPagoModal }}</p>
 
     <div class="acciones">
       <button class="boton boton--secundario boton--compacto" type="button" (click)="cerrarModalPago()">Cancelar</button>
