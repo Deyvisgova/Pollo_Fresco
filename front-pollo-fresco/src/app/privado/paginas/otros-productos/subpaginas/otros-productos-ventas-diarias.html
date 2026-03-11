@@ -35,16 +35,25 @@
           </td>
           <td data-label="Productos">
             <div class="selector-producto">
-              <button type="button" class="selector-producto__boton" (click)="toggleDropdownProducto(i)">
-                <span>{{ venta.productoNombre || 'Selecciona producto...' }}</span>
+              <button
+                type="button"
+                class="selector-producto__boton"
+                (click)="toggleDropdownProducto(i)"
+                [attr.aria-expanded]="venta.dropdownAbierto"
+              >
+                <span class="selector-producto__texto">
+                  {{ venta.productoNombre || 'Selecciona producto' }}
+                </span>
                 <span class="selector-producto__icono">▾</span>
               </button>
               <div class="selector-producto__menu" *ngIf="venta.dropdownAbierto">
                 <input
                   type="text"
+                  class="selector-producto__buscador"
                   placeholder="Buscar producto..."
                   [(ngModel)]="venta.filtroProducto"
                   name="buscar-producto-{{ i }}"
+                  autocomplete="off"
                 />
                 <div class="selector-producto__lista">
                   <button
@@ -55,7 +64,9 @@
                   >
                     {{ producto.nombre }}
                   </button>
-                  <p *ngIf="productosFiltrados(i).length === 0">No hay productos</p>
+                  <p class="selector-producto__sin-resultados" *ngIf="productosFiltrados(i).length === 0">
+                    No hay productos que coincidan
+                  </p>
                 </div>
               </div>
             </div>
@@ -65,9 +76,10 @@
               type="text"
               inputmode="decimal"
               placeholder="0.00"
-              [(ngModel)]="venta.cantidad"
-              (ngModelChange)="onFilaCambio()"
+              [ngModel]="venta.cantidad"
+              (ngModelChange)="actualizarCampoNumerico(i, 'cantidad', $event)"
               name="cantidad-{{ i }}"
+              autocomplete="off"
             />
           </td>
           <td data-label="Precio (S/)">
@@ -75,9 +87,10 @@
               type="text"
               inputmode="decimal"
               placeholder="0.00"
-              [(ngModel)]="venta.precio"
-              (ngModelChange)="onFilaCambio()"
+              [ngModel]="venta.precio"
+              (ngModelChange)="actualizarCampoNumerico(i, 'precio', $event)"
               name="precio-{{ i }}"
+              autocomplete="off"
             />
           </td>
           <td data-label="Acciones" class="seccion__acciones-fila">

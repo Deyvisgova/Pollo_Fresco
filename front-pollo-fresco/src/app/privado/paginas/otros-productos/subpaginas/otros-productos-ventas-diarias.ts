@@ -29,6 +29,8 @@ interface VentaDiariaItem {
   precio: string;
 }
 
+type CampoNumerico = 'cantidad' | 'precio';
+
 interface VentaCerradaItem {
   productoNombre: string;
   cantidad: number;
@@ -154,6 +156,18 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit {
 
   onFilaCambio(): void {
     this.programarGuardado();
+  }
+
+  actualizarCampoNumerico(index: number, campo: CampoNumerico, valor: string): void {
+    const fila = this.ventas[index];
+    if (!fila) {
+      return;
+    }
+
+    const valorNormalizado = this.normalizarEntradaDecimal(valor);
+    fila[campo] = valorNormalizado;
+    this.ventas = [...this.ventas];
+    this.onFilaCambio();
   }
 
   calcularTotalFila(venta: VentaDiariaItem): number {
@@ -335,6 +349,23 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit {
     const normalizado = String(valor).replace(',', '.');
     const numero = Number(normalizado);
     return Number.isFinite(numero) ? numero : 0;
+  }
+
+  private normalizarEntradaDecimal(valor: string | null | undefined): string {
+    if (valor == null) {
+      return '';
+    }
+
+    const soloCaracteresValidos = valor.replace(/[^\d.,]/g, '');
+    const conPuntoDecimal = soloCaracteresValidos.replace(',', '.');
+    const [parteEntera = '', ...restoDecimales] = conPuntoDecimal.split('.');
+    const parteDecimal = restoDecimales.join('');
+
+    if (restoDecimales.length === 0) {
+      return parteEntera;
+    }
+
+    return `${parteEntera}.${parteDecimal}`;
   }
 
   private siguienteDia(fecha: string): string {
