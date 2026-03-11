@@ -12,7 +12,7 @@
   <div class="seccion__acciones">
     <input
       type="search"
-      placeholder="Buscar por nombre o estado..."
+      placeholder="Buscar por nombre, grupo o estado..."
       [(ngModel)]="filtro"
     />
     <button class="boton boton--secundario">Buscar</button>
@@ -26,6 +26,7 @@
         <tr>
           <th>#</th>
           <th>Nombre</th>
+          <th>Grupo venta</th>
           <th>Estado</th>
           <th>Acciones</th>
         </tr>
@@ -34,6 +35,7 @@
         <tr *ngFor="let producto of productosFiltrados">
           <td data-label="#">{{ producto.id }}</td>
           <td data-label="Nombre">{{ producto.nombre }}</td>
+          <td data-label="Grupo venta">{{ producto.grupoVenta }}</td>
           <td data-label="Estado">
             <span
               class="etiqueta"
@@ -69,7 +71,7 @@
           </td>
         </tr>
         <tr *ngIf="productosFiltrados.length === 0">
-          <td colspan="4">No hay productos con ese filtro.</td>
+          <td colspan="5">No hay productos con ese filtro.</td>
         </tr>
       </tbody>
     </table>
@@ -94,6 +96,14 @@
           [(ngModel)]="formulario.nombre"
           placeholder="Ej: Huevos de codorniz"
         />
+      </label>
+      <label>
+        Grupo venta
+        <select [(ngModel)]="formulario.grupoVenta">
+          <option value="HUEVOS">Huevos</option>
+          <option value="CONGELADO">Congelado</option>
+          <option value="OTROS">Otros</option>
+        </select>
       </label>
       <label class="modal__switch">
         <span>Estado</span>

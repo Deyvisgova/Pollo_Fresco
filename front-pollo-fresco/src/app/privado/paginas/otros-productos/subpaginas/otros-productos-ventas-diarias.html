@@ -3,59 +3,61 @@
     <div>
       <h3>Registro manual de ventas diarias</h3>
       <p class="seccion__descripcion">
-        Agrega líneas durante el día. El precio es obligatorio para registrar la venta.
+        Agrega líneas durante el día. Selecciona producto, cantidad y precio.
       </p>
     </div>
-    <div class="seccion__acciones">
-      <button type="button" class="boton boton--secundario" (click)="agregarFila()" [disabled]="cerrado">
-        + Agregar línea
-      </button>
+    <div class="seccion__acciones" *ngIf="!cerrado">
       <button type="button" class="boton boton--primario" (click)="cerrarDia()" [disabled]="cerrado">
         Cerrar día
-      </button>
-      <button type="button" class="boton boton--texto" (click)="reabrirDia()" [disabled]="!cerrado">
-        Reabrir
       </button>
     </div>
   </header>
 
-  <form class="seccion__formulario">
-    <div class="seccion__campo">
-      <label for="tipo">Tipo de producto</label>
-      <select id="tipo" [(ngModel)]="tipoSeleccionado" name="tipo" [disabled]="cerrado">
-        <option value="">Selecciona: Congelados o Huevos</option>
-        <option value="CONGELADO">Congelados</option>
-        <option value="HUEVO">Huevos</option>
-      </select>
-      <small>Se usará para registrar automáticamente cuando se active la facturación electrónica.</small>
-    </div>
+  <p class="seccion__error" *ngIf="mensajeError">{{ mensajeError }}</p>
 
-    <div class="seccion__campo">
-      <label for="fecha">Fecha</label>
-      <input id="fecha" type="date" [value]="fechaHoy" disabled />
-      <small>Fecha automática (no editable).</small>
-    </div>
-  </form>
-
-  <div class="seccion__tabla">
+  <div class="seccion__tabla" *ngIf="!cerrado">
     <table>
       <thead>
         <tr>
-          <th>Detalle</th>
+          <th>Productos</th>
           <th>Cantidad</th>
           <th>Precio (S/)</th>
-          <th></th>
+          <th>Acciones</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let venta of ventas; let i = index">
-          <td data-label="Detalle">
-            <input
-              type="text"
-              [(ngModel)]="venta.descripcion"
-              name="descripcion-{{ i }}"
-              [disabled]="cerrado"
-            />
+          <td data-label="Productos">
+            <div class="selector-producto">
+              <button
+                type="button"
+                class="selector-producto__boton"
+                (click)="toggleDropdownProducto(i)"
+                [disabled]="cerrado"
+              >
+                <span>{{ venta.productoNombre || 'Selecciona producto...' }}</span>
+                <span class="selector-producto__icono">▾</span>
+              </button>
+              <div class="selector-producto__menu" *ngIf="venta.dropdownAbierto">
+                <input
+                  type="text"
+                  placeholder="Buscar producto..."
+                  [(ngModel)]="venta.filtroProducto"
+                  name="buscar-producto-{{ i }}"
+                />
+                <div class="selector-producto__lista">
+                  <button
+                    type="button"
+                    class="selector-producto__item"
+                    *ngFor="let producto of productosFiltrados(i)"
+                    (click)="seleccionarProducto(i, producto)"
+                  >
+                    {{ producto.nombre }}
+                  </button>
+                  <p *ngIf="productosFiltrados(i).length === 0">No hay productos</p>
+                </div>
+              </div>
+            </div>
           </td>
           <td data-label="Cantidad">
             <input
@@ -72,18 +74,25 @@
               placeholder="0.00"
               [(ngModel)]="venta.precio"
               name="precio-{{ i }}"
-              required
               [disabled]="cerrado"
             />
           </td>
-          <td data-label="Acción">
+          <td data-label="Acciones" class="seccion__acciones-fila">
             <button
               type="button"
               class="boton boton--texto boton--peligro"
-              (click)="eliminarFila(i)"
+              (click)="quitarFila(i)"
               [disabled]="cerrado"
             >
-              Quitar
+              Quitar fila
+            </button>
+            <button
+              type="button"
+              class="boton boton--texto"
+              (click)="limpiarFila(i)"
+              [disabled]="cerrado"
+            >
+              Limpiar fila
             </button>
           </td>
         </tr>
@@ -91,26 +100,69 @@
     </table>
   </div>
 
-  <div class="seccion__resumen">
-    <div>
-      <span>Total del día</span>
-      <strong>S/ {{ totalDia | number : '1.2-2' }}</strong>
-    </div>
-    <div class="seccion__acciones">
-      <button type="button" class="boton boton--secundario" (click)="limpiar()" [disabled]="cerrado">
-        Limpiar formulario
+  <div class="seccion__pie" *ngIf="!cerrado">
+    <div class="seccion__pie-izquierda">
+      <div class="seccion__campo seccion__campo--fecha">
+        <label for="fecha">Fecha</label>
+        <input id="fecha" type="date" [value]="fechaHoy" disabled />
+      </div>
+      <button type="button" class="boton boton--secundario" (click)="agregarFila()" [disabled]="cerrado">
+        + Agregar línea
       </button>
     </div>
-  </div>
-</section>
 
-<section class="seccion__tarjeta seccion__tarjeta--info">
-  <h3>Automatización con facturación electrónica</h3>
-  <p>
-    Cuando el sistema de facturación esté activo, al elegir “Congelados” o “Huevos”
-    se registrarán automáticamente las cantidades vendidas en el día.
-  </p>
-  <p *ngIf="cerrado" class="seccion__estado">
-    Día cerrado: ya no se permite editar ni eliminar registros.
-  </p>
+    <div class="seccion__totales">
+      <div>
+        <span>Total Huevos</span>
+        <strong>S/ {{ totalHuevos | number : '1.2-2' }}</strong>
+      </div>
+      <div>
+        <span>Total Congelados</span>
+        <strong>S/ {{ totalCongelados | number : '1.2-2' }}</strong>
+      </div>
+    </div>
+  </div>
+
+  <section *ngIf="cerrado" class="seccion__cierre">
+    <div class="seccion__cierre-encabezado">
+      <button type="button" class="boton boton--texto" (click)="reabrirDia()">Reabrir</button>
+    </div>
+
+    <div class="seccion__tabla">
+      <table>
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Cantidad</th>
+            <th>Precio (S/)</th>
+            <th>Total (S/)</th>
+            <th>Tipo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of registrosCerrados">
+            <td>{{ item.productoNombre }}</td>
+            <td>{{ item.cantidad | number : '1.0-2' }}</td>
+            <td>{{ item.precio | number : '1.2-2' }}</td>
+            <td>{{ item.total | number : '1.2-2' }}</td>
+            <td>{{ item.categoria }}</td>
+          </tr>
+          <tr *ngIf="registrosCerrados.length === 0">
+            <td colspan="5">No hay registros para mostrar.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="seccion__totales seccion__totales--cerrado">
+      <div>
+        <span>Total Huevos</span>
+        <strong>S/ {{ totalHuevosCerrado | number : '1.2-2' }}</strong>
+      </div>
+      <div>
+        <span>Total Congelados</span>
+        <strong>S/ {{ totalCongeladosCerrado | number : '1.2-2' }}</strong>
+      </div>
+    </div>
+  </section>
 </section>
