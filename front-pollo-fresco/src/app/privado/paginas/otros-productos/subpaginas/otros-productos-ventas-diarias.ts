@@ -152,7 +152,18 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit {
       return;
     }
 
-    fila[campo] = this.normalizarEntradaDecimal(valor);
+    fila[campo] = valor ?? '';
+    this.ventas = [...this.ventas];
+    this.programarGuardado();
+  }
+
+  normalizarCampoNumerico(index: number, campo: CampoNumerico): void {
+    const fila = this.ventas[index];
+    if (!fila) {
+      return;
+    }
+
+    fila[campo] = this.normalizarEntradaDecimal(fila[campo]);
     this.ventas = [...this.ventas];
     this.programarGuardado();
   }

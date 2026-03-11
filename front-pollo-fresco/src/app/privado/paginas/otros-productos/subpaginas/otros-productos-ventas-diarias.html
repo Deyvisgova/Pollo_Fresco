@@ -15,7 +15,8 @@
     <table>
       <thead>
         <tr>
-          <th class="col-fecha">Fecha / Nombre</th>
+          <th class="col-fecha">Fecha</th>
+          <th class="col-nombre">Nombre proveedor</th>
           <th>Productos</th>
           <th>Cantidad</th>
           <th>Precio (S/)</th>
@@ -24,19 +25,13 @@
       </thead>
       <tbody>
         <tr *ngFor="let venta of ventas; let i = index">
-          <td data-label="Fecha / Nombre">
+          <td data-label="Fecha">
             <div class="fecha-usuario">
               <input type="date" [ngModel]="fechaHoy" name="fecha-{{ i }}" disabled readonly class="fecha-usuario__fecha" />
-              <span class="fecha-usuario__nombre" title="Nombre del usuario">{{ usuarioActual }}</span>
             </div>
-            <button
-              type="button"
-              class="boton boton--secundario fecha-usuario__agregar"
-              *ngIf="i === 0"
-              (click)="agregarFila()"
-            >
-              + Agregar línea
-            </button>
+          </td>
+          <td data-label="Nombre proveedor">
+            <span class="fecha-usuario__nombre" title="Nombre del usuario">{{ usuarioActual }}</span>
           </td>
           <td data-label="Productos">
             <div class="selector-producto">
@@ -81,8 +76,9 @@
               type="text"
               inputmode="decimal"
               placeholder="0.00"
-              [ngModel]="venta.cantidad"
+              [(ngModel)]="venta.cantidad"
               (ngModelChange)="actualizarCampoNumerico(i, 'cantidad', $event)"
+              (blur)="normalizarCampoNumerico(i, 'cantidad')"
               name="cantidad-{{ i }}"
               autocomplete="off"
             />
@@ -92,8 +88,9 @@
               type="text"
               inputmode="decimal"
               placeholder="0.00"
-              [ngModel]="venta.precio"
+              [(ngModel)]="venta.precio"
               (ngModelChange)="actualizarCampoNumerico(i, 'precio', $event)"
+              (blur)="normalizarCampoNumerico(i, 'precio')"
               name="precio-{{ i }}"
               autocomplete="off"
             />
@@ -106,6 +103,8 @@
       </tbody>
     </table>
   </div>
+
+  <button type="button" class="boton boton--secundario seccion__agregar-fila" (click)="agregarFila()">+ Agregar fila</button>
 
   <div class="seccion__pie">
     <div class="seccion__totales">
