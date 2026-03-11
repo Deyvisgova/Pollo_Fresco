@@ -12,6 +12,9 @@ interface PagoProveedor {
   saldo: number;
   estado: string;
   cantidad_entregas: number;
+  proveedor_id?: number | null;
+  proveedor?: { nombres: string; apellidos: string | null } | null;
+  proveedor_pagado: string | null;
   fecha_desde: string | null;
   fecha_hasta: string | null;
   creado_en: string;
@@ -53,6 +56,62 @@ export class PrivadoProveedoresPagos implements OnInit {
         this.cargando = false;
       }
     });
+  }
+
+
+  proveedorPagadoTexto(pago: PagoProveedor): string {
+    const desdeCampo = String(pago.proveedor_pagado ?? '').trim();
+    if (desdeCampo) {
+      return desdeCampo;
+    }
+
+    const nombreProveedor = `${pago.proveedor?.nombres ?? ''} ${pago.proveedor?.apellidos ?? ''}`.trim();
+    if (nombreProveedor) {
+      return nombreProveedor;
+    }
+
+    if (pago.proveedor_id) {
+      return `Proveedor #${pago.proveedor_id}`;
+    }
+
+    return '-';
+  }
+
+
+  formatearRangoFechas(fechaDesde: string | null, fechaHasta: string | null): string {
+    if (!fechaDesde && !fechaHasta) {
+      return '-';
+    }
+
+    const desde = this.formatearFechaCorta(fechaDesde);
+    const hasta = this.formatearFechaCorta(fechaHasta);
+
+    if (desde && hasta) {
+      return `${desde} a ${hasta}`;
+    }
+
+    return desde || hasta || '-';
+  }
+
+  estadoEsPagado(estado: string): boolean {
+    return String(estado ?? '').trim().toUpperCase() === 'PAGADO';
+  }
+
+  private formatearFechaCorta(fecha: string | null): string {
+    if (!fecha) {
+      return '';
+    }
+
+    const valor = new Date(fecha);
+    if (Number.isNaN(valor.getTime())) {
+      return '';
+    }
+
+    return new Intl.DateTimeFormat('es-PE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    }).format(valor);
   }
 
   private obtenerHeaders(): HttpHeaders {
