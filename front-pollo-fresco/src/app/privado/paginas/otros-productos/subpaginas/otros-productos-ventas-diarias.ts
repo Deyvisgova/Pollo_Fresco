@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule, HttpHeaders, HttpParams } from '@angular/common/http';
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Subject, debounceTime } from 'rxjs';
 import { SesionServicio } from '../../../../servicios/sesion.servicio';
@@ -58,6 +58,13 @@ interface EstadoVentaApi {
   }>;
 }
 
+interface DropdownPosicion {
+  top: number;
+  left: number;
+  width: number;
+  maxHeight: number;
+}
+
 @Component({
   selector: 'app-privado-otros-productos-ventas-diarias',
   standalone: true,
@@ -65,7 +72,9 @@ interface EstadoVentaApi {
   templateUrl: './otros-productos-ventas-diarias.html',
   styleUrl: './otros-productos-ventas-diarias.css'
 })
-export class PrivadoOtrosProductosVentasDiarias implements OnInit {
+export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
+  @ViewChild('buscadorDropdown') buscadorDropdown?: ElementRef<HTMLInputElement>;
+
   fechaHoy = this.obtenerFechaLocalISO();
   usuarioActual = '-';
   cerrado = false;
@@ -77,8 +86,20 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit {
   registrosCerrados: VentaCerradaItem[] = [];
   fechaUltimoCierre: string | null = null;
 
+  activeDropdownIndex: number | null = null;
+  dropdownAbrirHaciaArriba = false;
+  dropdownPosicion: DropdownPosicion = { top: 0, left: 0, width: 300, maxHeight: 320 };
+  indiceProductoResaltado = 0;
+
   private readonly guardado$ = new Subject<void>();
   private productoIdsConLote = new Set<number>();
+  private readonly panelMargin = 8;
+  private readonly panelMaxHeight = 320;
+  private readonly panelMinHeight = 150;
+  private triggerDropdownActivo: HTMLElement | null = null;
+
+  private readonly onWindowResize = () => this.reposicionarDropdownActivo();
+  private readonly onWindowScroll = () => this.reposicionarDropdownActivo();
 
   constructor(
     private readonly http: HttpClient,
@@ -93,6 +114,30 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit {
     this.guardado$.pipe(debounceTime(500)).subscribe(() => {
       this.guardarBorrador();
     });
+  }
+
+  ngOnDestroy(): void {
+    this.desregistrarListenersReubicacion();
+  }
+
+  get dropdownAbierto(): boolean {
+    return this.activeDropdownIndex !== null;
+  }
+
+  get filtroDropdownActivo(): string {
+    if (this.activeDropdownIndex === null) {
+      return '';
+    }
+
+    return this.ventas[this.activeDropdownIndex]?.filtroProducto ?? '';
+  }
+
+  get productosDropdownActivos(): Producto[] {
+    if (this.activeDropdownIndex === null) {
+      return [];
+    }
+
+    return this.productosFiltrados(this.activeDropdownIndex);
   }
 
   get totalHuevos(): number {
@@ -137,12 +182,22 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit {
     if (this.ventas.length === 0) {
       this.ventas = [this.crearFilaVacia(this.fechaHoy)];
     }
+
+    if (this.activeDropdownIndex !== null && (this.activeDropdownIndex === index || this.activeDropdownIndex >= this.ventas.length)) {
+      this.cerrarDropdownProducto();
+    }
+
     this.programarGuardado();
   }
 
   limpiarFila(index: number): void {
     this.ventas[index] = this.crearFilaVacia(this.fechaHoy);
     this.ventas = [...this.ventas];
+
+    if (this.activeDropdownIndex === index) {
+      this.indiceProductoResaltado = 0;
+    }
+
     this.programarGuardado();
   }
 
@@ -152,7 +207,18 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit {
       return;
     }
 
-    fila[campo] = this.normalizarEntradaDecimal(valor);
+    fila[campo] = valor ?? '';
+    this.ventas = [...this.ventas];
+    this.programarGuardado();
+  }
+
+  normalizarCampoNumerico(index: number, campo: CampoNumerico): void {
+    const fila = this.ventas[index];
+    if (!fila) {
+      return;
+    }
+
+    fila[campo] = this.normalizarEntradaDecimal(fila[campo]);
     this.ventas = [...this.ventas];
     this.programarGuardado();
   }
@@ -172,6 +238,7 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit {
         this.fechaHoy = this.siguienteDia(this.fechaHoy);
         this.ventas = [this.crearFilaVacia(this.fechaHoy)];
         this.cerrado = false;
+        this.cerrarDropdownProducto();
       },
       error: (error) => {
         this.mensajeError = error?.error?.message || 'No se pudo cerrar el día.';
@@ -197,11 +264,92 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit {
     });
   }
 
-  toggleDropdownProducto(index: number): void {
-    this.ventas = this.ventas.map((item, i) => ({
-      ...item,
-      dropdownAbierto: i === index ? !item.dropdownAbierto : false
-    }));
+  dropdownAbiertoEnFila(index: number): boolean {
+    return this.activeDropdownIndex === index;
+  }
+
+  toggleDropdownProducto(index: number, event: MouseEvent): void {
+    const trigger = event.currentTarget as HTMLElement | null;
+    if (!trigger) {
+      return;
+    }
+
+    if (this.activeDropdownIndex === index) {
+      this.cerrarDropdownProducto();
+      return;
+    }
+
+    this.abrirDropdownProducto(index, trigger);
+  }
+
+  onTriggerProductoKeydown(index: number, event: KeyboardEvent): void {
+    if (!['ArrowDown', 'Enter', ' '].includes(event.key)) {
+      return;
+    }
+
+    event.preventDefault();
+    const trigger = event.currentTarget as HTMLElement | null;
+    if (!trigger) {
+      return;
+    }
+
+    this.abrirDropdownProducto(index, trigger);
+  }
+
+  onBuscadorProductoKeydown(event: KeyboardEvent): void {
+    if (!this.dropdownAbierto) {
+      return;
+    }
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      this.moverIndiceResaltado(1);
+      return;
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      this.moverIndiceResaltado(-1);
+      return;
+    }
+
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      const producto = this.productosDropdownActivos[this.indiceProductoResaltado];
+      if (producto) {
+        this.seleccionarProductoDesdeDropdown(producto);
+      }
+      return;
+    }
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      this.cerrarDropdownProducto();
+    }
+  }
+
+  actualizarFiltroProductoActivo(valor: string): void {
+    if (this.activeDropdownIndex === null) {
+      return;
+    }
+
+    const fila = this.ventas[this.activeDropdownIndex];
+    if (!fila) {
+      return;
+    }
+
+    fila.filtroProducto = valor;
+    this.indiceProductoResaltado = 0;
+    this.ventas = [...this.ventas];
+    this.reposicionarDropdownActivo();
+  }
+
+  seleccionarProductoDesdeDropdown(producto: Producto): void {
+    if (this.activeDropdownIndex === null) {
+      return;
+    }
+
+    this.seleccionarProducto(this.activeDropdownIndex, producto);
   }
 
   seleccionarProducto(index: number, producto: Producto): void {
@@ -221,6 +369,7 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit {
     fila.filtroProducto = producto.nombre;
     fila.dropdownAbierto = false;
     this.ventas = [...this.ventas];
+    this.cerrarDropdownProducto();
     this.programarGuardado();
   }
 
@@ -242,11 +391,96 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit {
   @HostListener('document:click', ['$event'])
   cerrarDropdownExterno(event: MouseEvent): void {
     const target = event.target as HTMLElement;
-    if (target.closest('.selector-producto')) {
+    if (target.closest('.selector-producto') || target.closest('.selector-producto__overlay')) {
       return;
     }
 
+    this.cerrarDropdownProducto();
+  }
+
+  private abrirDropdownProducto(index: number, trigger: HTMLElement): void {
+    this.activeDropdownIndex = index;
+    this.triggerDropdownActivo = trigger;
+    this.ventas = this.ventas.map((item, i) => ({ ...item, dropdownAbierto: i === index }));
+
+    const productos = this.productosFiltrados(index);
+    const productoSeleccionado = this.ventas[index]?.productoId ?? null;
+    const indiceSeleccionado = productos.findIndex((producto) => producto.id === productoSeleccionado);
+    this.indiceProductoResaltado = indiceSeleccionado >= 0 ? indiceSeleccionado : 0;
+
+    this.reposicionarDropdownActivo();
+    this.registrarListenersReubicacion();
+
+    setTimeout(() => {
+      this.buscadorDropdown?.nativeElement.focus();
+      this.buscadorDropdown?.nativeElement.select();
+    });
+  }
+
+  private cerrarDropdownProducto(): void {
+    this.activeDropdownIndex = null;
+    this.triggerDropdownActivo = null;
+    this.indiceProductoResaltado = 0;
     this.ventas = this.ventas.map((item) => ({ ...item, dropdownAbierto: false }));
+    this.desregistrarListenersReubicacion();
+  }
+
+  private moverIndiceResaltado(delta: number): void {
+    const total = this.productosDropdownActivos.length;
+    if (total === 0) {
+      this.indiceProductoResaltado = 0;
+      return;
+    }
+
+    const siguiente = (this.indiceProductoResaltado + delta + total) % total;
+    this.indiceProductoResaltado = siguiente;
+  }
+
+  private reposicionarDropdownActivo(): void {
+    if (!this.dropdownAbierto || !this.triggerDropdownActivo) {
+      return;
+    }
+
+    if (!this.triggerDropdownActivo.isConnected) {
+      this.cerrarDropdownProducto();
+      return;
+    }
+
+    const rect = this.triggerDropdownActivo.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+    const espacioAbajo = viewportHeight - rect.bottom - this.panelMargin;
+    const espacioArriba = rect.top - this.panelMargin;
+
+    const abrirHaciaArriba = espacioAbajo < 220 && espacioArriba > espacioAbajo;
+    const maxHeightDisponible = Math.max(
+      this.panelMinHeight,
+      Math.min(this.panelMaxHeight, abrirHaciaArriba ? espacioArriba : espacioAbajo)
+    );
+
+    const width = Math.min(rect.width, viewportWidth - this.panelMargin * 2);
+    const left = Math.min(Math.max(this.panelMargin, rect.left), viewportWidth - width - this.panelMargin);
+    const top = abrirHaciaArriba
+      ? Math.max(this.panelMargin, rect.top - maxHeightDisponible - this.panelMargin)
+      : Math.min(viewportHeight - maxHeightDisponible - this.panelMargin, rect.bottom + this.panelMargin);
+
+    this.dropdownAbrirHaciaArriba = abrirHaciaArriba;
+    this.dropdownPosicion = {
+      top,
+      left,
+      width,
+      maxHeight: maxHeightDisponible
+    };
+  }
+
+  private registrarListenersReubicacion(): void {
+    window.addEventListener('resize', this.onWindowResize);
+    window.addEventListener('scroll', this.onWindowScroll, true);
+  }
+
+  private desregistrarListenersReubicacion(): void {
+    window.removeEventListener('resize', this.onWindowResize);
+    window.removeEventListener('scroll', this.onWindowScroll, true);
   }
 
   private cargarProductos(): void {
