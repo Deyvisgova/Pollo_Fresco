@@ -15,7 +15,7 @@
     <table>
       <thead>
         <tr>
-          <th>Fecha</th>
+          <th class="col-fecha">Fecha / Nombre</th>
           <th>Productos</th>
           <th>Cantidad</th>
           <th>Precio (S/)</th>
@@ -24,27 +24,41 @@
       </thead>
       <tbody>
         <tr *ngFor="let venta of ventas; let i = index">
-          <td data-label="Fecha">
-            <input
-              type="date"
-              [value]="fechaHoy"
-              (ngModelChange)="cambiarFecha($event)"
-              [ngModel]="fechaHoy"
-              name="fecha-{{ i }}"
-            />
+          <td data-label="Fecha / Nombre">
+            <div class="fecha-usuario">
+              <input type="date" [ngModel]="fechaHoy" name="fecha-{{ i }}" disabled readonly class="fecha-usuario__fecha" />
+              <span class="fecha-usuario__nombre" title="Nombre del usuario">{{ usuarioActual }}</span>
+            </div>
+            <button
+              type="button"
+              class="boton boton--secundario fecha-usuario__agregar"
+              *ngIf="i === 0"
+              (click)="agregarFila()"
+            >
+              + Agregar línea
+            </button>
           </td>
           <td data-label="Productos">
             <div class="selector-producto">
-              <button type="button" class="selector-producto__boton" (click)="toggleDropdownProducto(i)">
-                <span>{{ venta.productoNombre || 'Selecciona producto...' }}</span>
+              <button
+                type="button"
+                class="selector-producto__boton"
+                (click)="toggleDropdownProducto(i)"
+                [attr.aria-expanded]="venta.dropdownAbierto"
+              >
+                <span class="selector-producto__texto">
+                  {{ venta.productoNombre || 'Selecciona producto' }}
+                </span>
                 <span class="selector-producto__icono">▾</span>
               </button>
               <div class="selector-producto__menu" *ngIf="venta.dropdownAbierto">
                 <input
                   type="text"
+                  class="selector-producto__buscador"
                   placeholder="Buscar producto..."
                   [(ngModel)]="venta.filtroProducto"
                   name="buscar-producto-{{ i }}"
+                  autocomplete="off"
                 />
                 <div class="selector-producto__lista">
                   <button
@@ -55,7 +69,9 @@
                   >
                     {{ producto.nombre }}
                   </button>
-                  <p *ngIf="productosFiltrados(i).length === 0">No hay productos</p>
+                  <p class="selector-producto__sin-resultados" *ngIf="productosFiltrados(i).length === 0">
+                    No hay productos disponibles con lote registrado
+                  </p>
                 </div>
               </div>
             </div>
@@ -65,9 +81,10 @@
               type="text"
               inputmode="decimal"
               placeholder="0.00"
-              [(ngModel)]="venta.cantidad"
-              (ngModelChange)="onFilaCambio()"
+              [ngModel]="venta.cantidad"
+              (ngModelChange)="actualizarCampoNumerico(i, 'cantidad', $event)"
               name="cantidad-{{ i }}"
+              autocomplete="off"
             />
           </td>
           <td data-label="Precio (S/)">
@@ -75,9 +92,10 @@
               type="text"
               inputmode="decimal"
               placeholder="0.00"
-              [(ngModel)]="venta.precio"
-              (ngModelChange)="onFilaCambio()"
+              [ngModel]="venta.precio"
+              (ngModelChange)="actualizarCampoNumerico(i, 'precio', $event)"
               name="precio-{{ i }}"
+              autocomplete="off"
             />
           </td>
           <td data-label="Acciones" class="seccion__acciones-fila">
@@ -90,10 +108,6 @@
   </div>
 
   <div class="seccion__pie">
-    <div class="seccion__pie-izquierda">
-      <button type="button" class="boton boton--secundario" (click)="agregarFila()">+ Agregar línea</button>
-    </div>
-
     <div class="seccion__totales">
       <div>
         <span>Total Huevos</span>
