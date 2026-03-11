@@ -67,6 +67,7 @@
 .seccion__tabla {
   width: 100%;
   overflow-x: auto;
+  overflow-y: visible;
 }
 
 .seccion__tabla table {
@@ -232,4 +233,15 @@
   margin: 0;
   color: #dc2626;
   font-weight: 600;
+}
+
+
+.seccion__cierre-encabezado {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.selector-producto__menu {
+  z-index: 1000;
 }
