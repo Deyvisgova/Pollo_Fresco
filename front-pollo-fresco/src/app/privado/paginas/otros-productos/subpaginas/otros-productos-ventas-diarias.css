@@ -54,7 +54,7 @@
   width: 100%;
   max-height: 50vh;
   overflow-x: auto;
-  overflow-y: auto;
+  overflow-y: visible;
   position: relative;
   z-index: 3;
 }
@@ -81,8 +81,7 @@
 .fecha-usuario {
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-width: 220px;
+  min-width: 140px;
 }
 
 .fecha-usuario__fecha {
@@ -93,7 +92,8 @@
 }
 
 .fecha-usuario__nombre {
-  max-width: 150px;
+  display: inline-flex;
+  max-width: 180px;
   padding: 7px 10px;
   border-radius: 999px;
   border: 1px solid #cbd5f5;
@@ -105,18 +105,17 @@
   text-overflow: ellipsis;
 }
 
-.fecha-usuario__agregar {
-  margin-top: 8px;
-  padding: 8px 12px;
-  font-size: 15px;
-}
-
 .seccion__acciones-fila {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
 }
 
+
+.seccion__agregar-fila {
+  align-self: flex-start;
+  margin-top: -4px;
+}
 .seccion__pie {
   display: flex;
   justify-content: flex-end;
@@ -196,7 +195,8 @@
 
 .selector-producto__menu {
   position: absolute;
-  top: calc(100% + 8px);
+  top: auto;
+  bottom: calc(100% + 8px);
   left: 0;
   width: max(100%, 420px);
   max-width: min(95vw, 560px);
@@ -289,8 +289,7 @@
   }
 
   .fecha-usuario {
-    min-width: 180px;
-    flex-wrap: wrap;
+    min-width: 130px;
   }
 
   .selector-producto {
