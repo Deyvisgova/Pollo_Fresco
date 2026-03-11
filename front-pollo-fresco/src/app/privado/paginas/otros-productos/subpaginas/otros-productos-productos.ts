@@ -7,17 +7,20 @@ import { SesionServicio } from '../../../../servicios/sesion.servicio';
 interface ProductoRegistro {
   id: number;
   nombre: string;
+  grupoVenta: 'HUEVOS' | 'CONGELADOS';
   activo: boolean;
 }
 
 interface ProductoApi {
   id: number;
   nombre: string;
+  grupo_venta: 'HUEVOS' | 'CONGELADOS';
   activo: number | boolean;
 }
 
 interface ProductoFormulario {
   nombre: string;
+  grupoVenta: 'HUEVOS' | 'CONGELADOS';
   activo: boolean;
 }
 
@@ -56,6 +59,7 @@ export class PrivadoOtrosProductosProductos implements OnInit {
       const contenido = [
         producto.id,
         producto.nombre,
+        producto.grupoVenta,
         producto.activo ? 'activo' : 'inactivo'
       ]
         .join(' ')
@@ -76,6 +80,7 @@ export class PrivadoOtrosProductosProductos implements OnInit {
     this.productoSeleccionado = producto;
     this.formulario = {
       nombre: producto.nombre,
+      grupoVenta: producto.grupoVenta,
       activo: producto.activo
     };
     this.mostrarModal = true;
@@ -147,13 +152,18 @@ export class PrivadoOtrosProductosProductos implements OnInit {
     this.mensajeError = '';
     const headers = this.obtenerHeaders();
     this.http
-      .post<ProductoApi>('/api/otros-productos/productos', { nombre }, { headers })
+      .post<ProductoApi>(
+        '/api/otros-productos/productos',
+        { nombre, grupo_venta: this.formulario.grupoVenta },
+        { headers }
+      )
       .subscribe({
         next: (producto) => {
           this.productos = [
             {
               id: producto.id,
               nombre: producto.nombre,
+              grupoVenta: producto.grupo_venta,
               activo: this.normalizarActivo(producto.activo)
             },
             ...this.productos
@@ -185,6 +195,7 @@ export class PrivadoOtrosProductosProductos implements OnInit {
     const headers = this.obtenerHeaders();
     const payload = {
       nombre,
+      grupo_venta: this.formulario.grupoVenta,
       activo: this.formulario.activo
     };
     this.http
@@ -200,6 +211,7 @@ export class PrivadoOtrosProductosProductos implements OnInit {
               ? {
                   id: producto.id,
                   nombre: producto.nombre,
+                  grupoVenta: producto.grupo_venta,
                   activo: this.normalizarActivo(producto.activo)
                 }
               : item
@@ -221,6 +233,7 @@ export class PrivadoOtrosProductosProductos implements OnInit {
     const headers = this.obtenerHeaders();
     const payload = {
       nombre: producto.nombre,
+      grupo_venta: producto.grupoVenta,
       activo
     };
     this.http
@@ -234,6 +247,7 @@ export class PrivadoOtrosProductosProductos implements OnInit {
               ? {
                   id: respuesta.id,
                   nombre: respuesta.nombre,
+                  grupoVenta: respuesta.grupo_venta,
                   activo: this.normalizarActivo(respuesta.activo)
                 }
               : item
@@ -258,6 +272,7 @@ export class PrivadoOtrosProductosProductos implements OnInit {
           this.productos = productos.map((producto) => ({
             id: producto.id,
             nombre: producto.nombre,
+            grupoVenta: producto.grupo_venta,
             activo: this.normalizarActivo(producto.activo)
           }));
           this.cargando = false;
@@ -277,6 +292,7 @@ export class PrivadoOtrosProductosProductos implements OnInit {
   private crearFormularioVacio(): ProductoFormulario {
     return {
       nombre: '',
+      grupoVenta: 'HUEVOS',
       activo: true
     };
   }
