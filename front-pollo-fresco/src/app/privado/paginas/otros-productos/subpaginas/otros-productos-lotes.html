@@ -1,9 +1,9 @@
 <section class="seccion__tarjeta">
   <header class="seccion__encabezado">
     <div>
-      <h3>Lotes y ganancias</h3>
+      <h3>Lotes</h3>
       <p>
-        Registra productos por lote, precio y estado. Aquí puedes editar o
+        Registra lotes y su detalle de compra/venta. Aquí puedes editar o
         eliminar si el lote está abierto.
       </p>
     </div>
@@ -15,7 +15,7 @@
   <div class="seccion__acciones">
     <input
       type="search"
-      placeholder="Buscar por lote, tipo, producto o estado..."
+      placeholder="Buscar por lote, comprobante, producto o estado..."
       [(ngModel)]="filtro"
     />
     <button class="boton boton--secundario">Buscar</button>
@@ -26,11 +26,15 @@
       <thead>
         <tr>
           <th>Lote</th>
-          <th>Nombre</th>
+          <th>Comprobante</th>
+          <th>Producto</th>
           <th>Proveedor</th>
           <th>Cantidad</th>
-          <th>Total</th>
-          <th>Fecha</th>
+          <th>Costo/Kg</th>
+          <th>Precio venta</th>
+          <th>Total costo</th>
+          <th>Total venta</th>
+          <th>Fecha ingreso</th>
           <th>Estado</th>
           <th>Acciones</th>
         </tr>
@@ -38,11 +42,15 @@
       <tbody>
         <tr *ngFor="let lote of lotesFiltrados">
           <td data-label="Lote">{{ lote.numeroLote }}</td>
-          <td data-label="Nombre">{{ lote.nombre }}</td>
+          <td data-label="Comprobante">{{ lote.codigoComprobante }}</td>
+          <td data-label="Producto">{{ lote.nombre }}</td>
           <td data-label="Proveedor">{{ lote.proveedorNombre }}</td>
           <td data-label="Cantidad">{{ lote.cantidad | number : '1.0-2' }}</td>
-          <td data-label="Total">S/ {{ lote.total | number : '1.2-2' }}</td>
-          <td data-label="Fecha">{{ lote.fechaIngreso }}</td>
+          <td data-label="Costo/Kg">S/ {{ lote.costoKilo | number : '1.2-2' }}</td>
+          <td data-label="Precio venta">S/ {{ lote.precioVenta | number : '1.2-2' }}</td>
+          <td data-label="Total costo">S/ {{ lote.totalCosto | number : '1.2-2' }}</td>
+          <td data-label="Total venta">S/ {{ lote.totalVenta | number : '1.2-2' }}</td>
+          <td data-label="Fecha ingreso">{{ lote.fechaIngreso }}</td>
           <td data-label="Estado">
             <span
               class="etiqueta"
@@ -71,7 +79,7 @@
           </td>
         </tr>
         <tr *ngIf="lotesFiltrados.length === 0">
-          <td colspan="8">No hay registros con ese filtro.</td>
+          <td colspan="12">No hay registros con ese filtro.</td>
         </tr>
       </tbody>
     </table>
@@ -83,12 +91,12 @@
     <header class="modal__encabezado">
       <div>
         <h3>Nuevo lote</h3>
-        <p>
-          Agrega productos y precios. Si no existe, registra un producto nuevo.
-        </p>
+        <p>Completa primero los datos del lote y luego el detalle del lote.</p>
       </div>
       <button class="boton boton--texto" (click)="cerrarModal()">Cerrar</button>
     </header>
+
+    <h4 class="modal__subtitulo">Datos de lote</h4>
 
     <div class="modal__grid">
       <label>
@@ -104,14 +112,12 @@
         <input type="date" [(ngModel)]="loteForm.fechaIngreso" />
       </label>
       <label>
-        Costo del lote (S/)
-        <input
-          type="number"
-          [(ngModel)]="loteForm.costoLote"
-          placeholder="0.00"
-        />
+        Código comprobante
+        <input type="text" [(ngModel)]="loteForm.codigoComprobante" placeholder="Ej: F001-000123" />
       </label>
     </div>
+
+    <h4 class="modal__subtitulo">Detalle de lote</h4>
 
     <div class="modal__selector">
       <div class="selector-proveedor">
@@ -187,6 +193,14 @@
         Cantidad
         <input type="number" [(ngModel)]="loteForm.cantidad" placeholder="0" />
       </label>
+      <label>
+        Costo por kilo (S/)
+        <input type="number" [(ngModel)]="loteForm.costoKilo" placeholder="0.00" />
+      </label>
+      <label>
+        Precio de venta (S/)
+        <input type="number" [(ngModel)]="loteForm.precioVenta" placeholder="0.00" />
+      </label>
     </div>
 
     <p class="modal__error" *ngIf="mensajeError">{{ mensajeError }}</p>
@@ -219,6 +233,14 @@
           [(ngModel)]="nuevoProducto"
           placeholder="Ej: Huevo jumbo"
         />
+      </label>
+      <label>
+        Grupo venta
+        <select [(ngModel)]="nuevoProductoGrupoVenta">
+          <option value="HUEVOS">Huevos</option>
+          <option value="CONGELADO">Congelado</option>
+          <option value="OTROS">Otros</option>
+        </select>
       </label>
     </div>
 

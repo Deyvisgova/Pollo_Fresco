@@ -18,12 +18,15 @@ class OtrosProductosController extends Controller
             ->select([
                 'cl.compra_lote_id',
                 'cl.proveedor_id',
+                'cl.codigo_comprobante',
                 'cl.fecha_ingreso',
-                'cl.costo_lote',
+                'cl.creado_en',
                 'cl.estado',
                 'p.producto_id',
                 'p.nombre as producto_nombre',
                 'cld.cantidad',
+                'cld.costo_kilo',
+                'cld.precio_venta',
                 'pr.nombres as proveedor_nombres',
                 'pr.apellidos as proveedor_apellidos',
                 'pr.nombre_empresa as proveedor_nombre_empresa',
@@ -42,7 +45,7 @@ class OtrosProductosController extends Controller
         $termino = trim((string) $request->query('buscar', ''));
         $incluirInactivos = filter_var($request->query('incluir_inactivos', false), FILTER_VALIDATE_BOOLEAN);
         $productos = DB::table('productos')
-            ->select('producto_id as id', 'nombre', 'activo')
+            ->select('producto_id as id', 'nombre', 'grupo_venta', 'activo')
             ->when(!$incluirInactivos, function ($query) {
                 $query->where('activo', 1);
             })
@@ -59,6 +62,7 @@ class OtrosProductosController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'nombre' => ['required', 'string', 'max:80'],
+            'grupo_venta' => ['required', 'in:HUEVOS,CONGELADO,OTROS'],
         ]);
 
         if ($validator->fails()) {
@@ -66,14 +70,17 @@ class OtrosProductosController extends Controller
         }
 
         $nombre = trim($request->input('nombre'));
+        $grupoVenta = strtoupper((string) $request->input('grupo_venta'));
         $productoId = DB::table('productos')->insertGetId([
             'nombre' => $nombre,
+            'grupo_venta' => $grupoVenta,
             'activo' => 1,
         ]);
 
         return response()->json([
             'id' => $productoId,
             'nombre' => $nombre,
+            'grupo_venta' => $grupoVenta,
             'activo' => 1,
         ], 201);
     }
@@ -82,6 +89,7 @@ class OtrosProductosController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'nombre' => ['required', 'string', 'max:80'],
+            'grupo_venta' => ['required', 'in:HUEVOS,CONGELADO,OTROS'],
             'activo' => ['nullable', 'boolean'],
         ]);
 
@@ -95,18 +103,21 @@ class OtrosProductosController extends Controller
         }
 
         $nombre = trim($request->input('nombre'));
+        $grupoVenta = strtoupper((string) $request->input('grupo_venta'));
         $activo = $request->has('activo') ? (int) $request->boolean('activo') : (int) $producto->activo;
 
         DB::table('productos')
             ->where('producto_id', $productoId)
             ->update([
                 'nombre' => $nombre,
+                'grupo_venta' => $grupoVenta,
                 'activo' => $activo,
             ]);
 
         return response()->json([
             'id' => $productoId,
             'nombre' => $nombre,
+            'grupo_venta' => $grupoVenta,
             'activo' => $activo,
         ]);
     }
@@ -133,7 +144,9 @@ class OtrosProductosController extends Controller
         $validator = Validator::make($request->all(), [
             'producto_id' => ['required', 'integer', 'exists:productos,producto_id'],
             'cantidad' => ['required', 'numeric', 'min:0.01'],
-            'costo_lote' => ['required', 'numeric', 'min:0'],
+            'costo_kilo' => ['required', 'numeric', 'min:0'],
+            'precio_venta' => ['required', 'numeric', 'min:0'],
+            'codigo_comprobante' => ['required', 'string', 'max:50'],
             'fecha_ingreso' => ['required', 'date'],
             'proveedor_id' => ['required', 'integer', 'exists:proveedores,proveedor_id'],
         ]);
@@ -149,7 +162,9 @@ class OtrosProductosController extends Controller
 
         $productoId = (int) $request->input('producto_id');
         $cantidad = (float) $request->input('cantidad');
-        $costo = (float) $request->input('costo_lote');
+        $costoKilo = (float) $request->input('costo_kilo');
+        $precioVenta = (float) $request->input('precio_venta');
+        $codigoComprobante = trim((string) $request->input('codigo_comprobante'));
         $fecha = $request->input('fecha_ingreso');
         $proveedorId = (int) $request->input('proveedor_id');
 
@@ -167,8 +182,8 @@ class OtrosProductosController extends Controller
             $compraLoteId = DB::table('compras_lote')->insertGetId([
                 'usuario_id' => $usuario->usuario_id,
                 'proveedor_id' => $proveedorId,
+                'codigo_comprobante' => $codigoComprobante,
                 'fecha_ingreso' => $fecha,
-                'costo_lote' => $costo,
                 'estado' => 'ABIERTO',
                 'creado_en' => now(),
             ]);
@@ -177,6 +192,8 @@ class OtrosProductosController extends Controller
                 'compra_lote_id' => $compraLoteId,
                 'producto_id' => $productoId,
                 'cantidad' => $cantidad,
+                'costo_kilo' => $costoKilo,
+                'precio_venta' => $precioVenta,
             ]);
 
             DB::commit();
@@ -192,7 +209,10 @@ class OtrosProductosController extends Controller
             'producto_id' => $productoId,
             'producto_nombre' => $producto->nombre,
             'cantidad' => $cantidad,
-            'costo_lote' => $costo,
+            'costo_kilo' => $costoKilo,
+            'precio_venta' => $precioVenta,
+            'codigo_comprobante' => $codigoComprobante,
+            'creado_en' => now()->toDateTimeString(),
             'estado' => 'ABIERTO',
             'proveedor_id' => $proveedorId,
         ], 201);
@@ -203,7 +223,9 @@ class OtrosProductosController extends Controller
         $validator = Validator::make($request->all(), [
             'producto_id' => ['required', 'integer', 'exists:productos,producto_id'],
             'cantidad' => ['required', 'numeric', 'min:0.01'],
-            'costo_lote' => ['required', 'numeric', 'min:0'],
+            'costo_kilo' => ['required', 'numeric', 'min:0'],
+            'precio_venta' => ['required', 'numeric', 'min:0'],
+            'codigo_comprobante' => ['required', 'string', 'max:50'],
             'fecha_ingreso' => ['required', 'date'],
             'proveedor_id' => ['required', 'integer', 'exists:proveedores,proveedor_id'],
         ]);
@@ -223,7 +245,9 @@ class OtrosProductosController extends Controller
 
         $productoId = (int) $request->input('producto_id');
         $cantidad = (float) $request->input('cantidad');
-        $costo = (float) $request->input('costo_lote');
+        $costoKilo = (float) $request->input('costo_kilo');
+        $precioVenta = (float) $request->input('precio_venta');
+        $codigoComprobante = trim((string) $request->input('codigo_comprobante'));
         $fecha = $request->input('fecha_ingreso');
         $proveedorId = (int) $request->input('proveedor_id');
 
@@ -238,19 +262,28 @@ class OtrosProductosController extends Controller
                 ->where('compra_lote_id', $compraLoteId)
                 ->update([
                     'fecha_ingreso' => $fecha,
-                    'costo_lote' => $costo,
+                    'codigo_comprobante' => $codigoComprobante,
                     'proveedor_id' => $proveedorId,
                 ]);
 
-            DB::table('compras_lote_detalle')
+            $detalleActualizado = DB::table('compras_lote_detalle')
                 ->where('compra_lote_id', $compraLoteId)
-                ->delete();
+                ->update([
+                    'producto_id' => $productoId,
+                    'cantidad' => $cantidad,
+                    'costo_kilo' => $costoKilo,
+                    'precio_venta' => $precioVenta,
+                ]);
 
-            DB::table('compras_lote_detalle')->insert([
-                'compra_lote_id' => $compraLoteId,
-                'producto_id' => $productoId,
-                'cantidad' => $cantidad,
-            ]);
+            if ($detalleActualizado === 0) {
+                DB::table('compras_lote_detalle')->insert([
+                    'compra_lote_id' => $compraLoteId,
+                    'producto_id' => $productoId,
+                    'cantidad' => $cantidad,
+                    'costo_kilo' => $costoKilo,
+                    'precio_venta' => $precioVenta,
+                ]);
+            }
 
             DB::commit();
         } catch (\Throwable $e) {
@@ -269,7 +302,10 @@ class OtrosProductosController extends Controller
             'producto_id' => $productoId,
             'producto_nombre' => $producto->nombre,
             'cantidad' => $cantidad,
-            'costo_lote' => $costo,
+            'costo_kilo' => $costoKilo,
+            'precio_venta' => $precioVenta,
+            'codigo_comprobante' => $codigoComprobante,
+            'creado_en' => $lote->creado_en,
             'estado' => $lote->estado,
             'proveedor_id' => $proveedorId,
         ]);

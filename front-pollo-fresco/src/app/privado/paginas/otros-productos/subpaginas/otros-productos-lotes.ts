@@ -10,8 +10,13 @@ interface LoteRegistro {
   nombre: string;
   productoId: number;
   cantidad: number;
-  total: number;
+  costoKilo: number;
+  precioVenta: number;
+  codigoComprobante: string;
+  totalCosto: number;
+  totalVenta: number;
   fechaIngreso: string;
+  creadoEn: string;
   estado: 'ABIERTO' | 'CERRADO';
   proveedorId: number | null;
   proveedorNombre: string;
@@ -20,11 +25,13 @@ interface LoteRegistro {
 interface Producto {
   id: number;
   nombre: string;
+  grupo_venta: 'HUEVOS' | 'CONGELADO' | 'OTROS';
 }
 
 interface ProductoApi {
   id: number;
   nombre: string;
+  grupo_venta: 'HUEVOS' | 'CONGELADO' | 'OTROS';
 }
 
 interface LoteApi {
@@ -34,7 +41,10 @@ interface LoteApi {
   producto_id: number;
   producto_nombre: string;
   cantidad: number;
-  costo_lote: number;
+  costo_kilo: number;
+  precio_venta: number;
+  codigo_comprobante: string;
+  creado_en: string;
   estado: 'ABIERTO' | 'CERRADO';
   proveedor_id: number | null;
   proveedor_nombres: string | null;
@@ -45,11 +55,12 @@ interface LoteApi {
 }
 
 interface LoteForm {
-  id: number;
   fechaIngreso: string;
-  costoLote: number | null;
+  codigoComprobante: string;
   productoId: number | null;
   cantidad: number | null;
+  costoKilo: number | null;
+  precioVenta: number | null;
   proveedorId: number | null;
 }
 
@@ -74,6 +85,7 @@ export class PrivadoOtrosProductosLotes implements OnInit {
   mostrarModalProducto = false;
   filtro = '';
   nuevoProducto = '';
+  nuevoProductoGrupoVenta: 'HUEVOS' | 'CONGELADO' | 'OTROS' = 'HUEVOS';
   filtroProducto = '';
   dropdownProductoAbierto = false;
   filtroProveedor = '';
@@ -84,11 +96,12 @@ export class PrivadoOtrosProductosLotes implements OnInit {
   loteEnEdicion: LoteRegistro | null = null;
 
   loteForm: LoteForm = {
-    id: 0,
-    fechaIngreso: new Date().toISOString().slice(0, 10),
-    costoLote: null,
+    fechaIngreso: this.obtenerFechaLocalISO(),
+    codigoComprobante: '',
     productoId: null,
     cantidad: null,
+    costoKilo: null,
+    precioVenta: null,
     proveedorId: null
   };
 
@@ -118,6 +131,7 @@ export class PrivadoOtrosProductosLotes implements OnInit {
         lote.proveedorNombre.toLowerCase().includes(valor) ||
         lote.estado.toLowerCase().includes(valor) ||
         lote.fechaIngreso.toLowerCase().includes(valor)
+        || lote.codigoComprobante.toLowerCase().includes(valor)
       );
     });
   }
@@ -131,11 +145,12 @@ export class PrivadoOtrosProductosLotes implements OnInit {
     this.mensajeError = '';
     this.loteEnEdicion = null;
     this.loteForm = {
-      id: 0,
-      fechaIngreso: new Date().toISOString().slice(0, 10),
-      costoLote: null,
+      fechaIngreso: this.obtenerFechaLocalISO(),
+      codigoComprobante: '',
       productoId: null,
       cantidad: null,
+      costoKilo: null,
+      precioVenta: null,
       proveedorId: null
     };
   }
@@ -147,6 +162,7 @@ export class PrivadoOtrosProductosLotes implements OnInit {
   abrirModalProducto(): void {
     this.mostrarModalProducto = true;
     this.nuevoProducto = '';
+    this.nuevoProductoGrupoVenta = 'HUEVOS';
     this.mensajeError = '';
   }
 
@@ -163,7 +179,11 @@ export class PrivadoOtrosProductosLotes implements OnInit {
 
     const headers = this.obtenerHeaders();
     this.http
-      .post<ProductoApi>('/api/otros-productos/productos', { nombre }, { headers })
+      .post<ProductoApi>(
+        '/api/otros-productos/productos',
+        { nombre, grupo_venta: this.nuevoProductoGrupoVenta },
+        { headers }
+      )
       .subscribe({
         next: (producto) => {
           this.productos = [...this.productos, producto];
@@ -236,8 +256,8 @@ export class PrivadoOtrosProductosLotes implements OnInit {
   }
 
   guardarLote(): void {
-    if (!this.loteForm.productoId || !this.loteForm.cantidad || !this.loteForm.proveedorId) {
-      this.mensajeError = 'Completa el producto, la cantidad y el proveedor.';
+    if (!this.loteForm.productoId || !this.loteForm.cantidad || !this.loteForm.proveedorId || !this.loteForm.costoKilo || !this.loteForm.precioVenta || !this.loteForm.codigoComprobante.trim()) {
+      this.mensajeError = 'Completa todos los campos obligatorios del lote y detalle.';
       return;
     }
 
@@ -245,7 +265,9 @@ export class PrivadoOtrosProductosLotes implements OnInit {
     const payload = {
       producto_id: this.loteForm.productoId,
       cantidad: this.loteForm.cantidad,
-      costo_lote: this.loteForm.costoLote ?? 0,
+      costo_kilo: this.loteForm.costoKilo,
+      precio_venta: this.loteForm.precioVenta,
+      codigo_comprobante: this.loteForm.codigoComprobante.trim(),
       fecha_ingreso: this.loteForm.fechaIngreso,
       proveedor_id: this.loteForm.proveedorId
     };
@@ -263,8 +285,13 @@ export class PrivadoOtrosProductosLotes implements OnInit {
           nombre: respuesta.producto_nombre,
           productoId: respuesta.producto_id,
           cantidad: respuesta.cantidad,
-          total: respuesta.costo_lote,
+          costoKilo: respuesta.costo_kilo,
+          precioVenta: respuesta.precio_venta,
+          codigoComprobante: respuesta.codigo_comprobante,
+          totalCosto: respuesta.cantidad * respuesta.costo_kilo,
+          totalVenta: respuesta.cantidad * respuesta.precio_venta,
           fechaIngreso: respuesta.fecha_ingreso,
+          creadoEn: respuesta.creado_en,
           estado: respuesta.estado,
           proveedorId: respuesta.proveedor_id ?? null,
           proveedorNombre: this.obtenerNombreProveedor(respuesta.proveedor_id)
@@ -297,11 +324,12 @@ export class PrivadoOtrosProductosLotes implements OnInit {
     this.dropdownProductoAbierto = false;
     this.dropdownProveedorAbierto = false;
     this.loteForm = {
-      id: lote.numeroLote,
       fechaIngreso: lote.fechaIngreso,
-      costoLote: lote.total,
+      codigoComprobante: lote.codigoComprobante,
       productoId: lote.productoId,
       cantidad: lote.cantidad,
+      costoKilo: lote.costoKilo,
+      precioVenta: lote.precioVenta,
       proveedorId: lote.proveedorId
     };
   }
@@ -380,8 +408,13 @@ export class PrivadoOtrosProductosLotes implements OnInit {
           nombre: lote.producto_nombre,
           productoId: lote.producto_id,
           cantidad: lote.cantidad,
-          total: lote.costo_lote,
+          costoKilo: lote.costo_kilo,
+          precioVenta: lote.precio_venta,
+          codigoComprobante: lote.codigo_comprobante,
+          totalCosto: lote.cantidad * lote.costo_kilo,
+          totalVenta: lote.cantidad * lote.precio_venta,
           fechaIngreso: lote.fecha_ingreso,
+          creadoEn: lote.creado_en,
           estado: lote.estado,
           proveedorId: lote.proveedor_id ?? null,
           proveedorNombre: this.formatearProveedorDesdeLote(lote),
@@ -441,5 +474,11 @@ export class PrivadoOtrosProductosLotes implements OnInit {
     if (!target.closest('.selector-proveedor')) {
       this.dropdownProveedorAbierto = false;
     }
+  }
+
+  private obtenerFechaLocalISO(): string {
+    const ahora = new Date();
+    const offset = ahora.getTimezoneOffset() * 60000;
+    return new Date(ahora.getTime() - offset).toISOString().slice(0, 10);
   }
 }
