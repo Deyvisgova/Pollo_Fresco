@@ -41,13 +41,31 @@ class PagoProveedorController extends Controller
         ]);
 
         return DB::transaction(function () use ($validated) {
-            $entregas = EntregaProveedor::whereIn('entrega_id', $validated['entregas_ids'])->lockForUpdate()->get();
+            $entregas = EntregaProveedor::query()
+                ->whereIn('entrega_id', $validated['entregas_ids'])
+                ->when(Schema::hasColumn('entregas_proveedor', 'estado_pago'), function ($query) {
+                    $query->where('estado_pago', 'PENDIENTE');
+                })
+                ->with('proveedor')
+                ->lockForUpdate()
+                ->get();
+
+            if ($entregas->isEmpty()) {
+                return response()->json(['message' => 'No hay entregas pendientes para pagar.'], 422);
+            }
+
             $total = (float) $entregas->sum(fn (EntregaProveedor $entrega) => (float) $entrega->costo_total);
             $pagado = (float) $validated['monto_transferencia'] + (float) $validated['monto_efectivo'];
             $saldo = round($total - $pagado, 2);
             $estado = abs($saldo) < 0.0001 ? 'PAGADO' : 'PENDIENTE';
 
-            $pago = PagoProveedor::create([
+            $proveedores = $entregas
+                ->map(fn (EntregaProveedor $entrega) => trim((string) ($entrega->proveedor?->nombres . ' ' . ($entrega->proveedor?->apellidos ?? ''))))
+                ->filter(fn (string $nombre) => $nombre !== '')
+                ->unique()
+                ->values();
+
+            $dataPago = [
                 'usuario_id' => $validated['usuario_id'],
                 'total' => $total,
                 'monto_transferencia' => $validated['monto_transferencia'],
@@ -57,10 +75,16 @@ class PagoProveedorController extends Controller
                 'fecha_desde' => $validated['fecha_desde'] ?? null,
                 'fecha_hasta' => $validated['fecha_hasta'] ?? null,
                 'cantidad_entregas' => $entregas->count(),
-            ]);
+            ];
+
+            if (Schema::hasColumn('pagos_proveedor', 'proveedor_pagado')) {
+                $dataPago['proveedor_pagado'] = $proveedores->join(', ');
+            }
+
+            $pago = PagoProveedor::create($dataPago);
 
             if ($estado === 'PAGADO' && Schema::hasColumn('entregas_proveedor', 'estado_pago')) {
-                EntregaProveedor::whereIn('entrega_id', $validated['entregas_ids'])->update(['estado_pago' => 'PAGADO']);
+                EntregaProveedor::whereIn('entrega_id', $entregas->pluck('entrega_id'))->update(['estado_pago' => 'PAGADO']);
             }
 
             return response()->json($pago, 201);

@@ -27,6 +27,7 @@ class PagoProveedor extends Model
         'fecha_desde',
         'fecha_hasta',
         'cantidad_entregas',
+        'proveedor_pagado',
     ];
 
     protected $casts = [
@@ -37,6 +38,7 @@ class PagoProveedor extends Model
         'fecha_desde' => 'date',
         'fecha_hasta' => 'date',
         'cantidad_entregas' => 'integer',
+        'proveedor_pagado' => 'string',
         'creado_en' => 'datetime',
     ];
 }

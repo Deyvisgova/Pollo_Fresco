@@ -102,6 +102,7 @@ export class PrivadoProveedoresRegistros implements OnInit {
   montoEfectivo: number | null = null;
   procesandoPago = false;
   entregasParaPagarIds: number[] = [];
+  errorPagoModal = '';
 
   editandoEntregaId: number | null = null;
   formularioEdicion: {
@@ -361,22 +362,24 @@ export class PrivadoProveedoresRegistros implements OnInit {
     evento?.stopPropagation();
 
     this.error = '';
+    this.errorPagoModal = '';
     this.entregasParaPagarIds = registro
-      ? [registro.entrega_id]
-      : this.registrosFiltrados.map((fila) => fila.entrega_id);
+      ? (this.esPendiente(registro) ? [registro.entrega_id] : [])
+      : this.registrosPendientesFiltrados.map((fila) => fila.entrega_id);
 
     this.modalPagoAbierto = true;
     this.montoTransferencia = null;
     this.montoEfectivo = null;
 
     if (this.entregasParaPagarIds.length === 0 || this.totalPagoActual() === 0) {
-      this.error = 'No hay entregas pendientes para pagar con el filtro actual.';
+      this.errorPagoModal = 'No hay entregas pendientes para pagar con el filtro actual.';
     }
   }
 
   cerrarModalPago(): void {
     this.modalPagoAbierto = false;
     this.entregasParaPagarIds = [];
+    this.errorPagoModal = '';
   }
 
 
@@ -442,7 +445,7 @@ export class PrivadoProveedoresRegistros implements OnInit {
         this.cargarRegistros();
       },
       error: () => {
-        this.error = 'No se pudo registrar el pago total.';
+        this.errorPagoModal = 'No se pudo registrar el pago total.';
       },
       complete: () => {
         this.procesandoPago = false;
@@ -585,7 +588,32 @@ export class PrivadoProveedoresRegistros implements OnInit {
   }
 
   private obtenerFechaActual(): string {
-    return new Date().toISOString().slice(0, 10);
+    const fecha = new Date();
+    const year = fecha.getFullYear();
+    const month = String(fecha.getMonth() + 1).padStart(2, '0');
+    const day = String(fecha.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  formatearFechaExacta(fechaHora: string): string {
+    const valor = String(fechaHora ?? '').trim();
+    if (!valor) {
+      return '-';
+    }
+
+    const coincidencia = valor.match(/(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
+    if (!coincidencia) {
+      return valor;
+    }
+
+    const [, year, month, day, hourRaw, minute, secondRaw] = coincidencia;
+    const hour = Number(hourRaw);
+    const second = secondRaw ?? '00';
+    const periodo = hour >= 12 ? 'p. m.' : 'a. m.';
+    const hour12 = ((hour + 11) % 12) + 1;
+    const hora = String(hour12).padStart(2, '0');
+
+    return `${day}/${month}/${year}, ${hora}:${minute}:${second} ${periodo}`;
   }
 
   persistirTarjetas(): void {
