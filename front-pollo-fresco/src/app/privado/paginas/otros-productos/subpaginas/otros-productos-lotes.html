@@ -45,7 +45,12 @@
           <td data-label="Comprobante">{{ lote.codigoComprobante }}</td>
           <td data-label="Producto">{{ lote.nombre }}</td>
           <td data-label="Proveedor">{{ lote.proveedorNombre }}</td>
-          <td data-label="Cantidad">{{ lote.cantidad | number : '1.0-2' }}</td>
+          <td data-label="Cantidad">
+            <div class="stock" [class.stock--bajo]="esStockBajo(lote)">
+              <span>{{ lote.cantidad | number : '1.0-2' }}</span>
+              <small *ngIf="esStockBajo(lote)">⚠ Stock bajo</small>
+            </div>
+          </td>
           <td data-label="Costo/Kg">S/ {{ lote.costoKilo | number : '1.2-2' }}</td>
           <td data-label="Precio venta">S/ {{ lote.precioVenta | number : '1.2-2' }}</td>
           <td data-label="Total costo">S/ {{ lote.totalCosto | number : '1.2-2' }}</td>

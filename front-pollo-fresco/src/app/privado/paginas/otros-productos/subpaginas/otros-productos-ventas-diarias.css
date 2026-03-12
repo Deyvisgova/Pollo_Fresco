@@ -40,12 +40,6 @@
   font-size: 14px;
 }
 
-.seccion__campo input:disabled,
-.seccion__tabla input:disabled {
-  background: #e2e8f0;
-  color: #64748b;
-}
-
 .seccion__acciones {
   display: flex;
   gap: 12px;
@@ -82,12 +76,12 @@
 .fecha-usuario {
   display: flex;
   align-items: center;
-  min-width: 140px;
+  min-width: 180px;
 }
 
 .fecha-usuario__fecha {
-  width: 130px;
-  min-width: 130px;
+  width: 190px;
+  min-width: 190px;
   padding: 7px 8px !important;
   font-size: 12px !important;
 }
@@ -112,11 +106,11 @@
   flex-wrap: wrap;
 }
 
-
 .seccion__agregar-fila {
   align-self: flex-start;
   margin-top: -4px;
 }
+
 .seccion__pie {
   display: flex;
   justify-content: flex-end;
@@ -125,13 +119,6 @@
   flex-wrap: wrap;
   position: relative;
   z-index: 1;
-}
-
-.seccion__pie-izquierda {
-  display: flex;
-  align-items: flex-end;
-  gap: 12px;
-  flex-wrap: wrap;
 }
 
 .seccion__totales {
@@ -155,12 +142,6 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-}
-
-.seccion__cierre-encabezado {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
 .selector-producto {
@@ -219,11 +200,6 @@
   z-index: 1200;
 }
 
-.selector-producto__menu--arriba {
-  transform-origin: bottom left;
-}
-
-
 .selector-producto__buscador {
   width: 100%;
   min-height: 42px;
@@ -245,77 +221,47 @@
   text-align: left;
   cursor: pointer;
   font-size: 14px;
-  line-height: 1.35;
 }
 
-.selector-producto__item:hover {
-  background: #e2e8f0;
+.selector-producto__item:hover { background: #e2e8f0; }
+.selector-producto__item--activo { background: #dbeafe; color: #1e3a8a; }
+.selector-producto__sin-resultados { margin: 4px 2px; color: #64748b; font-size: 13px; }
+
+.boton { padding: 10px 16px; border-radius: 999px; border: none; font-weight: 600; cursor: pointer; }
+.boton--primario { background: #1d4ed8; color: #fff; }
+.boton--secundario { background: #e2e8f0; color: #0f172a; }
+.boton--texto { background: transparent; color: #1d4ed8; }
+.boton--peligro { color: #dc2626; }
+.boton:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.seccion__error { margin: 0; color: #dc2626; font-weight: 600; }
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+  z-index: 1300;
 }
 
-.selector-producto__item--activo {
-  background: #dbeafe;
-  color: #1e3a8a;
+.modal__contenido {
+  width: min(960px, 100%);
+  background: #fff;
+  border-radius: 20px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.selector-producto__sin-resultados {
-  margin: 4px 2px;
-  color: #64748b;
-  font-size: 13px;
-}
-
-.boton {
-  padding: 10px 16px;
-  border-radius: 999px;
-  border: none;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.boton--primario {
-  background: #1d4ed8;
-  color: #fff;
-}
-
-.boton--secundario {
-  background: #e2e8f0;
-  color: #0f172a;
-}
-
-.boton--texto {
-  background: transparent;
-  color: #1d4ed8;
-}
-
-.boton--peligro {
-  color: #dc2626;
-}
-
-.boton:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.seccion__error {
-  margin: 0;
-  color: #dc2626;
-  font-weight: 600;
-}
+.modal__encabezado { display: flex; justify-content: space-between; align-items: center; }
+.modal__totales { display: grid; gap: 8px; color: #0f172a; }
 
 @media (max-width: 820px) {
-  .seccion__tarjeta {
-  position: relative;
-    min-height: auto;
-  }
-
-  .fecha-usuario {
-    min-width: 130px;
-  }
-
-  .selector-producto {
-    min-width: 220px;
-  }
-
-  .selector-producto__menu {
-    width: min(95vw, 420px);
-  }
+  .seccion__tarjeta { min-height: auto; }
+  .selector-producto { min-width: 220px; }
+  .selector-producto__menu { width: min(95vw, 420px); }
 }

@@ -24,7 +24,7 @@ interface LoteApi {
 
 interface VentaDiariaItem {
   ventaId: number | null;
-  fecha: string;
+  fechaHora: string;
   productoId: number | null;
   productoNombre: string;
   grupoVenta: 'HUEVOS' | 'CONGELADO' | 'OTROS' | null;
@@ -37,11 +37,21 @@ interface VentaDiariaItem {
 type CampoNumerico = 'cantidad' | 'precio';
 
 interface VentaCerradaItem {
+  ventaOpDiariaId: number;
   productoNombre: string;
   cantidad: number;
   precio: number;
   total: number;
   categoria: 'HUEVOS' | 'CONGELADO' | 'OTROS';
+}
+
+interface CierreHistorico {
+  fecha: string;
+  cerrado_en: string | null;
+  total_huevos: number;
+  total_congelados: number;
+  total_general: number;
+  items: VentaCerradaItem[];
 }
 
 interface EstadoVentaApi {
@@ -54,7 +64,23 @@ interface EstadoVentaApi {
     grupo_venta: 'HUEVOS' | 'CONGELADO' | 'OTROS';
     cantidad: number;
     precio: number;
+    fecha_hora: string;
     cerrado_en: string | null;
+  }>;
+  cierres: Array<{
+    fecha: string;
+    cerrado_en: string | null;
+    total_huevos: number;
+    total_congelados: number;
+    total_general: number;
+    items: Array<{
+      venta_op_diaria_id: number;
+      producto_nombre: string;
+      cantidad: number;
+      precio: number;
+      total: number;
+      grupo_venta: 'HUEVOS' | 'CONGELADO' | 'OTROS';
+    }>;
   }>;
 }
 
@@ -76,20 +102,23 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
   @ViewChild('buscadorDropdown') buscadorDropdown?: ElementRef<HTMLInputElement>;
 
   fechaHoy = this.obtenerFechaLocalISO();
+  fechaHoraActual = this.obtenerFechaHoraLocalInput();
   usuarioActual = '-';
   cerrado = false;
   productos: Producto[] = [];
   mensajeError = '';
   guardando = false;
 
-  ventas: VentaDiariaItem[] = [this.crearFilaVacia(this.fechaHoy)];
-  registrosCerrados: VentaCerradaItem[] = [];
-  fechaUltimoCierre: string | null = null;
+  ventas: VentaDiariaItem[] = [this.crearFilaVacia(this.fechaHoraActual)];
+  cierresHistoricos: CierreHistorico[] = [];
 
   activeDropdownIndex: number | null = null;
   dropdownAbrirHaciaArriba = false;
   dropdownPosicion: DropdownPosicion = { top: 0, left: 0, width: 300, maxHeight: 320 };
   indiceProductoResaltado = 0;
+
+  modalDetalleAbierto = false;
+  cierreDetalle: CierreHistorico | null = null;
 
   private readonly guardado$ = new Subject<void>();
   private productoIdsConLote = new Set<number>();
@@ -158,10 +187,10 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
     }, 0);
   }
 
-  crearFilaVacia(fecha: string): VentaDiariaItem {
+  crearFilaVacia(fechaHora: string): VentaDiariaItem {
     return {
       ventaId: null,
-      fecha,
+      fechaHora,
       productoId: null,
       productoNombre: '',
       grupoVenta: null,
@@ -173,14 +202,14 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
   }
 
   agregarFila(): void {
-    this.ventas = [...this.ventas, this.crearFilaVacia(this.fechaHoy)];
+    this.ventas = [...this.ventas, this.crearFilaVacia(this.fechaHoraActual)];
     this.programarGuardado();
   }
 
   quitarFila(index: number): void {
     this.ventas = this.ventas.filter((_, i) => i !== index);
     if (this.ventas.length === 0) {
-      this.ventas = [this.crearFilaVacia(this.fechaHoy)];
+      this.ventas = [this.crearFilaVacia(this.fechaHoraActual)];
     }
 
     if (this.activeDropdownIndex !== null && (this.activeDropdownIndex === index || this.activeDropdownIndex >= this.ventas.length)) {
@@ -191,13 +220,20 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
   }
 
   limpiarFila(index: number): void {
-    this.ventas[index] = this.crearFilaVacia(this.fechaHoy);
+    this.ventas[index] = this.crearFilaVacia(this.fechaHoraActual);
     this.ventas = [...this.ventas];
 
     if (this.activeDropdownIndex === index) {
       this.indiceProductoResaltado = 0;
     }
 
+    this.programarGuardado();
+  }
+
+  actualizarFechaHoraActual(valor: string): void {
+    this.fechaHoraActual = valor;
+    this.fechaHoy = (valor || '').slice(0, 10) || this.obtenerFechaLocalISO();
+    this.ventas = this.ventas.map((venta) => ({ ...venta, fechaHora: this.fechaHoraActual }));
     this.programarGuardado();
   }
 
@@ -231,12 +267,9 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
     const headers = this.obtenerHeaders();
     this.http.post('/api/otros-productos/ventas-diarias/cerrar', { fecha: this.fechaHoy }, { headers }).subscribe({
       next: () => {
-        this.fechaUltimoCierre = this.fechaHoy;
-        this.cargarEstadoFecha();
-        this.fechaHoy = this.siguienteDia(this.fechaHoy);
-        this.ventas = [this.crearFilaVacia(this.fechaHoy)];
-        this.cerrado = false;
+        this.ventas = [this.crearFilaVacia(this.fechaHoraActual)];
         this.cerrarDropdownProducto();
+        this.cargarEstadoFecha();
       },
       error: (error) => {
         this.mensajeError = error?.error?.message || 'No se pudo cerrar el día.';
@@ -244,22 +277,28 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
     });
   }
 
-  reabrirDia(): void {
-    if (!this.fechaUltimoCierre) {
-      return;
-    }
-
+  reabrirDia(fecha: string): void {
     const headers = this.obtenerHeaders();
-    this.http.post('/api/otros-productos/ventas-diarias/reabrir', { fecha: this.fechaUltimoCierre }, { headers }).subscribe({
+    this.http.post('/api/otros-productos/ventas-diarias/reabrir', { fecha }, { headers }).subscribe({
       next: () => {
-        this.fechaHoy = this.fechaUltimoCierre ?? this.obtenerFechaLocalISO();
-        this.fechaUltimoCierre = null;
+        this.fechaHoy = fecha;
+        this.fechaHoraActual = this.combinarFechaConHoraActual(fecha);
         this.cargarEstadoFecha();
       },
       error: (error) => {
         this.mensajeError = error?.error?.message || 'No se pudo reabrir el día.';
       }
     });
+  }
+
+  abrirDetalle(cierre: CierreHistorico): void {
+    this.cierreDetalle = cierre;
+    this.modalDetalleAbierto = true;
+  }
+
+  cerrarModalDetalle(): void {
+    this.modalDetalleAbierto = false;
+    this.cierreDetalle = null;
   }
 
   dropdownAbiertoEnFila(index: number): boolean {
@@ -508,7 +547,7 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
       next: (estado) => {
         const filas = estado.filas.map((item) => ({
           ventaId: item.venta_op_diaria_id,
-          fecha: estado.fecha,
+          fechaHora: this.formatearFechaHoraInput(item.fecha_hora),
           productoId: item.producto_id,
           productoNombre: item.producto_nombre,
           grupoVenta: item.grupo_venta,
@@ -518,24 +557,30 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
           precio: String(item.precio ?? '')
         }));
 
-        this.ventas = filas.length > 0 ? filas : [this.crearFilaVacia(this.fechaHoy)];
-        this.cerrado = estado.cerrado;
-        this.registrosCerrados = estado.cerrado
-          ? filas.map((item) => ({
-              productoNombre: item.productoNombre,
-              cantidad: this.parseNumero(item.cantidad),
-              precio: this.parseNumero(item.precio),
-              total: this.calcularTotalFila(item),
-              categoria: item.grupoVenta ?? 'OTROS'
-            }))
-          : [];
-
-        if (estado.cerrado) {
-          this.fechaUltimoCierre = estado.fecha;
+        if (filas.length > 0) {
+          this.fechaHoraActual = filas[0].fechaHora || this.fechaHoraActual;
         }
+
+        this.ventas = filas.length > 0 ? filas : [this.crearFilaVacia(this.fechaHoraActual)];
+        this.cerrado = estado.cerrado;
+        this.cierresHistoricos = (estado.cierres ?? []).map((cierre) => ({
+          fecha: cierre.fecha,
+          cerrado_en: cierre.cerrado_en,
+          total_huevos: Number(cierre.total_huevos ?? 0),
+          total_congelados: Number(cierre.total_congelados ?? 0),
+          total_general: Number(cierre.total_general ?? 0),
+          items: (cierre.items ?? []).map((item) => ({
+            ventaOpDiariaId: item.venta_op_diaria_id,
+            productoNombre: item.producto_nombre,
+            cantidad: Number(item.cantidad ?? 0),
+            precio: Number(item.precio ?? 0),
+            total: Number(item.total ?? 0),
+            categoria: item.grupo_venta ?? 'OTROS'
+          }))
+        }));
       },
       error: () => {
-        this.ventas = [this.crearFilaVacia(this.fechaHoy)];
+        this.ventas = [this.crearFilaVacia(this.fechaHoraActual)];
       }
     });
   }
@@ -561,7 +606,11 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
 
     this.guardando = true;
     const headers = this.obtenerHeaders();
-    this.http.put('/api/otros-productos/ventas-diarias', { fecha: this.fechaHoy, filas: filasValidas }, { headers }).subscribe({
+    this.http.put('/api/otros-productos/ventas-diarias', {
+      fecha: this.fechaHoy,
+      fecha_hora: this.formatearFechaHoraApi(this.fechaHoraActual),
+      filas: filasValidas
+    }, { headers }).subscribe({
       next: () => {
         this.guardando = false;
       },
@@ -615,13 +664,6 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
     return usuario?.name?.trim() || usuario?.usuario?.trim() || usuario?.email?.trim() || 'Usuario';
   }
 
-  private siguienteDia(fecha: string): string {
-    const date = new Date(`${fecha}T00:00:00`);
-    date.setDate(date.getDate() + 1);
-    const offset = date.getTimezoneOffset() * 60000;
-    return new Date(date.getTime() - offset).toISOString().slice(0, 10);
-  }
-
   private obtenerHeaders(): HttpHeaders {
     const token = this.sesionServicio.obtenerToken();
     return token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : new HttpHeaders();
@@ -631,5 +673,33 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
     const ahora = new Date();
     const offset = ahora.getTimezoneOffset() * 60000;
     return new Date(ahora.getTime() - offset).toISOString().slice(0, 10);
+  }
+
+  private obtenerFechaHoraLocalInput(): string {
+    const ahora = new Date();
+    const offset = ahora.getTimezoneOffset() * 60000;
+    const local = new Date(ahora.getTime() - offset).toISOString();
+    return local.slice(0, 16);
+  }
+
+  private combinarFechaConHoraActual(fecha: string): string {
+    const hora = this.obtenerFechaHoraLocalInput().slice(11, 16);
+    return `${fecha}T${hora}`;
+  }
+
+  private formatearFechaHoraInput(valor: string | null | undefined): string {
+    if (!valor) {
+      return this.obtenerFechaHoraLocalInput();
+    }
+
+    const normalizado = valor.replace(' ', 'T');
+    return normalizado.slice(0, 16);
+  }
+
+  private formatearFechaHoraApi(valor: string): string {
+    if (!valor) {
+      return `${this.obtenerFechaHoraLocalInput().replace('T', ' ')}:00`;
+    }
+    return `${valor.replace('T', ' ')}:00`;
   }
 }
