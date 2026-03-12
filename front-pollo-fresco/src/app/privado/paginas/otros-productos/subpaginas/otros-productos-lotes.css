@@ -327,3 +327,20 @@ td {
   background: #eef2ff;
   border-color: #c7d2fe;
 }
+
+
+.stock {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stock--bajo {
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+.stock--bajo small {
+  color: #dc2626;
+  font-weight: 700;
+}
