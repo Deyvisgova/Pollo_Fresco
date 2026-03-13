@@ -29,7 +29,7 @@
             <div class="fecha-usuario">
               <input
                 type="datetime-local"
-                [ngModel]="fechaHoraActual"
+                [ngModel]="venta.fechaHora"
                 name="fecha-hora-{{ i }}"
                 class="fecha-usuario__fecha"
                 disabled
@@ -172,7 +172,7 @@
             <td>S/ {{ cierre.total_congelados | number : '1.2-2' }}</td>
             <td>S/ {{ cierre.total_general | number : '1.2-2' }}</td>
             <td class="seccion__acciones-fila">
-              <button type="button" class="boton boton--texto" (click)="reabrirDia(cierre.fecha)">Reabrir día</button>
+              <button type="button" class="boton boton--texto" (click)="reabrirDia(cierre.fecha)" *ngIf="puedeReabrirDia(cierre)">Reabrir día</button>
               <button type="button" class="boton boton--texto" (click)="abrirDetalle(cierre)">Detalle</button>
             </td>
           </tr>
@@ -197,6 +197,7 @@
         <thead>
           <tr>
             <th>Producto</th>
+            <th>Hora</th>
             <th>Cantidad</th>
             <th>Precio</th>
             <th>Total</th>
@@ -206,6 +207,7 @@
         <tbody>
           <tr *ngFor="let item of cierreDetalle.items">
             <td>{{ item.productoNombre }}</td>
+            <td>{{ formatearHora(item.fechaHora) }}</td>
             <td>{{ item.cantidad | number : '1.0-2' }}</td>
             <td>S/ {{ item.precio | number : '1.2-2' }}</td>
             <td>S/ {{ item.total | number : '1.2-2' }}</td>
