@@ -1,5 +1,25 @@
 @import '@angular/material/prebuilt-themes/indigo-pink.css';
 
+:root {
+  --app-bg: #f5f7fb;
+  --surface-card: #ffffff;
+  --surface-muted: #f8fafc;
+  --surface-table-head: #eef2ff;
+  --border-soft: #dbe3ef;
+  --text-primary: #1f2937;
+  --text-secondary: #64748b;
+}
+
+:root[data-theme='dark'] {
+  --app-bg: #0f172a;
+  --surface-card: #1e293b;
+  --surface-muted: #253247;
+  --surface-table-head: #334155;
+  --border-soft: #475569;
+  --text-primary: #f1f5f9;
+  --text-secondary: #d5deea;
+}
+
 html,
 body {
   min-height: 100%;
@@ -7,8 +27,10 @@ body {
 
 
 body {
-  background-color: #fffaf5;
+  background-color: var(--app-bg);
+  color: var(--text-primary);
   min-height: 100vh;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .pagina-banner {
@@ -28,6 +50,183 @@ app-root {
   min-height: 100vh;
   display: grid;
   grid-template-rows: auto auto 1fr auto;
+}
+
+:root[data-theme='dark'] .panel,
+:root[data-theme='dark'] .panel__contenido,
+:root[data-theme='dark'] .panel__sidebar,
+:root[data-theme='dark'] .panel__logo,
+:root[data-theme='dark'] .seccion__tarjeta,
+:root[data-theme='dark'] .tarjeta,
+:root[data-theme='dark'] .card,
+:root[data-theme='dark'] [class*='tarjeta'],
+:root[data-theme='dark'] [class*='card'] {
+  background: var(--surface-card) !important;
+  color: var(--text-primary);
+  border-color: var(--border-soft) !important;
+}
+
+:root[data-theme='dark'] .panel__rutas h1,
+:root[data-theme='dark'] .panel__rutas h2,
+:root[data-theme='dark'] .panel__rutas h3,
+:root[data-theme='dark'] .panel__rutas h4,
+:root[data-theme='dark'] .panel__rutas h5,
+:root[data-theme='dark'] .panel__rutas h6,
+:root[data-theme='dark'] .panel__rutas p,
+:root[data-theme='dark'] .panel__rutas label,
+:root[data-theme='dark'] .panel__rutas strong,
+:root[data-theme='dark'] .panel__rutas small,
+:root[data-theme='dark'] .panel__rutas li,
+:root[data-theme='dark'] .panel__rutas span:not([class*='badge']):not([class*='icon']):not([class*='boton']):not([class*='btn']) {
+  color: var(--text-primary) !important;
+}
+
+:root[data-theme='dark'] .panel__rutas p,
+:root[data-theme='dark'] .panel__rutas small,
+:root[data-theme='dark'] .panel__rutas .texto-secundario,
+:root[data-theme='dark'] .panel__rutas [class*='subtitulo'],
+:root[data-theme='dark'] .panel__rutas [class*='descripcion'],
+:root[data-theme='dark'] .panel__rutas [class*='ayuda'] {
+  color: var(--text-secondary) !important;
+}
+
+:root[data-theme='dark'] .panel__rutas table,
+:root[data-theme='dark'] .panel__rutas .tabla,
+:root[data-theme='dark'] .panel__rutas .tabla-contenedor,
+:root[data-theme='dark'] .panel__rutas [class*='tabla'] {
+  background: transparent;
+  color: var(--text-primary);
+}
+
+:root[data-theme='dark'] .panel__rutas th,
+:root[data-theme='dark'] .panel__rutas td,
+:root[data-theme='dark'] .panel__rutas thead th {
+  border-color: var(--border-soft) !important;
+  color: var(--text-primary);
+}
+
+:root[data-theme='dark'] .panel__rutas th,
+:root[data-theme='dark'] .panel__rutas thead th,
+:root[data-theme='dark'] .panel__rutas .tabla-detalle__encabezado,
+:root[data-theme='dark'] .panel__rutas .tabla__encabezado {
+  background: var(--surface-table-head) !important;
+}
+
+:root[data-theme='dark'] .panel__rutas td,
+:root[data-theme='dark'] .panel__rutas input,
+:root[data-theme='dark'] .panel__rutas select,
+:root[data-theme='dark'] .panel__rutas textarea,
+:root[data-theme='dark'] .panel__rutas .modal__contenido,
+:root[data-theme='dark'] .panel__rutas .modal__cuerpo {
+  background: var(--surface-muted) !important;
+  color: var(--text-primary);
+  border-color: var(--border-soft) !important;
+}
+
+:root[data-theme='dark'] .panel__rutas input,
+:root[data-theme='dark'] .panel__rutas select,
+:root[data-theme='dark'] .panel__rutas textarea {
+  color: #f8fafc !important;
+  caret-color: #93c5fd;
+}
+
+:root[data-theme='dark'] .panel__rutas input::placeholder,
+:root[data-theme='dark'] .panel__rutas textarea::placeholder {
+  color: #a9b8cc !important;
+  opacity: 1;
+}
+
+:root[data-theme='dark'] .panel__rutas input:focus,
+:root[data-theme='dark'] .panel__rutas select:focus,
+:root[data-theme='dark'] .panel__rutas textarea:focus {
+  border-color: #60a5fa !important;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.22);
+  outline: none;
+}
+
+:root[data-theme='dark'] .panel__rutas .modal,
+:root[data-theme='dark'] .panel__rutas .modal-fondo,
+:root[data-theme='dark'] .panel__rutas .modal__overlay,
+:root[data-theme='dark'] .panel__rutas .modal__fondo {
+  background: rgba(2, 6, 23, 0.72) !important;
+  backdrop-filter: blur(7px) saturate(110%);
+}
+
+:root[data-theme='dark'] .panel__rutas .modal__contenido,
+:root[data-theme='dark'] .panel__rutas .modal__contenedor,
+:root[data-theme='dark'] .panel__rutas .modal-contenido {
+  background: linear-gradient(165deg, #1e293b, #172132 70%) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid rgba(148, 163, 184, 0.28) !important;
+  box-shadow: 0 24px 64px rgba(2, 6, 23, 0.66), 0 0 0 1px rgba(96, 165, 250, 0.16);
+}
+
+:root[data-theme='dark'] .panel__rutas .modal__encabezado,
+:root[data-theme='dark'] .panel__rutas .modal header,
+:root[data-theme='dark'] .panel__rutas [class*='modal__titulo'],
+:root[data-theme='dark'] .panel__rutas [class*='modal__subtitulo'] {
+  color: #f8fafc !important;
+}
+
+:root[data-theme='dark'] .panel__rutas .metodos-pago {
+  background: linear-gradient(170deg, #223044, #1d2a3d 70%) !important;
+  border-color: #4b5d75 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 14px 28px rgba(2, 6, 23, 0.35);
+}
+
+:root[data-theme='dark'] .panel__rutas .metodos-pago h5,
+:root[data-theme='dark'] .panel__rutas .metodos-pago__texto,
+:root[data-theme='dark'] .panel__rutas .metodos-pago__efectivo label,
+:root[data-theme='dark'] .panel__rutas .metodos-pago__efectivo span {
+  color: #f1f5f9 !important;
+}
+
+:root[data-theme='dark'] .panel__rutas .metodos-pago__opcion {
+  background: #2b3b52 !important;
+  border-color: #526885 !important;
+  color: #dbeafe !important;
+}
+
+:root[data-theme='dark'] .panel__rutas .metodos-pago__opcion--activa {
+  border-color: #4ade80 !important;
+  background: linear-gradient(155deg, rgba(34, 197, 94, 0.24), rgba(34, 197, 94, 0.14)) !important;
+  color: #bbf7d0 !important;
+  box-shadow: 0 8px 18px rgba(34, 197, 94, 0.24);
+}
+
+:root[data-theme='dark'] .panel__rutas .metodos-pago__icono {
+  background: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+:root[data-theme='dark'] .panel__rutas .metodos-pago__efectivo input[disabled] {
+  background: #334155 !important;
+  color: #f8fafc !important;
+  border-color: #64748b !important;
+}
+
+:root[data-theme='dark'] .panel__rutas .buscador-producto__control {
+  background: linear-gradient(165deg, #223145, #1c293b 72%) !important;
+  border-color: #526885 !important;
+  box-shadow: 0 10px 24px rgba(2, 6, 23, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+:root[data-theme='dark'] .panel__rutas .buscador-producto__control input {
+  color: #f8fafc !important;
+}
+
+:root[data-theme='dark'] .panel__rutas .resumen {
+  background: linear-gradient(165deg, #223145, #1c293b 72%) !important;
+  border-color: #4d627f !important;
+  box-shadow: 0 12px 26px rgba(2, 6, 23, 0.35);
+}
+
+:root[data-theme='dark'] .panel__rutas .resumen div {
+  color: #d5deea !important;
+}
+
+:root[data-theme='dark'] .panel__rutas .resumen__total {
+  color: #f8fafc !important;
 }
 
 .pagina-banner--full-bleed {
@@ -64,8 +263,8 @@ app-root {
   }
 
   .panel__rutas tbody tr {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
+    background: var(--surface-card);
+    border: 1px solid var(--border-soft);
     border-radius: 14px;
     padding: 10px 12px;
     box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
@@ -73,7 +272,7 @@ app-root {
 
   .panel__rutas tbody td {
     border: none !important;
-    border-bottom: 1px solid #edf2f7 !important;
+    border-bottom: 1px solid var(--border-soft) !important;
     padding: 8px 0;
     display: flex;
     align-items: center;
@@ -90,7 +289,7 @@ app-root {
   .panel__rutas tbody td::before {
     content: attr(data-label) ":";
     font-weight: 700;
-    color: #475569;
+    color: var(--text-secondary);
     flex: 0 0 120px;
     min-width: 120px;
     text-align: left;
