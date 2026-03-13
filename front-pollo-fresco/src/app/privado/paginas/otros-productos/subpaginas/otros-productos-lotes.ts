@@ -255,6 +255,11 @@ export class PrivadoOtrosProductosLotes implements OnInit {
     );
   }
 
+
+  esStockBajo(lote: LoteRegistro): boolean {
+    return lote.estado === 'ABIERTO' && lote.cantidad <= 5;
+  }
+
   guardarLote(): void {
     if (!this.loteForm.productoId || !this.loteForm.cantidad || !this.loteForm.proveedorId || !this.loteForm.costoKilo || !this.loteForm.precioVenta || !this.loteForm.codigoComprobante.trim()) {
       this.mensajeError = 'Completa todos los campos obligatorios del lote y detalle.';

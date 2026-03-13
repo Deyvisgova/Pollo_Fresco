@@ -37,7 +37,7 @@
           <tr *ngFor="let venta of ventasRegistradas">
             <td data-label="Comprobante">{{ venta.serie }}-{{ venta.numero }}</td>
             <td data-label="Tipo">{{ venta.tipo_comprobante }}</td>
-            <td data-label="Fecha">{{ venta.fecha_emision }}</td>
+            <td data-label="Fecha">{{ venta.fecha_emision | date: 'dd/MM/yyyy' }}</td>
             <td data-label="Cliente">{{ venta.cliente_nombre || 'Público general' }}</td>
             <td data-label="Total">{{ venta.moneda }} {{ venta.total | number: '1.2-2' }}</td>
             <td data-label="Acciones">
