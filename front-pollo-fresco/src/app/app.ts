@@ -4,6 +4,7 @@ import { filter } from 'rxjs';
 import { BarraNavegacion } from './diseno-publico/estructura/barra-navegacion/barra-navegacion';
 import { PiePagina } from './diseno-publico/estructura/pie-pagina/pie-pagina';
 import { PreCabecera } from './diseno-publico/estructura/pre-cabecera/pre-cabecera';
+import { TemaServicio } from './servicios/tema.servicio';
 
 @Component({
   selector: 'app-root',
@@ -15,7 +16,11 @@ export class App {
   protected readonly title = signal('front-pollo-fresco');
   protected readonly esModuloPrivado = signal(false);
 
-  constructor(private readonly router: Router) {
+  constructor(
+    private readonly router: Router,
+    private readonly temaServicio: TemaServicio
+  ) {
+    this.temaServicio.temaActual();
     this.actualizarVisibilidadEstructura(this.router.url);
 
     this.router.events

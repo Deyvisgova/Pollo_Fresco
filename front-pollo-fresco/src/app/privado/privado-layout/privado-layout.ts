@@ -5,6 +5,7 @@ import { filter } from 'rxjs/operators';
 import { AutenticacionServicio } from '../../servicios/autenticacion.servicio';
 import { ConfiguracionEmpresaServicio } from '../../servicios/configuracion-empresa.servicio';
 import { SesionServicio } from '../../servicios/sesion.servicio';
+import { TemaServicio } from '../../servicios/tema.servicio';
 
 interface ItemMenu {
   etiqueta: string;
@@ -43,11 +44,13 @@ export class PrivadoLayout implements AfterViewInit {
   readonly configuracionEmpresa;
   readonly mostrarLogo;
   readonly nombreUsuario;
+  readonly temaActual;
 
   constructor(
     private readonly autenticacionServicio: AutenticacionServicio,
     private readonly configuracionEmpresaServicio: ConfiguracionEmpresaServicio,
     private readonly sesionServicio: SesionServicio,
+    private readonly temaServicio: TemaServicio,
     private readonly router: Router
   ) {
     this.configuracionEmpresa = this.configuracionEmpresaServicio.configuracion;
@@ -56,6 +59,7 @@ export class PrivadoLayout implements AfterViewInit {
       const usuario = this.sesionServicio.obtenerUsuario();
       return usuario?.name || usuario?.usuario || 'Usuario';
     });
+    this.temaActual = this.temaServicio.temaActual();
 
     this.sincronizarMenuVenta(this.router.url);
     this.router.events
@@ -110,6 +114,10 @@ export class PrivadoLayout implements AfterViewInit {
   toggleMenuUsuario(evento: MouseEvent): void {
     evento.stopPropagation();
     this.menuUsuarioAbierto = !this.menuUsuarioAbierto;
+  }
+
+  toggleTema(): void {
+    this.temaServicio.alternarTema();
   }
 
   cerrarSidebarEnMovil(): void {
