@@ -39,6 +39,7 @@ type CampoNumerico = 'cantidad' | 'precio';
 
 interface VentaCerradaItem {
   ventaOpDiariaId: number;
+  fechaHora: string;
   productoNombre: string;
   cantidad: number;
   precio: number;
@@ -76,6 +77,7 @@ interface EstadoVentaApi {
     total_general: number;
     items: Array<{
       venta_op_diaria_id: number;
+      fecha_hora: string;
       producto_nombre: string;
       cantidad: number;
       precio: number;
@@ -110,7 +112,7 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
   mensajeError = '';
   guardando = false;
 
-  ventas: VentaDiariaItem[] = [this.crearFilaVacia(this.fechaHoraActual)];
+  ventas: VentaDiariaItem[] = [];
   cierresHistoricos: CierreHistorico[] = [];
 
   activeDropdownIndex: number | null = null;
@@ -124,7 +126,7 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
   private readonly guardado$ = new Subject<void>();
   private productoIdsConLote = new Set<number>();
   private stockDisponiblePorProducto = new Map<number, number>();
-  private alertasStockBajoMostradas = new Set<number>();
+  private filaAdvertenciaStock: number | null = null;
   private readonly panelMargin = 8;
   private readonly panelMaxHeight = 320;
   private readonly panelMinHeight = 150;
@@ -217,29 +219,39 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
   }
 
   agregarFila(): void {
-    this.ventas = [...this.ventas, this.crearFilaVacia(this.fechaHoraActual)];
-    this.programarGuardado();
+    const fechaHoraFila = this.obtenerFechaHoraLocalInput();
+    this.ventas = [...this.ventas, this.crearFilaVacia(fechaHoraFila)];
   }
 
   quitarFila(index: number): void {
     this.ventas = this.ventas.filter((_, i) => i !== index);
-    if (this.ventas.length === 0) {
-      this.ventas = [this.crearFilaVacia(this.fechaHoraActual)];
-    }
 
     if (this.activeDropdownIndex !== null && (this.activeDropdownIndex === index || this.activeDropdownIndex >= this.ventas.length)) {
       this.cerrarDropdownProducto();
+    }
+
+    if (this.filaAdvertenciaStock !== null) {
+      if (this.filaAdvertenciaStock === index) {
+        this.filaAdvertenciaStock = null;
+      } else if (this.filaAdvertenciaStock > index) {
+        this.filaAdvertenciaStock -= 1;
+      }
     }
 
     this.programarGuardado();
   }
 
   limpiarFila(index: number): void {
-    this.ventas[index] = this.crearFilaVacia(this.fechaHoraActual);
+    const fechaHoraActualFila = this.ventas[index]?.fechaHora || this.obtenerFechaHoraLocalInput();
+    this.ventas[index] = this.crearFilaVacia(fechaHoraActualFila);
     this.ventas = [...this.ventas];
 
     if (this.activeDropdownIndex === index) {
       this.indiceProductoResaltado = 0;
+    }
+
+    if (this.filaAdvertenciaStock === index) {
+      this.filaAdvertenciaStock = null;
     }
 
     this.programarGuardado();
@@ -270,7 +282,7 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
 
   mostrarAdvertenciaStock(index: number): boolean {
     const restante = this.stockRestanteFila(index);
-    return restante !== null && restante <= 5;
+    return this.filaAdvertenciaStock === index && restante !== null && restante <= 5;
   }
 
   formatearFechaDMY(valor: string | null | undefined): string {
@@ -313,23 +325,81 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
     return horaCompleta.slice(0, 5);
   }
 
-  private evaluarAlertaStockBajo(index: number): void {
+  tituloCierre(cierre: CierreHistorico): string {
+    if (!cierre.cerrado_en) {
+      return this.formatearFechaDMY(cierre.fecha);
+    }
+
+    const normalizado = cierre.cerrado_en.replace(' ', 'T');
+    const [fecha] = normalizado.split('T');
+    const horaCierre = this.formatearHora(cierre.cerrado_en);
+    return `${this.formatearFechaDMY(fecha)} (${horaCierre})`;
+  }
+
+
+
+  private mostrarAlertaStockAgotado(nombreProducto: string): void {
+    const swal = (window as unknown as { Swal?: { fire: (options: Record<string, unknown>) => Promise<{ isConfirmed: boolean }> } }).Swal;
+    if (!swal) {
+      window.alert(`Sin stock disponible para ${nombreProducto}.`);
+      return;
+    }
+
+    swal.fire({
+      title: 'Stock agotado',
+      text: `El producto "${nombreProducto}" no tiene stock disponible.`,
+      icon: 'warning',
+      confirmButtonText: 'Entendido',
+      customClass: {
+        container: 'swal-zindex-superior'
+      },
+      zIndex: 6000
+    });
+  }
+
+  private mostrarAlertaCantidadExcedida(stockDisponible: number): void {
+    const swal = (window as unknown as { Swal?: { fire: (options: Record<string, unknown>) => Promise<{ isConfirmed: boolean }> } }).Swal;
+    if (!swal) {
+      window.alert(`La cantidad supera el stock disponible (${stockDisponible.toFixed(2)}).`);
+      return;
+    }
+
+    swal.fire({
+      title: 'Cantidad no permitida',
+      text: `No puedes exceder el stock disponible (${stockDisponible.toFixed(2)}).`,
+      icon: 'warning',
+      confirmButtonText: 'Entendido',
+      customClass: {
+        container: 'swal-zindex-superior'
+      },
+      zIndex: 6000
+    });
+  }
+
+  private stockDisponibleFormulario(productoId: number): number {
+    return this.stockDisponiblePorProducto.get(productoId) ?? 0;
+  }
+  private actualizarAdvertenciaStock(index: number): void {
     const fila = this.ventas[index];
     if (!fila?.productoId) {
+      if (this.filaAdvertenciaStock === index) {
+        this.filaAdvertenciaStock = null;
+      }
       return;
     }
 
     const restante = this.stockRestanteFila(index);
     if (restante === null || restante > 5) {
+      if (this.filaAdvertenciaStock === index) {
+        this.filaAdvertenciaStock = null;
+      }
       return;
     }
 
-    if (this.alertasStockBajoMostradas.has(fila.productoId)) {
-      return;
-    }
-
-    this.alertasStockBajoMostradas.add(fila.productoId);
-    window.alert(`Stock bajo para ${fila.productoNombre || 'producto seleccionado'}: quedan ${Math.max(restante, 0).toFixed(2)}.`);
+    this.filaAdvertenciaStock = this.ventas
+      .map((item, idx) => ({ item, idx }))
+      .filter(({ item }) => item.productoId === fila.productoId)
+      .slice(-1)[0]?.idx ?? index;
   }
 
   actualizarCampoNumerico(index: number, campo: CampoNumerico, valor: string): void {
@@ -340,7 +410,16 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
 
     fila[campo] = valor ?? '';
     if (campo === 'cantidad') {
-      this.evaluarAlertaStockBajo(index);
+      const stockDisponible = fila.productoId ? this.stockDisponibleFormulario(fila.productoId) : null;
+      const totalProducto = fila.productoId
+        ? this.ventas.reduce((acc, item) => item.productoId === fila.productoId ? acc + this.parseNumero(item.cantidad) : acc, 0)
+        : 0;
+
+      if (stockDisponible !== null && totalProducto > stockDisponible) {
+        fila.cantidad = '0';
+        this.mostrarAlertaCantidadExcedida(stockDisponible);
+      }
+      this.actualizarAdvertenciaStock(index);
     }
     this.programarGuardado();
   }
@@ -372,7 +451,7 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
       next: () => {
         this.fechaHoraActual = this.obtenerFechaHoraLocalInput();
         this.fechaHoy = this.fechaHoraActual.slice(0, 10);
-        this.ventas = [this.crearFilaVacia(this.fechaHoraActual)];
+        this.ventas = [];
         this.cerrarDropdownProducto();
         this.cargarEstadoFecha();
       },
@@ -421,6 +500,11 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
       return;
     }
 
+    const fila = this.ventas[index];
+    if (fila) {
+      fila.filtroProducto = '';
+    }
+
     this.abrirDropdownProducto(index, trigger);
   }
 
@@ -433,6 +517,11 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
     const trigger = event.currentTarget as HTMLElement | null;
     if (!trigger) {
       return;
+    }
+
+    const fila = this.ventas[index];
+    if (fila) {
+      fila.filtroProducto = '';
     }
 
     this.abrirDropdownProducto(index, trigger);
@@ -504,11 +593,19 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
       return;
     }
 
+    const stockDisponible = this.stockDisponiblePorProducto.get(producto.id) ?? 0;
+    if (stockDisponible <= 0) {
+      this.cerrarDropdownProducto();
+      this.mostrarAlertaStockAgotado(producto.nombre);
+      return;
+    }
+
     fila.productoId = producto.id;
     fila.productoNombre = producto.nombre;
     fila.grupoVenta = producto.grupo_venta;
-    fila.filtroProducto = producto.nombre;
+    fila.filtroProducto = '';
     fila.dropdownAbierto = false;
+    this.actualizarAdvertenciaStock(index);
     this.cerrarDropdownProducto();
     this.programarGuardado();
   }
@@ -656,6 +753,7 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
 
     this.http.get<EstadoVentaApi>('/api/otros-productos/ventas-diarias', { headers, params }).subscribe({
       next: (estado) => {
+        const filasIncompletasLocales = this.ventas.filter((fila) => !fila.productoId || this.parseNumero(fila.cantidad) <= 0);
         const filasAbiertas = (estado.filas ?? []).filter((item) => !item.cerrado_en);
         const filas = filasAbiertas.map((item) => ({
           ventaId: item.venta_op_diaria_id,
@@ -673,7 +771,8 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
           this.fechaHoraActual = filas[0].fechaHora || this.fechaHoraActual;
         }
 
-        this.ventas = filas.length > 0 ? filas : [this.crearFilaVacia(this.fechaHoraActual)];
+        const filasCombinadas = [...filas, ...filasIncompletasLocales.filter((fila) => !fila.ventaId)];
+        this.ventas = filasCombinadas;
         this.cerrado = filasAbiertas.length === 0 && (estado.filas ?? []).some((item) => !!item.cerrado_en);
         this.cierresHistoricos = (estado.cierres ?? []).map((cierre) => ({
           fecha: cierre.fecha,
@@ -683,6 +782,7 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
           total_general: Number(cierre.total_general ?? 0),
           items: (cierre.items ?? []).map((item) => ({
             ventaOpDiariaId: item.venta_op_diaria_id,
+            fechaHora: item.fecha_hora,
             productoNombre: item.producto_nombre,
             cantidad: Number(item.cantidad ?? 0),
             precio: Number(item.precio ?? 0),
@@ -690,11 +790,14 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
             categoria: item.grupo_venta ?? 'OTROS'
           }))
         }));
+
+        this.filaAdvertenciaStock = null;
+        this.ventas.forEach((_, index) => this.actualizarAdvertenciaStock(index));
       },
       error: () => {
         this.fechaHoraActual = this.obtenerFechaHoraLocalInput();
         this.fechaHoy = this.fechaHoraActual.slice(0, 10);
-        this.ventas = [this.crearFilaVacia(this.fechaHoraActual)];
+        this.ventas = [];
       }
     });
   }
@@ -715,14 +818,14 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
       .map((fila) => ({
         producto_id: fila.productoId,
         cantidad: this.parseNumero(fila.cantidad),
-        precio: this.parseNumero(fila.precio)
+        precio: this.parseNumero(fila.precio),
+        fecha_hora: this.formatearFechaHoraApi(fila.fechaHora)
       }));
 
     this.guardando = true;
     const headers = this.obtenerHeaders();
     this.http.put('/api/otros-productos/ventas-diarias', {
       fecha: this.fechaHoy,
-      fecha_hora: this.formatearFechaHoraApi(this.fechaHoraActual),
       filas: filasValidas
     }, { headers }).subscribe({
       next: () => {
@@ -751,9 +854,15 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
   private iniciarRelojFechaHora(): void {
     const tick = () => {
       const ahora = this.obtenerFechaHoraLocalInput();
+      const fechaAnterior = this.fechaHoy;
       this.fechaHoraActual = ahora;
       this.fechaHoy = ahora.slice(0, 10);
-      this.ventas = this.ventas.map((venta) => ({ ...venta, fechaHora: ahora }));
+
+      if (fechaAnterior && fechaAnterior !== this.fechaHoy) {
+        this.cerrado = false;
+        this.ventas = [];
+        this.cargarEstadoFecha();
+      }
     };
 
     tick();
@@ -823,6 +932,10 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
   private combinarFechaConHoraActual(fecha: string): string {
     const hora = this.obtenerFechaHoraLocalInput().slice(11, 16);
     return `${fecha}T${hora}`;
+  }
+
+  puedeReabrirDia(cierre: CierreHistorico): boolean {
+    return cierre.fecha === this.fechaHoy;
   }
 
   private formatearFechaHoraInput(valor: string | null | undefined): string {
