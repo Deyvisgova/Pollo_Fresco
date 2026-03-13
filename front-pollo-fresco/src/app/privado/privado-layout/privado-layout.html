@@ -13,7 +13,32 @@
 
     <p class="panel__topbar-mensaje">Bienvenidos al sistema de EL POLLO FRESCO</p>
 
-    <div class="panel__usuario">
+    <div class="panel__acciones-usuario">
+      <button
+        type="button"
+        class="theme-toggle"
+        [class.theme-toggle--dark]="temaActual() === 'dark'"
+        (click)="toggleTema()"
+        [attr.aria-label]="temaActual() === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+      >
+        <span class="theme-toggle__icon theme-toggle__icon--sun" aria-hidden="true">
+          <svg viewBox="0 0 512 512" focusable="false">
+            <path
+              d="M256 112a144 144 0 1 0 0 288 144 144 0 1 0 0-288zm0-112c17.7 0 32 14.3 32 32V64c0 17.7-14.3 32-32 32s-32-14.3-32-32V32c0-17.7 14.3-32 32-32zm0 416c17.7 0 32 14.3 32 32v32c0 17.7-14.3 32-32 32s-32-14.3-32-32V448c0-17.7 14.3-32 32-32zM400 256c0-17.7 14.3-32 32-32h32c17.7 0 32 14.3 32 32s-14.3 32-32 32H432c-17.7 0-32-14.3-32-32zM80 224h32c17.7 0 32 14.3 32 32s-14.3 32-32 32H80c-17.7 0-32-14.3-32-32s14.3-32 32-32zm288.5-133.8l22.6-22.6c12.5-12.5 32.8-12.5 45.3 0s12.5 32.8 0 45.3l-22.6 22.6c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3zM98.2 368.5l22.6-22.6c12.5-12.5 32.8-12.5 45.3 0s12.5 32.8 0 45.3l-22.6 22.6c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3zM413.8 345.9l22.6 22.6c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0l-22.6-22.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0zM143.5 90.2c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L75.6 112.9c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l22.6 22.6z"
+            />
+          </svg>
+        </span>
+        <span class="theme-toggle__icon theme-toggle__icon--moon" aria-hidden="true">
+          <svg viewBox="0 0 384 512" focusable="false">
+            <path
+              d="M223.5 32c-123.5 0-223.5 100-223.5 223.5S100 479 223.5 479c67.4 0 128-30 168.9-77.4c10.2-11.8 1.4-30.1-14.1-29.2c-5 .3-10 .5-15.1 .5c-97.2 0-176-78.8-176-176c0-54.2 24.5-102.7 63-135.1c12.4-10.4 4.8-30.1-11.2-29.7c-5.1 .1-10.2 .2-15.5 .2z"
+            />
+          </svg>
+        </span>
+        <span class="theme-toggle__knob" aria-hidden="true"></span>
+      </button>
+
+      <div class="panel__usuario">
       <button
         type="button"
         class="panel__usuario-trigger"
@@ -33,6 +58,7 @@
         <button type="button" class="panel__usuario-item panel__usuario-item--salir" (click)="cerrarSesion()">
           Cerrar sesión
         </button>
+      </div>
       </div>
     </div>
   </header>
