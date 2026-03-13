@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -426,6 +427,7 @@ class OtrosProductosController extends Controller
 
                     $items[] = [
                         'venta_op_diaria_id' => $row->venta_op_diaria_id,
+                        'fecha_hora' => $row->fecha_hora,
                         'producto_id' => $row->producto_id,
                         'producto_nombre' => $row->producto_nombre,
                         'grupo_venta' => $row->grupo_venta,
@@ -458,11 +460,11 @@ class OtrosProductosController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'fecha' => ['required', 'date'],
-            'fecha_hora' => ['nullable', 'date'],
             'filas' => ['array'],
             'filas.*.producto_id' => ['required', 'integer', 'exists:productos,producto_id'],
             'filas.*.cantidad' => ['required', 'numeric', 'min:0.01'],
             'filas.*.precio' => ['required', 'numeric', 'min:0'],
+            'filas.*.fecha_hora' => ['nullable', 'date'],
         ]);
 
         if ($validator->fails()) {
@@ -475,7 +477,6 @@ class OtrosProductosController extends Controller
         }
 
         $fecha = $request->input('fecha');
-        $fechaHora = $request->input('fecha_hora') ?: Carbon::parse($fecha)->format('Y-m-d H:i:s');
         $filas = collect($request->input('filas', []));
 
         $hayCierre = DB::table('otros_productos_ventas_diarias')
@@ -499,13 +500,17 @@ class OtrosProductosController extends Controller
                 ->delete();
 
             foreach ($filas as $fila) {
+                $fechaHoraFila = isset($fila['fecha_hora']) && !empty($fila['fecha_hora'])
+                    ? Carbon::parse($fila['fecha_hora'])->format('Y-m-d H:i:s')
+                    : Carbon::parse($fecha)->format('Y-m-d H:i:s');
+
                 DB::table('otros_productos_ventas_diarias')->insert([
                     'usuario_id' => $usuario->usuario_id,
                     'producto_id' => (int) $fila['producto_id'],
                     'compra_lote_detalle_id' => null,
                     'cantidad' => (float) $fila['cantidad'],
                     'precio' => (float) $fila['precio'],
-                    'fecha_hora' => $fechaHora,
+                    'fecha_hora' => $fechaHoraFila,
                     'total' => (float) $fila['cantidad'] * (float) $fila['precio'],
                     'total_huevos' => $totales['huevos'],
                     'total_congelados' => $totales['congelados'],
@@ -561,7 +566,7 @@ class OtrosProductosController extends Controller
             return response()->json(['message' => 'No hay filas para cerrar en esta fecha'], 422);
         }
 
-        $ahora = now();
+        $ahora = Carbon::now('America/Lima')->format('Y-m-d H:i:s');
 
         DB::beginTransaction();
         try {
