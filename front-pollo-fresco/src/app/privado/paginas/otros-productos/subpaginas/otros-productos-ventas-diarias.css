@@ -57,6 +57,7 @@
 .seccion__tabla table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 .seccion__tabla th,
@@ -65,6 +66,21 @@
   border-bottom: 1px solid #e2e8f0;
   text-align: left;
   vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.seccion__tabla td {
+  word-break: break-word;
+}
+
+.seccion__tabla td input,
+.seccion__tabla td .selector-producto__boton {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cantidad-celda {
+  min-height: 64px;
 }
 
 .seccion__tabla th {
@@ -264,6 +280,56 @@
   .seccion__tarjeta { min-height: auto; }
   .selector-producto { min-width: 220px; }
   .selector-producto__menu { width: min(95vw, 420px); }
+
+  .seccion__tabla table,
+  .seccion__tabla thead,
+  .seccion__tabla tbody,
+  .seccion__tabla th,
+  .seccion__tabla td,
+  .seccion__tabla tr {
+    display: block;
+  }
+
+  .seccion__tabla thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+  }
+
+  .seccion__tabla tr {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    padding: 8px;
+    background: #fff;
+  }
+
+  .seccion__tabla td {
+    border-bottom: 1px solid #e2e8f0;
+    padding: 10px 10px 10px 44%;
+    position: relative;
+    min-height: 44px;
+  }
+
+  .seccion__tabla td:last-child {
+    border-bottom: none;
+  }
+
+  .seccion__tabla td::before {
+    content: attr(data-label);
+    position: absolute;
+    left: 10px;
+    top: 10px;
+    width: 40%;
+    font-weight: 700;
+    color: #334155;
+    white-space: nowrap;
+  }
 }
 
 
@@ -272,6 +338,10 @@
   margin-top: 6px;
   color: #b91c1c;
   font-weight: 600;
+}
+
+:host ::ng-deep .swal-zindex-superior {
+  z-index: 5000 !important;
 }
 
 .modal__fecha-cierre {

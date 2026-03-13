@@ -29,7 +29,7 @@
             <div class="fecha-usuario">
               <input
                 type="datetime-local"
-                [ngModel]="fechaHoraActual"
+                [ngModel]="venta.fechaHora"
                 name="fecha-hora-{{ i }}"
                 class="fecha-usuario__fecha"
                 disabled
@@ -60,18 +60,20 @@
             </div>
           </td>
           <td data-label="Cantidad">
-            <input
-              type="text"
-              inputmode="decimal"
-              placeholder="0.00"
-              [(ngModel)]="venta.cantidad"
-              (ngModelChange)="actualizarCampoNumerico(i, 'cantidad', $event)"
-              (blur)="normalizarCampoNumerico(i, 'cantidad')"
-              name="cantidad-{{ i }}"
-              autocomplete="off"
-              [disabled]="cerrado"
-            />
-            <small class="stock-advertencia" *ngIf="mostrarAdvertenciaStock(i)">⚠ Stock restante: {{ stockRestanteFila(i) | number : '1.0-2' }}</small>
+            <div class="cantidad-celda">
+              <input
+                type="text"
+                inputmode="decimal"
+                placeholder="0.00"
+                [(ngModel)]="venta.cantidad"
+                (ngModelChange)="actualizarCampoNumerico(i, 'cantidad', $event)"
+                (blur)="normalizarCampoNumerico(i, 'cantidad')"
+                name="cantidad-{{ i }}"
+                autocomplete="off"
+                [disabled]="cerrado"
+              />
+              <small class="stock-advertencia" *ngIf="mostrarAdvertenciaStock(i)">⚠ Stock restante: {{ stockRestanteFila(i) | number : '1.0-2' }}</small>
+            </div>
           </td>
           <td data-label="Precio (S/)">
             <input
@@ -166,13 +168,13 @@
         </thead>
         <tbody>
           <tr *ngFor="let cierre of cierresHistoricos">
-            <td>{{ formatearFechaDMY(cierre.fecha) }}</td>
-            <td>{{ formatearHora(cierre.cerrado_en) }}</td>
-            <td>S/ {{ cierre.total_huevos | number : '1.2-2' }}</td>
-            <td>S/ {{ cierre.total_congelados | number : '1.2-2' }}</td>
-            <td>S/ {{ cierre.total_general | number : '1.2-2' }}</td>
-            <td class="seccion__acciones-fila">
-              <button type="button" class="boton boton--texto" (click)="reabrirDia(cierre.fecha)">Reabrir día</button>
+            <td data-label="Fecha">{{ formatearFechaDMY(cierre.fecha) }}</td>
+            <td data-label="Hora cierre">{{ formatearHora(cierre.cerrado_en) }}</td>
+            <td data-label="Total Huevos">S/ {{ cierre.total_huevos | number : '1.2-2' }}</td>
+            <td data-label="Total Congelados">S/ {{ cierre.total_congelados | number : '1.2-2' }}</td>
+            <td data-label="Total General">S/ {{ cierre.total_general | number : '1.2-2' }}</td>
+            <td data-label="Acciones" class="seccion__acciones-fila">
+              <button type="button" class="boton boton--texto" (click)="reabrirDia(cierre.fecha)" *ngIf="puedeReabrirDia(cierre)">Reabrir día</button>
               <button type="button" class="boton boton--texto" (click)="abrirDetalle(cierre)">Detalle</button>
             </td>
           </tr>
@@ -186,8 +188,7 @@
   <div class="modal__contenido">
     <header class="modal__encabezado">
       <div>
-        <h3>Detalle del cierre {{ formatearFechaDMY(cierreDetalle.fecha) }} {{ cierreDetalle.cerrado_en ? '(' + formatearHora(cierreDetalle.cerrado_en) + ')' : '' }}</h3>
-        <p *ngIf="cierreDetalle.cerrado_en" class="modal__fecha-cierre">Cerrado en: {{ formatearFechaHoraDMY(cierreDetalle.cerrado_en) }}</p>
+        <h3>Detalle del cierre {{ tituloCierre(cierreDetalle) }}</h3>
       </div>
       <button type="button" class="boton boton--texto" (click)="cerrarModalDetalle()">Cerrar</button>
     </header>
@@ -197,6 +198,7 @@
         <thead>
           <tr>
             <th>Producto</th>
+            <th>Hora</th>
             <th>Cantidad</th>
             <th>Precio</th>
             <th>Total</th>
@@ -205,11 +207,12 @@
         </thead>
         <tbody>
           <tr *ngFor="let item of cierreDetalle.items">
-            <td>{{ item.productoNombre }}</td>
-            <td>{{ item.cantidad | number : '1.0-2' }}</td>
-            <td>S/ {{ item.precio | number : '1.2-2' }}</td>
-            <td>S/ {{ item.total | number : '1.2-2' }}</td>
-            <td>{{ item.categoria }}</td>
+            <td data-label="Producto">{{ item.productoNombre }}</td>
+            <td data-label="Hora">{{ formatearHora(item.fechaHora) }}</td>
+            <td data-label="Cantidad">{{ item.cantidad | number : '1.0-2' }}</td>
+            <td data-label="Precio">S/ {{ item.precio | number : '1.2-2' }}</td>
+            <td data-label="Total">S/ {{ item.total | number : '1.2-2' }}</td>
+            <td data-label="Tipo">{{ item.categoria }}</td>
           </tr>
         </tbody>
       </table>
