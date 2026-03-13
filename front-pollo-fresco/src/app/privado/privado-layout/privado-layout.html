@@ -13,7 +13,20 @@
 
     <p class="panel__topbar-mensaje">Bienvenidos al sistema de EL POLLO FRESCO</p>
 
-    <div class="panel__usuario">
+    <div class="panel__acciones-usuario">
+      <button
+        type="button"
+        class="theme-toggle"
+        [class.theme-toggle--dark]="temaActual() === 'dark'"
+        (click)="toggleTema()"
+        [attr.aria-label]="temaActual() === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+      >
+        <i class="fas fa-sun theme-track-icon theme-track-icon-sun" aria-hidden="true"></i>
+        <i class="fas fa-moon theme-track-icon theme-track-icon-moon" aria-hidden="true"></i>
+        <span class="theme-toggle__knob" aria-hidden="true"></span>
+      </button>
+
+      <div class="panel__usuario">
       <button
         type="button"
         class="panel__usuario-trigger"
@@ -33,6 +46,7 @@
         <button type="button" class="panel__usuario-item panel__usuario-item--salir" (click)="cerrarSesion()">
           Cerrar sesión
         </button>
+      </div>
       </div>
     </div>
   </header>
