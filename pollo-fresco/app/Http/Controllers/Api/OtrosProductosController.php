@@ -368,19 +368,89 @@ class OtrosProductosController extends Controller
                 'opvd.total',
                 'opvd.total_huevos',
                 'opvd.total_congelados',
+                'opvd.fecha_hora',
                 'opvd.cerrado_en',
                 'p.nombre as producto_nombre',
                 'p.grupo_venta',
             ])
             ->where('opvd.usuario_id', $usuario->usuario_id)
-            ->whereDate('opvd.fecha', $fecha)
+            ->whereDate('opvd.fecha_hora', $fecha)
             ->orderBy('opvd.venta_op_diaria_id')
             ->get();
+
+        $cierresHistoricos = DB::table('otros_productos_ventas_diarias as opvd')
+            ->join('productos as p', 'p.producto_id', '=', 'opvd.producto_id')
+            ->select([
+                'opvd.venta_op_diaria_id',
+                'opvd.producto_id',
+                'opvd.cantidad',
+                'opvd.precio',
+                'opvd.total',
+                'opvd.total_huevos',
+                'opvd.total_congelados',
+                'opvd.fecha_hora',
+                'opvd.cerrado_en',
+                'p.nombre as producto_nombre',
+                'p.grupo_venta',
+            ])
+            ->where('opvd.usuario_id', $usuario->usuario_id)
+            ->whereNotNull('opvd.cerrado_en')
+            ->whereNotNull('opvd.fecha_hora')
+            ->orderByDesc('opvd.cerrado_en')
+            ->orderByDesc('opvd.venta_op_diaria_id')
+            ->get()
+            ->groupBy(function ($item) {
+                $fechaHora = (string) ($item->fecha_hora ?? '');
+                return strlen($fechaHora) >= 10 ? substr($fechaHora, 0, 10) : now()->toDateString();
+            })
+            ->map(function ($rows, $fechaCierre) {
+                $totales = [
+                    'huevos' => 0,
+                    'congelados' => 0,
+                    'general' => 0,
+                ];
+
+                $items = [];
+
+                foreach ($rows as $row) {
+                    $subtotal = (float) $row->total;
+                    $totales['general'] += $subtotal;
+
+                    if ($row->grupo_venta === 'HUEVOS') {
+                        $totales['huevos'] += $subtotal;
+                    }
+
+                    if ($row->grupo_venta === 'CONGELADO') {
+                        $totales['congelados'] += $subtotal;
+                    }
+
+                    $items[] = [
+                        'venta_op_diaria_id' => $row->venta_op_diaria_id,
+                        'producto_id' => $row->producto_id,
+                        'producto_nombre' => $row->producto_nombre,
+                        'grupo_venta' => $row->grupo_venta,
+                        'cantidad' => (float) $row->cantidad,
+                        'precio' => (float) $row->precio,
+                        'total' => $subtotal,
+                    ];
+                }
+
+                return [
+                    'fecha' => $fechaCierre,
+                    'cerrado_en' => optional(collect($rows)->first())->cerrado_en,
+                    'total_huevos' => $totales['huevos'],
+                    'total_congelados' => $totales['congelados'],
+                    'total_general' => $totales['general'],
+                    'items' => $items,
+                ];
+            })
+            ->values();
 
         return response()->json([
             'fecha' => $fecha,
             'cerrado' => $filas->contains(fn ($item) => !is_null($item->cerrado_en)),
             'filas' => $filas,
+            'cierres' => $cierresHistoricos,
         ]);
     }
 
@@ -388,6 +458,7 @@ class OtrosProductosController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'fecha' => ['required', 'date'],
+            'fecha_hora' => ['nullable', 'date'],
             'filas' => ['array'],
             'filas.*.producto_id' => ['required', 'integer', 'exists:productos,producto_id'],
             'filas.*.cantidad' => ['required', 'numeric', 'min:0.01'],
@@ -404,11 +475,12 @@ class OtrosProductosController extends Controller
         }
 
         $fecha = $request->input('fecha');
+        $fechaHora = $request->input('fecha_hora') ?: Carbon::parse($fecha)->format('Y-m-d H:i:s');
         $filas = collect($request->input('filas', []));
 
         $hayCierre = DB::table('otros_productos_ventas_diarias')
             ->where('usuario_id', $usuario->usuario_id)
-            ->whereDate('fecha', $fecha)
+            ->whereDate('fecha_hora', $fecha)
             ->whereNotNull('cerrado_en')
             ->exists();
 
@@ -422,7 +494,7 @@ class OtrosProductosController extends Controller
         try {
             DB::table('otros_productos_ventas_diarias')
                 ->where('usuario_id', $usuario->usuario_id)
-                ->whereDate('fecha', $fecha)
+                ->whereDate('fecha_hora', $fecha)
                 ->whereNull('cerrado_en')
                 ->delete();
 
@@ -433,7 +505,7 @@ class OtrosProductosController extends Controller
                     'compra_lote_detalle_id' => null,
                     'cantidad' => (float) $fila['cantidad'],
                     'precio' => (float) $fila['precio'],
-                    'fecha' => $fecha,
+                    'fecha_hora' => $fechaHora,
                     'total' => (float) $fila['cantidad'] * (float) $fila['precio'],
                     'total_huevos' => $totales['huevos'],
                     'total_congelados' => $totales['congelados'],
@@ -470,12 +542,22 @@ class OtrosProductosController extends Controller
 
         $filas = DB::table('otros_productos_ventas_diarias')
             ->where('usuario_id', $usuario->usuario_id)
-            ->whereDate('fecha', $fecha)
+            ->whereDate('fecha_hora', $fecha)
             ->whereNull('cerrado_en')
             ->orderBy('venta_op_diaria_id')
             ->get();
 
         if ($filas->isEmpty()) {
+            $yaCerrado = DB::table('otros_productos_ventas_diarias')
+                ->where('usuario_id', $usuario->usuario_id)
+                ->whereDate('fecha_hora', $fecha)
+                ->whereNotNull('cerrado_en')
+                ->exists();
+
+            if ($yaCerrado) {
+                return response()->json(['message' => 'El día ya está cerrado. Debes reabrir el día para editar.'], 409);
+            }
+
             return response()->json(['message' => 'No hay filas para cerrar en esta fecha'], 422);
         }
 
@@ -543,7 +625,7 @@ class OtrosProductosController extends Controller
 
         $filas = DB::table('otros_productos_ventas_diarias')
             ->where('usuario_id', $usuario->usuario_id)
-            ->whereDate('fecha', $fecha)
+            ->whereDate('fecha_hora', $fecha)
             ->whereNotNull('cerrado_en')
             ->get();
 
@@ -572,7 +654,7 @@ class OtrosProductosController extends Controller
 
             DB::table('otros_productos_ventas_diarias')
                 ->where('usuario_id', $usuario->usuario_id)
-                ->whereDate('fecha', $fecha)
+                ->whereDate('fecha_hora', $fecha)
                 ->update([
                     'cerrado_en' => null,
                     'compra_lote_detalle_id' => null,

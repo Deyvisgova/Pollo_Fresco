@@ -55,7 +55,7 @@
           <td>{{ pago.cantidad_entregas }}</td>
           <td>{{ proveedorPagadoTexto(pago) }}</td>
           <td>{{ formatearRangoFechas(pago.fecha_desde, pago.fecha_hasta) }}</td>
-          <td>{{ pago.creado_en | date: 'short' }}</td>
+          <td>{{ pago.creado_en | date: 'dd/MM/yyyy HH:mm' }}</td>
         </tr>
         <tr *ngIf="!cargando && pagos.length === 0">
           <td colspan="10">Sin pagos registrados.</td>
