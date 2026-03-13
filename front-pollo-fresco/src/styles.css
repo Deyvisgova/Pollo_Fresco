@@ -1,5 +1,25 @@
 @import '@angular/material/prebuilt-themes/indigo-pink.css';
 
+:root {
+  --app-bg: #f5f7fb;
+  --surface-card: #ffffff;
+  --surface-muted: #f8fafc;
+  --surface-table-head: #eef2ff;
+  --border-soft: #dbe3ef;
+  --text-primary: #1f2937;
+  --text-secondary: #64748b;
+}
+
+:root[data-theme='dark'] {
+  --app-bg: #0f172a;
+  --surface-card: #1e293b;
+  --surface-muted: #273449;
+  --surface-table-head: #334155;
+  --border-soft: #475569;
+  --text-primary: #e2e8f0;
+  --text-secondary: #cbd5e1;
+}
+
 html,
 body {
   min-height: 100%;
@@ -7,8 +27,10 @@ body {
 
 
 body {
-  background-color: #fffaf5;
+  background-color: var(--app-bg);
+  color: var(--text-primary);
   min-height: 100vh;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .pagina-banner {
@@ -28,6 +50,53 @@ app-root {
   min-height: 100vh;
   display: grid;
   grid-template-rows: auto auto 1fr auto;
+}
+
+:root[data-theme='dark'] .panel,
+:root[data-theme='dark'] .panel__contenido,
+:root[data-theme='dark'] .panel__sidebar,
+:root[data-theme='dark'] .panel__logo,
+:root[data-theme='dark'] .seccion__tarjeta,
+:root[data-theme='dark'] .tarjeta,
+:root[data-theme='dark'] .card,
+:root[data-theme='dark'] [class*='tarjeta'],
+:root[data-theme='dark'] [class*='card'] {
+  background: var(--surface-card) !important;
+  color: var(--text-primary);
+  border-color: var(--border-soft) !important;
+}
+
+:root[data-theme='dark'] .panel__rutas table,
+:root[data-theme='dark'] .panel__rutas .tabla,
+:root[data-theme='dark'] .panel__rutas .tabla-contenedor,
+:root[data-theme='dark'] .panel__rutas [class*='tabla'] {
+  background: transparent;
+  color: var(--text-primary);
+}
+
+:root[data-theme='dark'] .panel__rutas th,
+:root[data-theme='dark'] .panel__rutas td,
+:root[data-theme='dark'] .panel__rutas thead th {
+  border-color: var(--border-soft) !important;
+  color: var(--text-primary);
+}
+
+:root[data-theme='dark'] .panel__rutas th,
+:root[data-theme='dark'] .panel__rutas thead th,
+:root[data-theme='dark'] .panel__rutas .tabla-detalle__encabezado,
+:root[data-theme='dark'] .panel__rutas .tabla__encabezado {
+  background: var(--surface-table-head) !important;
+}
+
+:root[data-theme='dark'] .panel__rutas td,
+:root[data-theme='dark'] .panel__rutas input,
+:root[data-theme='dark'] .panel__rutas select,
+:root[data-theme='dark'] .panel__rutas textarea,
+:root[data-theme='dark'] .panel__rutas .modal__contenido,
+:root[data-theme='dark'] .panel__rutas .modal__cuerpo {
+  background: var(--surface-muted) !important;
+  color: var(--text-primary);
+  border-color: var(--border-soft) !important;
 }
 
 .pagina-banner--full-bleed {
@@ -64,8 +133,8 @@ app-root {
   }
 
   .panel__rutas tbody tr {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
+    background: var(--surface-card);
+    border: 1px solid var(--border-soft);
     border-radius: 14px;
     padding: 10px 12px;
     box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
@@ -73,7 +142,7 @@ app-root {
 
   .panel__rutas tbody td {
     border: none !important;
-    border-bottom: 1px solid #edf2f7 !important;
+    border-bottom: 1px solid var(--border-soft) !important;
     padding: 8px 0;
     display: flex;
     align-items: center;
@@ -90,7 +159,7 @@ app-root {
   .panel__rutas tbody td::before {
     content: attr(data-label) ":";
     font-weight: 700;
-    color: #475569;
+    color: var(--text-secondary);
     flex: 0 0 120px;
     min-width: 120px;
     text-align: left;
