@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule, HttpHeaders, HttpParams } from '@angular/common/http';
-import { Component, OnInit } from '@angular/core';
+import { Component, DoCheck, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { SesionServicio } from '../../../servicios/sesion.servicio';
 
@@ -45,8 +45,11 @@ interface VentaGuardada {
   templateUrl: './venta.html',
   styleUrl: './venta.css'
 })
-export class PrivadoVenta implements OnInit {
+export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
   private token = 'f3ba6fa1f3a2b2d1a6390dc06d831ebad2f218a9d3ba43e7f1f42b425dd03e26';
+
+  private readonly claveBorradorVenta = 'pollo-fresco:venta:borrador:v1';
+  private ultimoBorradorSerializado = '';
 
   tipoComprobante: TipoComprobante = 'factura';
   tipoDocumentoCliente: TipoDocumentoCliente = 'ruc';
@@ -104,6 +107,16 @@ export class PrivadoVenta implements OnInit {
   ngOnInit(): void {
     this.actualizarSerieNumero();
     this.cargarProductos();
+    this.restaurarBorradorVenta();
+    this.ultimoBorradorSerializado = JSON.stringify(this.obtenerBorradorVenta());
+  }
+
+  ngDoCheck(): void {
+    this.guardarBorradorVentaSiCambio();
+  }
+
+  ngOnDestroy(): void {
+    this.guardarBorradorVentaSiCambio();
   }
 
   actualizarSerieNumero(): void {
@@ -378,6 +391,7 @@ export class PrivadoVenta implements OnInit {
     this.productoSeleccionado = '';
     this.metodoPagoSeleccionado = 'efectivo';
     this.montoRecibido = null;
+    this.limpiarBorradorVenta();
   }
 
   private abrirComprobante(modo: 'print' | 'download'): void {
@@ -447,6 +461,89 @@ export class PrivadoVenta implements OnInit {
 
   private obtenerUrlXml(ventaId: number): string {
     return `/api/ventas/${ventaId}/xml`;
+  }
+
+  private obtenerBorradorVenta() {
+    return {
+      tipoComprobante: this.tipoComprobante,
+      tipoDocumentoCliente: this.tipoDocumentoCliente,
+      serie: this.serie,
+      numero: this.numero,
+      fechaEmision: this.fechaEmision,
+      moneda: this.moneda,
+      formaPago: this.formaPago,
+      referenciaSerie: this.referenciaSerie,
+      referenciaNumero: this.referenciaNumero,
+      referenciaMotivo: this.referenciaMotivo,
+      consultaDocumento: this.consultaDocumento,
+      cliente: this.cliente,
+      detalles: this.detalles,
+      productoSeleccionado: this.productoSeleccionado,
+      metodoPagoSeleccionado: this.metodoPagoSeleccionado,
+      montoRecibido: this.montoRecibido
+    };
+  }
+
+  private guardarBorradorVentaSiCambio(): void {
+    const serializado = JSON.stringify(this.obtenerBorradorVenta());
+    if (serializado === this.ultimoBorradorSerializado) {
+      return;
+    }
+
+    localStorage.setItem(this.claveBorradorVenta, serializado);
+    this.ultimoBorradorSerializado = serializado;
+  }
+
+  private restaurarBorradorVenta(): void {
+    const borrador = localStorage.getItem(this.claveBorradorVenta);
+    if (!borrador) {
+      return;
+    }
+
+    try {
+      const data = JSON.parse(borrador) as Partial<{
+        tipoComprobante: TipoComprobante;
+        tipoDocumentoCliente: TipoDocumentoCliente;
+        serie: string;
+        numero: string;
+        fechaEmision: string;
+        moneda: string;
+        formaPago: string;
+        referenciaSerie: string;
+        referenciaNumero: string;
+        referenciaMotivo: string;
+        consultaDocumento: string;
+        cliente: ClienteFactura;
+        detalles: DetalleFactura[];
+        productoSeleccionado: string;
+        metodoPagoSeleccionado: string;
+        montoRecibido: number | null;
+      }>;
+
+      this.tipoComprobante = data.tipoComprobante ?? this.tipoComprobante;
+      this.tipoDocumentoCliente = data.tipoDocumentoCliente ?? this.tipoDocumentoCliente;
+      this.serie = data.serie ?? this.serie;
+      this.numero = data.numero ?? this.numero;
+      this.fechaEmision = data.fechaEmision ?? this.fechaEmision;
+      this.moneda = data.moneda ?? this.moneda;
+      this.formaPago = data.formaPago ?? this.formaPago;
+      this.referenciaSerie = data.referenciaSerie ?? this.referenciaSerie;
+      this.referenciaNumero = data.referenciaNumero ?? this.referenciaNumero;
+      this.referenciaMotivo = data.referenciaMotivo ?? this.referenciaMotivo;
+      this.consultaDocumento = data.consultaDocumento ?? this.consultaDocumento;
+      this.cliente = data.cliente ?? this.cliente;
+      this.detalles = Array.isArray(data.detalles) ? data.detalles : this.detalles;
+      this.productoSeleccionado = data.productoSeleccionado ?? this.productoSeleccionado;
+      this.metodoPagoSeleccionado = data.metodoPagoSeleccionado ?? this.metodoPagoSeleccionado;
+      this.montoRecibido = data.montoRecibido ?? this.montoRecibido;
+    } catch {
+      localStorage.removeItem(this.claveBorradorVenta);
+    }
+  }
+
+  private limpiarBorradorVenta(): void {
+    localStorage.removeItem(this.claveBorradorVenta);
+    this.ultimoBorradorSerializado = JSON.stringify(this.obtenerBorradorVenta());
   }
 
   consultarDocumento(): void {
