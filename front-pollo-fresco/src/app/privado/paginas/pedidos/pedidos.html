@@ -1,14 +1,185 @@
-<!-- Contenido base para la vista de pedidos -->
-<section class="seccion">
-  <div class="seccion__encabezado">
-    <h2>Pedidos</h2>
-    <p>Gestión y seguimiento de pedidos en el panel privado.</p>
-  </div>
+<section class="pedidos">
+  <header class="pedidos__encabezado">
+    <div>
+      <h2>Pedidos Delivery</h2>
+      <p>Registro del vendedor, seguimiento del delivery, pagos, ubicación y evidencia.</p>
+    </div>
+    <div class="pedidos__tabs">
+      <button type="button" [class.activo]="vista === 'vendedor'" (click)="cambiarVista('vendedor')">Vista vendedor</button>
+      <button type="button" [class.activo]="vista === 'delivery'" (click)="cambiarVista('delivery')">Vista delivery</button>
+    </div>
+  </header>
 
-  <div class="seccion__tarjeta">
-    <p>
-      Aquí se mostrará el contenido principal de <strong>Pedidos</strong>.
-      Este bloque se diseñó como placeholder para agregar formularios, tablas o reportes.
-    </p>
+  <p class="pedidos__error" *ngIf="mensajeError">{{ mensajeError }}</p>
+
+  <div class="pedidos__grid">
+    <article class="tarjeta" *ngIf="vista === 'vendedor'">
+      <h3>Registrar pedido</h3>
+      <p class="sub">El pedido se guarda en estado <strong>PENDIENTE</strong> por defecto.</p>
+
+      <div class="campo-switch">
+        <label>
+          <input type="checkbox" [(ngModel)]="formulario.usarClienteNuevo" />
+          Cliente no registrado
+        </label>
+      </div>
+
+      <div class="grid-2" *ngIf="formulario.usarClienteNuevo">
+        <label>
+          Nombres
+          <input type="text" [(ngModel)]="formulario.cliente_nuevo.nombres" />
+        </label>
+        <label>
+          Apellidos
+          <input type="text" [(ngModel)]="formulario.cliente_nuevo.apellidos" />
+        </label>
+        <label>
+          Celular
+          <input type="text" [(ngModel)]="formulario.cliente_nuevo.celular" />
+        </label>
+        <label class="span-2">
+          Dirección
+          <input type="text" [(ngModel)]="formulario.cliente_nuevo.direccion" />
+        </label>
+      </div>
+
+      <div class="grid-2" *ngIf="!formulario.usarClienteNuevo">
+        <label>
+          ID cliente
+          <input type="number" [(ngModel)]="formulario.cliente_id" />
+        </label>
+      </div>
+
+      <div class="grid-2">
+        <label>
+          ID usuario delivery (opcional)
+          <input type="number" [(ngModel)]="formulario.delivery_usuario_id" />
+        </label>
+        <label>
+          Fecha y hora
+          <input type="datetime-local" [(ngModel)]="formulario.fecha_hora_creacion" />
+        </label>
+      </div>
+
+      <h4>Detalle de productos</h4>
+      <div class="detalle" *ngFor="let detalle of formulario.detalles; let i = index">
+        <label>
+          Producto ID
+          <input type="number" [(ngModel)]="detalle.producto_id" />
+        </label>
+        <label>
+          Cantidad
+          <input type="number" min="0.01" step="0.01" [(ngModel)]="detalle.cantidad" />
+        </label>
+        <label>
+          Peso (kg)
+          <input type="number" min="0" step="0.01" [(ngModel)]="detalle.peso_kg" />
+        </label>
+        <label>
+          Precio unitario
+          <input type="number" min="0" step="0.01" [(ngModel)]="detalle.precio_unitario" />
+        </label>
+        <div class="detalle__acciones">
+          <span>Subtotal: S/ {{ totalDetalle(detalle) | number:'1.2-2' }}</span>
+          <button type="button" (click)="quitarDetalle(i)">Quitar</button>
+        </div>
+      </div>
+
+      <div class="acciones-inline">
+        <button type="button" (click)="agregarDetalle()">+ Agregar producto</button>
+        <strong>Total estimado: S/ {{ totalFormulario() | number:'1.2-2' }}</strong>
+      </div>
+
+      <button type="button" class="btn-principal" [disabled]="guardandoPedido" (click)="guardarPedido()">
+        {{ guardandoPedido ? 'Guardando...' : 'Registrar pedido' }}
+      </button>
+    </article>
+
+    <article class="tarjeta lista-pedidos">
+      <div class="lista-pedidos__header">
+        <h3>{{ vista === 'vendedor' ? 'Pedidos registrados' : 'Pedidos asignados' }}</h3>
+        <input type="text" placeholder="Buscar por ID, cliente o dirección" [(ngModel)]="filtro" (ngModelChange)="aplicarFiltro()" />
+      </div>
+
+      <p *ngIf="cargando">Cargando pedidos...</p>
+
+      <div class="pedido-item" *ngFor="let pedido of pedidosFiltrados" (click)="seleccionarPedido(pedido)" [class.activo]="pedidoSeleccionado?.pedido_id === pedido.pedido_id">
+        <div>
+          <strong>#{{ pedido.pedido_id }} - {{ pedido.cliente.nombres }} {{ pedido.cliente.apellidos }}</strong>
+          <p>{{ pedido.cliente.direccion || 'Sin dirección registrada' }}</p>
+          <small>Estado: {{ obtenerEtiquetaEstado(pedido.estado_id) }} · Total: S/ {{ pedido.total | number:'1.2-2' }}</small>
+        </div>
+        <div class="pedido-item__contacto">
+          <button type="button" (click)="$event.stopPropagation(); abrirWhatsapp(pedido)">WhatsApp</button>
+          <button type="button" (click)="$event.stopPropagation(); llamarCliente(pedido)">Llamar</button>
+        </div>
+      </div>
+    </article>
+
+    <article class="tarjeta" *ngIf="pedidoSeleccionado && vista === 'delivery'">
+      <h3>Gestión de entrega: pedido #{{ pedidoSeleccionado.pedido_id }}</h3>
+
+      <section class="bloque">
+        <h4>1) Estado del pedido</h4>
+        <label>
+          Nuevo estado
+          <select [(ngModel)]="estadoDestino">
+            <option [ngValue]="2">ENTREGADO</option>
+            <option [ngValue]="3">CANCELADO</option>
+          </select>
+        </label>
+        <label *ngIf="estadoDestino === 3">
+          Motivo de cancelación
+          <textarea rows="3" [(ngModel)]="motivoCancelacion"></textarea>
+        </label>
+        <button type="button" [disabled]="guardandoEstado" (click)="actualizarEstadoPedido()">
+          {{ guardandoEstado ? 'Actualizando...' : 'Guardar estado' }}
+        </button>
+      </section>
+
+      <section class="bloque">
+        <h4>2) Control de pagos</h4>
+        <label>
+          Estado de pago
+          <select [(ngModel)]="estadoPago">
+            <option value="COMPLETO">Completo</option>
+            <option value="PENDIENTE">Pendiente</option>
+            <option value="PARCIAL">Parcial</option>
+          </select>
+        </label>
+        <label *ngIf="estadoPago === 'PARCIAL'">
+          Monto parcial
+          <input type="number" min="0" step="0.01" [(ngModel)]="pagoParcial" />
+        </label>
+        <label>
+          Monto recibido (para calcular vuelto)
+          <input type="number" min="0" step="0.01" [(ngModel)]="montoRecibido" />
+        </label>
+        <button type="button" [disabled]="registrandoPago" (click)="registrarPagoPedido()">
+          {{ registrandoPago ? 'Registrando...' : 'Registrar pago' }}
+        </button>
+      </section>
+
+      <section class="bloque">
+        <h4>3) Ubicación y evidencia</h4>
+        <div class="grid-2">
+          <label>
+            Latitud
+            <input type="number" step="0.0000001" [(ngModel)]="latitud" />
+          </label>
+          <label>
+            Longitud
+            <input type="number" step="0.0000001" [(ngModel)]="longitud" />
+          </label>
+        </div>
+        <label>
+          URL de foto frontis
+          <input type="text" [(ngModel)]="fotoFrontisUrl" placeholder="https://..." />
+        </label>
+        <button type="button" [disabled]="guardandoUbicacion" (click)="guardarUbicacionEvidencia()">
+          {{ guardandoUbicacion ? 'Guardando...' : 'Guardar ubicación y evidencia' }}
+        </button>
+      </section>
+    </article>
   </div>
 </section>

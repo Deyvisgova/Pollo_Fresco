@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\ConfiguracionController;
 use App\Http\Controllers\Api\EntregaProveedorController;
 use App\Http\Controllers\Api\OtrosProductosController;
 use App\Http\Controllers\Api\PagoProveedorController;
+use App\Http\Controllers\Api\PedidoDeliveryController;
 use App\Http\Controllers\Api\ProveedorController;
 use App\Http\Controllers\Api\VentaController;
 
@@ -110,4 +111,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('ventas', [VentaController::class, 'store']);
     Route::get('ventas/{ventaId}/pdf', [VentaController::class, 'pdf']);
     Route::get('ventas/{ventaId}/xml', [VentaController::class, 'xml']);
+
+    Route::get('pedidos-delivery', [PedidoDeliveryController::class, 'index']);
+    Route::post('pedidos-delivery', [PedidoDeliveryController::class, 'store']);
+    Route::patch('pedidos-delivery/{pedido}/estado', [PedidoDeliveryController::class, 'actualizarEstado']);
+    Route::post('pedidos-delivery/{pedido}/pagos', [PedidoDeliveryController::class, 'registrarPago']);
+    Route::patch('pedidos-delivery/{pedido}/ubicacion-evidencia', [PedidoDeliveryController::class, 'actualizarUbicacionEvidencia']);
 });
