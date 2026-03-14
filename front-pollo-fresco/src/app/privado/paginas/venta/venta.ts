@@ -25,6 +25,29 @@ interface ProductoApi {
   nombre: string;
 }
 
+interface LoteVentaDiariaApi {
+  producto_id: number;
+  cantidad: number;
+  estado: 'ABIERTO' | 'CERRADO';
+}
+
+interface EstadoVentaDiariaApi {
+  filas: Array<{
+    producto_id: number;
+    cantidad: number;
+    precio: number;
+    fecha_hora: string;
+    cerrado_en: string | null;
+  }>;
+}
+
+interface FilaVentaDiariaPayload {
+  producto_id: number;
+  cantidad: number;
+  precio: number;
+  fecha_hora: string;
+}
+
 interface MetodoPago {
   id: string;
   etiqueta: string;
@@ -35,6 +58,13 @@ interface VentaGuardada {
   comprobante_venta_id: number;
   serie: string;
   numero: string;
+}
+
+interface DetalleVentaValido {
+  descripcion: string;
+  unidad: string;
+  cantidad: number;
+  precio_unitario: number;
 }
 
 @Component({
@@ -95,6 +125,7 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
   guardandoVenta = false;
   mensajeVenta = '';
   errorVenta = '';
+  advertenciaVenta = '';
   ultimaVentaEmitida: VentaGuardada | null = null;
   formatoVoucher: 'a4' | 'ticket-80' | 'ticket-57' = 'a4';
   mostrarModalVoucher = false;
@@ -275,7 +306,7 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
       return;
     }
 
-    const detallesValidos = this.detalles
+    const detallesValidos: DetalleVentaValido[] = this.detalles
       .filter((item) => !!item.descripcion.trim() && (item.cantidad ?? 0) > 0)
       .map((item) => ({
         descripcion: item.descripcion.trim(),
@@ -316,8 +347,10 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
       next: (venta) => {
         this.guardandoVenta = false;
         this.mensajeVenta = 'Venta registrada correctamente.';
+        this.advertenciaVenta = '';
         this.ultimaVentaEmitida = venta;
         this.mostrarModalVoucher = true;
+        this.sincronizarConVentasDiarias(detallesValidos);
         this.limpiarFormularioVenta();
       },
       error: (err) => {
@@ -391,7 +424,119 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
     this.productoSeleccionado = '';
     this.metodoPagoSeleccionado = 'efectivo';
     this.montoRecibido = null;
+    this.advertenciaVenta = '';
     this.limpiarBorradorVenta();
+  }
+
+  private sincronizarConVentasDiarias(detalles: DetalleVentaValido[]): void {
+    const headers = this.obtenerHeaders();
+    const fecha = this.fechaEmision || new Date().toISOString().slice(0, 10);
+
+    this.http.get<ProductoApi[]>('/api/otros-productos/productos', { headers }).subscribe({
+      next: (productos) => {
+        const productosPorNombre = new Map(productos.map((producto) => [producto.nombre.trim().toLowerCase(), producto]));
+        const nuevasFilas = detalles.reduce((acc, item) => {
+          const producto = productosPorNombre.get(item.descripcion.trim().toLowerCase());
+          if (!producto) {
+            return acc;
+          }
+
+          acc.push({
+            producto_id: producto.id,
+            cantidad: item.cantidad,
+            precio: item.precio_unitario,
+            fecha_hora: this.generarFechaHoraVentaDiaria(fecha)
+          });
+          return acc;
+        }, [] as FilaVentaDiariaPayload[]);
+
+        if (!nuevasFilas.length) {
+          this.advertenciaVenta = 'Comprobante emitido. No se sincronizó ventas diarias porque ningún detalle coincide con un producto registrado.';
+          return;
+        }
+
+        this.http.get<LoteVentaDiariaApi[]>('/api/otros-productos/lotes', { headers }).subscribe({
+          next: (lotes) => {
+            const stockPorProducto = lotes
+              .filter((lote) => lote.estado === 'ABIERTO')
+              .reduce((mapa, lote) => {
+                const actual = mapa.get(lote.producto_id) ?? 0;
+                mapa.set(lote.producto_id, actual + Number(lote.cantidad ?? 0));
+                return mapa;
+              }, new Map<number, number>());
+
+            this.http
+              .get<EstadoVentaDiariaApi>('/api/otros-productos/ventas-diarias', {
+                headers,
+                params: new HttpParams().set('fecha', fecha)
+              })
+              .subscribe({
+                next: (estado) => {
+                  const filasAbiertas = (estado.filas ?? []).filter((fila) => !fila.cerrado_en);
+                  const consumoActual = filasAbiertas.reduce((mapa, fila) => {
+                    const actual = mapa.get(fila.producto_id) ?? 0;
+                    mapa.set(fila.producto_id, actual + Number(fila.cantidad ?? 0));
+                    return mapa;
+                  }, new Map<number, number>());
+
+                  const consumoNuevo = nuevasFilas.reduce((mapa, fila) => {
+                    const actual = mapa.get(fila.producto_id) ?? 0;
+                    mapa.set(fila.producto_id, actual + Number(fila.cantidad ?? 0));
+                    return mapa;
+                  }, new Map<number, number>());
+
+                  const productosSinStock = Array.from(consumoNuevo.entries()).filter(([productoId, cantidad]) => {
+                    const stock = stockPorProducto.get(productoId) ?? 0;
+                    const consumo = (consumoActual.get(productoId) ?? 0) + cantidad;
+                    return stock <= 0 || consumo > stock;
+                  });
+
+                  if (productosSinStock.length > 0) {
+                    this.advertenciaVenta = 'Comprobante emitido. No se sincronizó ventas diarias porque algunos productos no tienen stock disponible.';
+                    return;
+                  }
+
+                  const filasCombinadas: FilaVentaDiariaPayload[] = [
+                    ...filasAbiertas.map((fila) => ({
+                      producto_id: fila.producto_id,
+                      cantidad: Number(fila.cantidad ?? 0),
+                      precio: Number(fila.precio ?? 0),
+                      fecha_hora: fila.fecha_hora
+                    })),
+                    ...nuevasFilas
+                  ];
+
+                  this.http
+                    .put('/api/otros-productos/ventas-diarias', { fecha, filas: filasCombinadas }, { headers })
+                    .subscribe({
+                      next: () => {
+                        this.advertenciaVenta = '';
+                      },
+                      error: (error) => {
+                        this.advertenciaVenta = error?.error?.message
+                          ?? 'Comprobante emitido, pero no se pudo sincronizar el registro de ventas diarias.';
+                      }
+                    });
+                },
+                error: () => {
+                  this.advertenciaVenta = 'Comprobante emitido, pero no se pudo consultar el registro de ventas diarias.';
+                }
+              });
+          },
+          error: () => {
+            this.advertenciaVenta = 'Comprobante emitido, pero no se pudo validar stock para ventas diarias.';
+          }
+        });
+      },
+      error: () => {
+        this.advertenciaVenta = 'Comprobante emitido, pero no se pudo sincronizar ventas diarias.';
+      }
+    });
+  }
+
+  private generarFechaHoraVentaDiaria(fecha: string): string {
+    const horaActual = new Date().toTimeString().slice(0, 8);
+    return `${fecha} ${horaActual}`;
   }
 
   private abrirComprobante(modo: 'print' | 'download'): void {
