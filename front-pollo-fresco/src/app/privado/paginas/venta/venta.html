@@ -299,6 +299,7 @@
       <footer class="acciones">
         <small class="mensaje-ok" *ngIf="mensajeVenta">{{ mensajeVenta }}</small>
         <small class="mensaje-error" *ngIf="errorVenta">{{ errorVenta }}</small>
+        <small class="mensaje-error" *ngIf="advertenciaVenta">{{ advertenciaVenta }}</small>
         <button class="boton boton--primario" type="button" (click)="emitirComprobante()" [disabled]="guardandoVenta">
           {{ guardandoVenta ? 'Guardando...' : 'Emitir comprobante' }}
         </button>
