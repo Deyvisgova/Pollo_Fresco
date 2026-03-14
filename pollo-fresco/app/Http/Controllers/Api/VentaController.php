@@ -107,7 +107,11 @@ class VentaController extends Controller
 
         DB::beginTransaction();
         try {
-            $this->guardarClienteDesdeVenta($request);
+            try {
+                $this->guardarClienteDesdeVenta($request);
+            } catch (\Throwable $clienteError) {
+                report($clienteError);
+            }
 
             $ventaId = DB::table('ventas')->insertGetId([
                 'usuario_id' => $usuario->usuario_id,
@@ -275,8 +279,9 @@ class VentaController extends Controller
             return;
         }
 
-        $tipoDocumento = trim((string) $request->input('cliente_tipo_documento'));
+        $tipoDocumento = strtolower(trim((string) $request->input('cliente_tipo_documento')));
         $documento = trim((string) $request->input('cliente_documento'));
+        $documentoSoloDigitos = preg_replace('/\D+/', '', $documento) ?? '';
         $nombre = trim((string) $request->input('cliente_nombre'));
 
         if ($documento === '' && $nombre === '') {
@@ -289,14 +294,24 @@ class VentaController extends Controller
         $payloadBase = [
             'nombres' => $nombres,
             'apellidos' => $apellidos,
+            'nombre_empresa' => $nombre !== '' ? $nombre : null,
             'direccion' => $direccion !== '' ? $direccion : null,
             'direccion_fiscal' => $direccion !== '' ? $direccion : null,
             'actualizado_en' => now(),
         ];
 
-        $columnaDocumento = $tipoDocumento === 'ruc' ? 'ruc' : 'dni';
+        $columnaDocumento = match ($tipoDocumento) {
+            'ruc', '6' => 'ruc',
+            'dni', '1' => 'dni',
+            default => strlen($documentoSoloDigitos) === 11 ? 'ruc' : 'dni',
+        };
 
-        if ($documento !== '') {
+        $payloadBase = $this->filtrarColumnasExistentes('clientes', $payloadBase);
+        if (!$payloadBase) {
+            return;
+        }
+
+        if ($documento !== '' && Schema::hasColumn('clientes', $columnaDocumento)) {
             $clienteExistente = DB::table('clientes')->where($columnaDocumento, $documento)->first();
 
             if ($clienteExistente) {
@@ -307,20 +322,42 @@ class VentaController extends Controller
                 return;
             }
 
-            DB::table('clientes')->insert(array_merge($payloadBase, [
+            $payloadInsert = $this->filtrarColumnasExistentes('clientes', array_merge($payloadBase, [
                 'dni' => $columnaDocumento === 'dni' ? $documento : null,
                 'ruc' => $columnaDocumento === 'ruc' ? $documento : null,
                 'creado_en' => now(),
             ]));
 
+            if ($payloadInsert) {
+                DB::table('clientes')->insert($payloadInsert);
+            }
+
             return;
         }
 
-        DB::table('clientes')->insert(array_merge($payloadBase, [
+        $payloadSinDocumento = $this->filtrarColumnasExistentes('clientes', array_merge($payloadBase, [
             'dni' => null,
             'ruc' => null,
             'creado_en' => now(),
         ]));
+
+        if ($payloadSinDocumento) {
+            DB::table('clientes')->insert($payloadSinDocumento);
+        }
+    }
+
+
+    private function filtrarColumnasExistentes(string $tabla, array $payload): array
+    {
+        $resultado = [];
+
+        foreach ($payload as $columna => $valor) {
+            if (Schema::hasColumn($tabla, $columna)) {
+                $resultado[$columna] = $valor;
+            }
+        }
+
+        return $resultado;
     }
 
     private function separarNombreCompleto(string $nombreCompleto): array
@@ -401,6 +438,8 @@ class VentaController extends Controller
                 $table->index(['serie', 'numero']);
                 $table->index('fecha_emision');
             });
+        } else {
+            $this->asegurarColumnasTablaVentas();
         }
 
         if (!Schema::hasTable('venta_detalle')) {
@@ -418,6 +457,48 @@ class VentaController extends Controller
                     ->on('ventas')
                     ->cascadeOnDelete();
             });
+        } else {
+            $this->asegurarColumnasTablaVentaDetalle();
+        }
+    }
+
+    private function asegurarColumnasTablaVentas(): void
+    {
+        $columnas = [
+            'metodo_pago' => fn (Blueprint $table) => $table->string('metodo_pago', 30)->default('efectivo')->after('forma_pago'),
+            'cliente_tipo_documento' => fn (Blueprint $table) => $table->string('cliente_tipo_documento', 10)->nullable()->after('metodo_pago'),
+            'cliente_documento' => fn (Blueprint $table) => $table->string('cliente_documento', 20)->nullable()->after('cliente_tipo_documento'),
+            'cliente_nombre' => fn (Blueprint $table) => $table->string('cliente_nombre', 150)->nullable()->after('cliente_documento'),
+            'cliente_direccion' => fn (Blueprint $table) => $table->string('cliente_direccion', 255)->nullable()->after('cliente_nombre'),
+            'monto_recibido' => fn (Blueprint $table) => $table->decimal('monto_recibido', 12, 2)->nullable()->after('total'),
+            'vuelto' => fn (Blueprint $table) => $table->decimal('vuelto', 12, 2)->default(0)->after('monto_recibido'),
+            'referencia_serie' => fn (Blueprint $table) => $table->string('referencia_serie', 10)->nullable()->after('vuelto'),
+            'referencia_numero' => fn (Blueprint $table) => $table->string('referencia_numero', 20)->nullable()->after('referencia_serie'),
+            'referencia_motivo' => fn (Blueprint $table) => $table->string('referencia_motivo', 255)->nullable()->after('referencia_numero'),
+            'creado_en' => fn (Blueprint $table) => $table->timestamp('creado_en')->useCurrent()->after('referencia_motivo'),
+        ];
+
+        foreach ($columnas as $columna => $callback) {
+            if (!Schema::hasColumn('ventas', $columna)) {
+                Schema::table('ventas', $callback);
+            }
+        }
+    }
+
+    private function asegurarColumnasTablaVentaDetalle(): void
+    {
+        $columnas = [
+            'descripcion' => fn (Blueprint $table) => $table->string('descripcion', 120)->default('')->after('comprobante_venta_id'),
+            'unidad' => fn (Blueprint $table) => $table->string('unidad', 10)->default('UND')->after('descripcion'),
+            'cantidad' => fn (Blueprint $table) => $table->decimal('cantidad', 12, 2)->default(0)->after('unidad'),
+            'precio_unitario' => fn (Blueprint $table) => $table->decimal('precio_unitario', 12, 2)->default(0)->after('cantidad'),
+            'total_linea' => fn (Blueprint $table) => $table->decimal('total_linea', 12, 2)->default(0)->after('precio_unitario'),
+        ];
+
+        foreach ($columnas as $columna => $callback) {
+            if (!Schema::hasColumn('venta_detalle', $columna)) {
+                Schema::table('venta_detalle', $callback);
+            }
         }
     }
 }
