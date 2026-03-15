@@ -112,6 +112,11 @@ class ClienteController extends Controller
     {
         $payload['nombres'] = isset($payload['nombres']) ? trim((string) $payload['nombres']) : '';
         $payload['apellidos'] = isset($payload['apellidos']) ? trim((string) $payload['apellidos']) : '';
+        $payload['nombre_empresa'] = isset($payload['nombre_empresa']) ? trim((string) $payload['nombre_empresa']) : '';
+        $payload['celular'] = isset($payload['celular']) ? trim((string) $payload['celular']) : '';
+        $payload['direccion'] = isset($payload['direccion']) ? trim((string) $payload['direccion']) : '';
+        $payload['direccion_fiscal'] = isset($payload['direccion_fiscal']) ? trim((string) $payload['direccion_fiscal']) : '';
+        $payload['referencias'] = isset($payload['referencias']) ? trim((string) $payload['referencias']) : '';
 
         return $payload;
     }
