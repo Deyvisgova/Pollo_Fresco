@@ -1,10 +1,689 @@
-import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { HttpClient, HttpClientModule, HttpHeaders, HttpParams } from '@angular/common/http';
+import { Component, OnInit } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { SesionServicio } from '../../../servicios/sesion.servicio';
+
+interface PedidoCliente {
+  cliente_id: number;
+  dni: string | null;
+  ruc: string | null;
+  nombres: string;
+  apellidos: string | null;
+  nombre_empresa: string | null;
+  celular: string | null;
+  direccion: string | null;
+  direccion_fiscal: string | null;
+  referencias: string | null;
+}
+
+interface PedidoDetalleApi {
+  cantidad: number;
+  unidad: string;
+  descripcion: string;
+  precio_unitario: number;
+  subtotal: number;
+}
+
+interface PedidoPago {
+  pedido_pago_id: number;
+  estado_pago: 'COMPLETO' | 'PENDIENTE' | 'PARCIAL';
+  pago_parcial: number | null;
+  vuelto: number;
+}
+
+interface PedidoDelivery {
+  pedido_id: number;
+  estado_id: 1 | 2 | 3;
+  fecha_hora_creacion: string;
+  motivo_cancelacion: string | null;
+  latitud: number | null;
+  longitud: number | null;
+  foto_frontis_url: string | null;
+  total: number;
+  cliente: PedidoCliente;
+  detalles: PedidoDetalleApi[];
+  pagos: PedidoPago[];
+}
+
+interface DetalleFormulario {
+  cantidad: number;
+  unidad: 'KG' | 'UND';
+  descripcion: string;
+  precioUnitario: number;
+}
+
+interface ClienteFormulario {
+  cliente_id: number | null;
+  dni: string;
+  ruc: string;
+  nombres: string;
+  apellidos: string;
+  nombreEmpresa: string;
+  celular: string;
+  direccion: string;
+  direccionFiscal: string;
+  referencias: string;
+}
+
+interface ProductoApi {
+  id: number;
+  nombre: string;
+}
+
+interface LoteApi {
+  producto_id: number;
+  cantidad: number;
+  estado: 'ABIERTO' | 'CERRADO';
+}
 
 @Component({
   selector: 'app-privado-pedidos',
-  // Componente informativo para la sección de pedidos.
   standalone: true,
+  imports: [CommonModule, FormsModule, HttpClientModule],
   templateUrl: './pedidos.html',
   styleUrl: './pedidos.css'
 })
-export class PrivadoPedidos {}
+export class PrivadoPedidos implements OnInit {
+  private token = 'f3ba6fa1f3a2b2d1a6390dc06d831ebad2f218a9d3ba43e7f1f42b425dd03e26';
+
+  vista: 'vendedor' | 'delivery' = 'vendedor';
+
+  pedidos: PedidoDelivery[] = [];
+  pedidosFiltrados: PedidoDelivery[] = [];
+  pedidoSeleccionado: PedidoDelivery | null = null;
+
+  terminoCliente = '';
+  clientesSugeridos: PedidoCliente[] = [];
+  clienteSeleccionado: PedidoCliente | null = null;
+
+  fechaHoraCreacion = '';
+  detalles: DetalleFormulario[] = [this.crearDetalleVacio()];
+  productoSeleccionado = '';
+  productosDisponibles: ProductoApi[] = [];
+  productosFiltrados: string[] = [];
+  stockDisponiblePorProducto = new Map<number, number>();
+
+  mostrarModalCliente = false;
+  consultaDocumento = '';
+  consultaCargando = false;
+  guardandoCliente = false;
+  formularioCliente: ClienteFormulario = this.crearFormularioCliente();
+
+  estadoDestino: 2 | 3 = 2;
+  motivoCancelacion = '';
+  estadoPago: 'COMPLETO' | 'PENDIENTE' | 'PARCIAL' = 'PENDIENTE';
+  pagoParcial: number | null = null;
+  montoRecibido: number | null = null;
+  latitud: number | null = null;
+  longitud: number | null = null;
+  fotoFrontisUrl = '';
+
+  cargando = false;
+  guardandoPedido = false;
+  guardandoEstado = false;
+  registrandoPago = false;
+  guardandoUbicacion = false;
+  mensajeError = '';
+  filtro = '';
+
+  constructor(
+    private readonly http: HttpClient,
+    private readonly sesionServicio: SesionServicio
+  ) {}
+
+  ngOnInit(): void {
+    this.fechaHoraCreacion = this.fechaActualIsoLocal();
+    this.cargarPedidos();
+    this.cargarProductos();
+    this.cargarStockDisponible();
+  }
+
+  cambiarVista(vista: 'vendedor' | 'delivery'): void {
+    this.vista = vista;
+    this.pedidoSeleccionado = null;
+    this.cargarPedidos();
+  }
+
+  cargarPedidos(): void {
+    this.cargando = true;
+    this.http.get<PedidoDelivery[]>(`/api/pedidos-delivery?rol=${this.vista}`, { headers: this.obtenerHeaders() }).subscribe({
+      next: (pedidos) => {
+        this.pedidos = pedidos;
+        this.aplicarFiltro();
+        this.cargando = false;
+      },
+      error: (error) => {
+        this.pedidos = [];
+        this.pedidosFiltrados = [];
+        this.cargando = false;
+        this.mensajeError = this.extraerError(error, 'No se pudo cargar pedidos.');
+      }
+    });
+  }
+
+  aplicarFiltro(): void {
+    const termino = this.filtro.trim().toLowerCase();
+    if (!termino) {
+      this.pedidosFiltrados = [...this.pedidos];
+      return;
+    }
+
+    this.pedidosFiltrados = this.pedidos.filter((pedido) => {
+      const nombre = `${pedido.cliente?.nombres ?? ''} ${pedido.cliente?.apellidos ?? ''}`.toLowerCase();
+      const dni = (pedido.cliente?.dni ?? '').toLowerCase();
+      return `${pedido.pedido_id}`.includes(termino) || nombre.includes(termino) || dni.includes(termino);
+    });
+  }
+
+  buscarClientes(): void {
+    const termino = this.terminoCliente.trim();
+    if (!termino) {
+      this.clientesSugeridos = [];
+      return;
+    }
+
+    this.http.get<PedidoCliente[]>(`/api/clientes?search=${encodeURIComponent(termino)}`, { headers: this.obtenerHeaders() }).subscribe({
+      next: (clientes) => {
+        this.clientesSugeridos = clientes.slice(0, 6);
+      },
+      error: () => {
+        this.clientesSugeridos = [];
+      }
+    });
+  }
+
+  seleccionarCliente(cliente: PedidoCliente): void {
+    this.clienteSeleccionado = cliente;
+    this.terminoCliente = `${cliente.nombres} ${cliente.apellidos ?? ''}`.trim();
+    this.clientesSugeridos = [];
+  }
+
+  abrirModalCliente(): void {
+    this.formularioCliente = this.crearFormularioCliente();
+    this.consultaDocumento = '';
+    this.mostrarModalCliente = true;
+  }
+
+  cerrarModalCliente(): void {
+    this.mostrarModalCliente = false;
+    this.consultaCargando = false;
+    this.guardandoCliente = false;
+  }
+
+  consultarDocumentoApi(): void {
+    this.mensajeError = '';
+    const documento = this.consultaDocumento.trim();
+
+    if (!/^\d+$/.test(documento)) {
+      this.mensajeError = 'El documento solo debe contener dígitos.';
+      return;
+    }
+
+    if (documento.length === 8) {
+      this.consultarApi(`dni/${documento}`, this.autocompletarDesdeDni.bind(this));
+      return;
+    }
+
+    if (documento.length === 11) {
+      this.consultarApi(`ruc/${documento}`, this.autocompletarDesdeRuc.bind(this));
+      return;
+    }
+
+    this.mensajeError = 'El documento debe tener 8 (DNI) u 11 (RUC) dígitos.';
+  }
+
+  guardarClienteDesdeModal(): void {
+    this.guardandoCliente = true;
+
+    const payload = {
+      dni: this.formularioCliente.dni || null,
+      ruc: this.formularioCliente.ruc || null,
+      nombres: this.formularioCliente.nombres || '',
+      apellidos: this.formularioCliente.apellidos || '',
+      nombre_empresa: this.formularioCliente.nombreEmpresa || null,
+      celular: this.formularioCliente.celular || null,
+      direccion: this.formularioCliente.direccion || null,
+      direccion_fiscal: this.formularioCliente.direccionFiscal || null,
+      referencias: this.formularioCliente.referencias || null
+    };
+
+    this.http.post<PedidoCliente>('/api/clientes', payload, { headers: this.obtenerHeaders() }).subscribe({
+      next: (cliente) => {
+        this.guardandoCliente = false;
+        this.seleccionarCliente(cliente);
+        this.cerrarModalCliente();
+      },
+      error: (error) => {
+        this.guardandoCliente = false;
+        this.mensajeError = this.extraerError(error, 'No se pudo guardar el cliente.');
+      }
+    });
+  }
+
+  limpiarFormularioCliente(): void {
+    this.consultaDocumento = '';
+    this.formularioCliente = this.crearFormularioCliente();
+  }
+
+  actualizarBusquedaProductos(): void {
+    const termino = this.productoSeleccionado.trim().toLowerCase();
+    if (!termino) {
+      this.productosFiltrados = [];
+      return;
+    }
+
+    this.productosFiltrados = this.productosDisponibles
+      .map((producto) => producto.nombre)
+      .filter((nombre) => nombre.toLowerCase().includes(termino));
+  }
+
+  seleccionarProductoDesdeBuscador(): void {
+    const nombre = this.productoSeleccionado.trim();
+    if (!nombre) {
+      return;
+    }
+
+    const producto = this.productosDisponibles.find((item) => item.nombre.toLowerCase() === nombre.toLowerCase());
+    if (!producto) {
+      return;
+    }
+
+    const stockDisponible = this.stockDisponiblePorProducto.get(producto.id) ?? 0;
+    if (stockDisponible <= 0) {
+      this.mostrarAlertaStockSinDisponibilidad(producto.nombre);
+      this.productoSeleccionado = '';
+      this.productosFiltrados = [];
+      return;
+    }
+
+    if (this.detalles.length === 1 && !this.detalles[0].descripcion.trim()) {
+      this.detalles[0].descripcion = producto.nombre;
+    } else {
+      this.agregarLineaDetalle(producto.nombre);
+    }
+
+    this.productoSeleccionado = '';
+    this.productosFiltrados = [];
+  }
+
+  agregarLineaDetalle(descripcion = ''): void {
+    this.detalles.push({
+      cantidad: 1,
+      unidad: 'KG',
+      descripcion,
+      precioUnitario: 0
+    });
+  }
+
+  eliminarLineaDetalle(index: number): void {
+    if (this.detalles.length === 1) {
+      return;
+    }
+    this.detalles.splice(index, 1);
+  }
+
+  totalDetalle(item: DetalleFormulario): number {
+    return Number(((item.cantidad || 0) * (item.precioUnitario || 0)).toFixed(2));
+  }
+
+  totalPedido(): number {
+    return this.detalles.reduce((acc, item) => acc + this.totalDetalle(item), 0);
+  }
+
+  guardarPedido(): void {
+    if (!this.clienteSeleccionado) {
+      this.mensajeError = 'Selecciona un cliente antes de registrar el pedido.';
+      return;
+    }
+
+    const detallesValidos = this.detalles.filter((item) => item.descripcion.trim() && item.cantidad > 0 && item.precioUnitario >= 0);
+
+    if (!detallesValidos.length) {
+      this.mensajeError = 'Agrega al menos una línea válida en el detalle.';
+      return;
+    }
+
+    this.guardandoPedido = true;
+    this.mensajeError = '';
+
+    const payload = {
+      cliente_id: this.clienteSeleccionado.cliente_id,
+      fecha_hora_creacion: this.fechaHoraCreacion,
+      detalles: detallesValidos.map((item) => ({
+        cantidad: item.cantidad,
+        unidad: item.unidad,
+        descripcion: item.descripcion,
+        precio_unitario: item.precioUnitario
+      }))
+    };
+
+    this.http.post('/api/pedidos-delivery', payload, { headers: this.obtenerHeaders() }).subscribe({
+      next: () => {
+        this.enviarFilasAVentasDiarias(detallesValidos);
+        this.guardandoPedido = false;
+        this.reiniciarFormularioPedido();
+        this.cargarPedidos();
+      },
+      error: (error) => {
+        this.guardandoPedido = false;
+        this.mensajeError = this.extraerError(error, 'No se pudo guardar el pedido.');
+      }
+    });
+  }
+
+  seleccionarPedido(pedido: PedidoDelivery): void {
+    this.pedidoSeleccionado = pedido;
+    this.estadoDestino = pedido.estado_id === 3 ? 3 : 2;
+    this.motivoCancelacion = pedido.motivo_cancelacion ?? '';
+    this.estadoPago = 'PENDIENTE';
+    this.pagoParcial = null;
+    this.montoRecibido = null;
+    this.latitud = pedido.latitud;
+    this.longitud = pedido.longitud;
+    this.fotoFrontisUrl = pedido.foto_frontis_url ?? '';
+  }
+
+  actualizarEstadoPedido(): void {
+    if (!this.pedidoSeleccionado) {
+      return;
+    }
+
+    this.guardandoEstado = true;
+
+    this.http
+      .patch(
+        `/api/pedidos-delivery/${this.pedidoSeleccionado.pedido_id}/estado`,
+        { estado_id: this.estadoDestino, motivo_cancelacion: this.estadoDestino === 3 ? this.motivoCancelacion : null },
+        { headers: this.obtenerHeaders() }
+      )
+      .subscribe({
+        next: () => {
+          this.guardandoEstado = false;
+          this.cargarPedidos();
+        },
+        error: (error) => {
+          this.guardandoEstado = false;
+          this.mensajeError = this.extraerError(error, 'No se pudo actualizar estado.');
+        }
+      });
+  }
+
+  registrarPagoPedido(): void {
+    if (!this.pedidoSeleccionado) {
+      return;
+    }
+
+    this.registrandoPago = true;
+
+    this.http
+      .post(
+        `/api/pedidos-delivery/${this.pedidoSeleccionado.pedido_id}/pagos`,
+        {
+          estado_pago: this.estadoPago,
+          pago_parcial: this.estadoPago === 'PARCIAL' ? this.pagoParcial : null,
+          monto_recibido: this.montoRecibido
+        },
+        { headers: this.obtenerHeaders() }
+      )
+      .subscribe({
+        next: () => {
+          this.registrandoPago = false;
+          this.cargarPedidos();
+        },
+        error: (error) => {
+          this.registrandoPago = false;
+          this.mensajeError = this.extraerError(error, 'No se pudo registrar el pago.');
+        }
+      });
+  }
+
+  guardarUbicacionEvidencia(): void {
+    if (!this.pedidoSeleccionado) {
+      return;
+    }
+
+    this.guardandoUbicacion = true;
+
+    this.http
+      .patch(
+        `/api/pedidos-delivery/${this.pedidoSeleccionado.pedido_id}/ubicacion-evidencia`,
+        { latitud: this.latitud, longitud: this.longitud, foto_frontis_url: this.fotoFrontisUrl || null },
+        { headers: this.obtenerHeaders() }
+      )
+      .subscribe({
+        next: () => {
+          this.guardandoUbicacion = false;
+          this.cargarPedidos();
+        },
+        error: (error) => {
+          this.guardandoUbicacion = false;
+          this.mensajeError = this.extraerError(error, 'No se pudo guardar la evidencia.');
+        }
+      });
+  }
+
+  abrirWhatsapp(pedido: PedidoDelivery): void {
+    const numero = this.normalizarNumero(pedido.cliente?.celular ?? '');
+    if (!numero) {
+      return;
+    }
+    window.open(`https://wa.me/51${numero}?text=${encodeURIComponent(`Hola, tu pedido #${pedido.pedido_id} está en ruta.`)}`, '_blank');
+  }
+
+  llamarCliente(pedido: PedidoDelivery): void {
+    const numero = this.normalizarNumero(pedido.cliente?.celular ?? '');
+    if (!numero) {
+      return;
+    }
+    window.location.href = `tel:+51${numero}`;
+  }
+
+  obtenerEtiquetaEstado(estadoId: number): string {
+    if (estadoId === 2) {
+      return 'ENTREGADO';
+    }
+    if (estadoId === 3) {
+      return 'CANCELADO';
+    }
+    return 'PENDIENTE';
+  }
+
+  private cargarProductos(search = ''): void {
+    let params = new HttpParams();
+    if (search.trim()) {
+      params = params.set('buscar', search.trim());
+    }
+
+    this.http.get<ProductoApi[]>('/api/otros-productos/productos', { headers: this.obtenerHeaders(), params }).subscribe({
+      next: (productos) => {
+        this.productosDisponibles = productos;
+      },
+      error: () => {
+        this.productosDisponibles = [];
+      }
+    });
+  }
+
+
+  private cargarStockDisponible(): void {
+    this.http.get<LoteApi[]>('/api/otros-productos/lotes', { headers: this.obtenerHeaders() }).subscribe({
+      next: (lotes) => {
+        const stockPorProducto = new Map<number, number>();
+        lotes
+          .filter((lote) => lote.estado === 'ABIERTO')
+          .forEach((lote) => {
+            const acumulado = stockPorProducto.get(lote.producto_id) ?? 0;
+            stockPorProducto.set(lote.producto_id, acumulado + Number(lote.cantidad ?? 0));
+          });
+
+        this.stockDisponiblePorProducto = stockPorProducto;
+      },
+      error: () => {
+        this.stockDisponiblePorProducto = new Map<number, number>();
+      }
+    });
+  }
+
+  private mostrarAlertaStockSinDisponibilidad(nombreProducto: string): void {
+    const swal = (window as unknown as {
+      Swal?: { fire: (options: Record<string, unknown>) => Promise<{ isConfirmed: boolean }> };
+    }).Swal;
+
+    if (!swal) {
+      this.mensajeError = `No hay stock disponible para ${nombreProducto}.`;
+      return;
+    }
+
+    void swal.fire({
+      icon: 'warning',
+      title: 'Stock insuficiente',
+      text: `El producto ${nombreProducto} no tiene stock disponible en lotes abiertos.`,
+      confirmButtonText: 'Entendido'
+    });
+  }
+
+
+
+  /**
+   * Envía en paralelo las filas del pedido al módulo de ventas diarias manuales.
+   */
+  private enviarFilasAVentasDiarias(detallesValidos: DetalleFormulario[]): void {
+    const filas = detallesValidos
+      .map((detalle) => {
+        const producto = this.productosDisponibles.find(
+          (item) => item.nombre.trim().toLowerCase() === detalle.descripcion.trim().toLowerCase()
+        );
+
+        if (!producto) {
+          return null;
+        }
+
+        return {
+          producto_id: producto.id,
+          cantidad: Number(detalle.cantidad),
+          precio: Number(detalle.precioUnitario),
+          fecha_hora: this.formatearFechaHoraApi(this.fechaHoraCreacion)
+        };
+      })
+      .filter((fila): fila is { producto_id: number; cantidad: number; precio: number; fecha_hora: string } => fila !== null);
+
+    if (!filas.length) {
+      return;
+    }
+
+    this.http
+      .put('/api/otros-productos/ventas-diarias', {
+        fecha: this.fechaHoraCreacion.slice(0, 10),
+        filas
+      }, { headers: this.obtenerHeaders() })
+      .subscribe({
+        error: () => {
+          this.mensajeError = 'Pedido guardado, pero no se pudo enviar automáticamente a Ventas diarias.';
+        }
+      });
+  }
+
+  private formatearFechaHoraApi(valor: string): string {
+    if (!valor) {
+      return new Date().toISOString().slice(0, 19).replace('T', ' ');
+    }
+
+    const base = valor.length === 16 ? `${valor}:00` : valor;
+    return base.replace('T', ' ');
+  }
+
+  private consultarApi(endpoint: string, autocompletar: (data: Record<string, unknown>) => void): void {
+    const url = `https://apiperu.dev/api/${endpoint}?api_token=${this.token}`;
+    this.consultaCargando = true;
+
+    this.http.get<{ data?: Record<string, unknown>; success?: boolean; message?: string }>(url).subscribe({
+      next: (response) => {
+        if (!response?.success || !response?.data) {
+          this.mensajeError = response?.message || 'No se encontraron datos del documento.';
+          return;
+        }
+        autocompletar(response.data);
+      },
+      error: () => {
+        this.mensajeError = 'No se pudo consultar el documento en API externa.';
+      },
+      complete: () => {
+        this.consultaCargando = false;
+      }
+    });
+  }
+
+  private autocompletarDesdeDni(data: Record<string, unknown>): void {
+    this.formularioCliente.dni = String(data['numero'] ?? this.consultaDocumento);
+    this.formularioCliente.nombres = String(data['nombres'] ?? '');
+    this.formularioCliente.apellidos = `${String(data['apellido_paterno'] ?? '')} ${String(data['apellido_materno'] ?? '')}`.trim();
+  }
+
+  private autocompletarDesdeRuc(data: Record<string, unknown>): void {
+    this.formularioCliente.ruc = String(data['ruc'] ?? this.consultaDocumento);
+    this.formularioCliente.nombreEmpresa = String(data['nombre_o_razon_social'] ?? '');
+    this.formularioCliente.direccion = String(data['direccion'] ?? '');
+    this.formularioCliente.nombres = this.formularioCliente.nombres || this.formularioCliente.nombreEmpresa;
+  }
+
+  private crearDetalleVacio(): DetalleFormulario {
+    return {
+      cantidad: 1,
+      unidad: 'KG',
+      descripcion: '',
+      precioUnitario: 0
+    };
+  }
+
+  private crearFormularioCliente(): ClienteFormulario {
+    return {
+      cliente_id: null,
+      dni: '',
+      ruc: '',
+      nombres: '',
+      apellidos: '',
+      nombreEmpresa: '',
+      celular: '',
+      direccion: '',
+      direccionFiscal: '',
+      referencias: ''
+    };
+  }
+
+  private reiniciarFormularioPedido(): void {
+    this.fechaHoraCreacion = this.fechaActualIsoLocal();
+    this.detalles = [this.crearDetalleVacio()];
+    this.terminoCliente = '';
+    this.clienteSeleccionado = null;
+    this.clientesSugeridos = [];
+  }
+
+  private obtenerHeaders(): HttpHeaders {
+    const token = this.sesionServicio.obtenerToken();
+    return token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : new HttpHeaders();
+  }
+
+  private fechaActualIsoLocal(): string {
+    const ahora = new Date();
+    const offset = ahora.getTimezoneOffset() * 60000;
+    return new Date(ahora.getTime() - offset).toISOString().slice(0, 16);
+  }
+
+  private extraerError(error: unknown, fallback: string): string {
+    const errorApi = error as { error?: { message?: string; errors?: Record<string, string[]> } };
+    const errores = errorApi?.error?.errors;
+    if (errores) {
+      const primerError = Object.values(errores)?.[0]?.[0];
+      if (primerError) {
+        return primerError;
+      }
+    }
+    return errorApi?.error?.message ?? fallback;
+  }
+
+  private normalizarNumero(numero: string): string {
+    const limpio = (numero || '').replace(/\D/g, '');
+    return limpio.length === 9 ? limpio : '';
+  }
+}
