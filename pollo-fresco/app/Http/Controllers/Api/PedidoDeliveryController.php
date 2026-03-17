@@ -26,7 +26,11 @@ class PedidoDeliveryController extends Controller
             ->orderByDesc('pedido_id');
 
         if ($rolVista === 'delivery') {
-            $query->where('delivery_usuario_id', $usuario->id);
+            $query->where(function ($subquery) use ($usuario) {
+                $subquery
+                    ->whereNull('delivery_usuario_id')
+                    ->orWhere('delivery_usuario_id', $usuario->id);
+            });
         }
 
         return response()->json($query->get());
