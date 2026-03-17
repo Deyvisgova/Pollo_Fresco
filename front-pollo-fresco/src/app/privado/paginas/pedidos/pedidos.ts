@@ -30,6 +30,7 @@ interface PedidoPago {
   estado_pago: 'COMPLETO' | 'PENDIENTE' | 'PARCIAL';
   pago_parcial: number | null;
   vuelto: number;
+  fecha_hora: string | null;
 }
 
 interface PedidoDelivery {
@@ -125,6 +126,7 @@ export class PrivadoPedidos implements OnInit {
   guardandoPedido = false;
   guardandoEstado = false;
   registrandoPago = false;
+  guardandoGestion = false;
   guardandoUbicacion = false;
   mensajeError = '';
   filtro = '';
@@ -437,64 +439,52 @@ export class PrivadoPedidos implements OnInit {
     this.pedidoSeleccionado = pedido;
     this.estadoDestino = pedido.estado_id === 3 ? 3 : 2;
     this.motivoCancelacion = pedido.motivo_cancelacion ?? '';
-    this.estadoPago = 'PENDIENTE';
-    this.pagoParcial = null;
-    this.montoRecibido = null;
+    const ultimoPago = this.obtenerUltimoPago(pedido);
+    this.estadoPago = ultimoPago?.estado_pago ?? 'PENDIENTE';
+    this.pagoParcial = ultimoPago?.pago_parcial ?? null;
+    this.montoRecibido = ultimoPago?.estado_pago === 'COMPLETO' ? Number(pedido.total) : ultimoPago?.pago_parcial ?? null;
     this.latitud = pedido.latitud;
     this.longitud = pedido.longitud;
     this.fotoFrontisUrl = pedido.foto_frontis_url ?? '';
   }
 
-  actualizarEstadoPedido(): void {
+  cerrarModalGestion(): void {
+    this.pedidoSeleccionado = null;
+  }
+
+  guardarEstadoYPago(): void {
     if (!this.pedidoSeleccionado) {
       return;
     }
 
-    this.guardandoEstado = true;
+    if (this.estadoPago === 'PARCIAL' && (this.pagoParcial === null || Number(this.pagoParcial) <= 0)) {
+      this.mensajeError = 'En pago parcial debes ingresar un monto mayor a 0.';
+      return;
+    }
+
+    this.guardandoGestion = true;
 
     this.http
       .patch(
-        `/api/pedidos-delivery/${this.pedidoSeleccionado.pedido_id}/estado`,
-        { estado_id: this.estadoDestino, motivo_cancelacion: this.estadoDestino === 3 ? this.motivoCancelacion : null },
-        { headers: this.obtenerHeaders() }
-      )
-      .subscribe({
-        next: () => {
-          this.guardandoEstado = false;
-          this.cargarPedidos('delivery');
-        },
-        error: (error) => {
-          this.guardandoEstado = false;
-          this.mensajeError = this.extraerError(error, 'No se pudo actualizar estado.');
-        }
-      });
-  }
-
-  registrarPagoPedido(): void {
-    if (!this.pedidoSeleccionado) {
-      return;
-    }
-
-    this.registrandoPago = true;
-
-    this.http
-      .post(
-        `/api/pedidos-delivery/${this.pedidoSeleccionado.pedido_id}/pagos`,
+        `/api/pedidos-delivery/${this.pedidoSeleccionado.pedido_id}/gestion`,
         {
+          estado_id: this.estadoDestino,
+          motivo_cancelacion: this.estadoDestino === 3 ? this.motivoCancelacion : null,
           estado_pago: this.estadoPago,
-          pago_parcial: this.estadoPago === 'PARCIAL' ? this.pagoParcial : null,
-          monto_recibido: this.montoRecibido
+          monto_recibido: this.estadoPago === 'PARCIAL' ? null : this.montoRecibido,
+          pago_parcial: this.estadoPago === 'PARCIAL' ? this.pagoParcial : this.montoRecibido
         },
         { headers: this.obtenerHeaders() }
       )
       .subscribe({
-        next: () => {
-          this.registrandoPago = false;
+        next: (pedidoActualizado) => {
+          this.guardandoGestion = false;
+          this.pedidoSeleccionado = pedidoActualizado as PedidoDelivery;
           this.cargarPedidos('delivery');
         },
         error: (error) => {
-          this.registrandoPago = false;
-          this.mensajeError = this.extraerError(error, 'No se pudo registrar el pago.');
+          this.guardandoGestion = false;
+          this.mensajeError = this.extraerError(error, 'No se pudo guardar el estado y pago.');
         }
       });
   }
@@ -540,6 +530,33 @@ export class PrivadoPedidos implements OnInit {
     window.location.href = `tel:+51${numero}`;
   }
 
+  abrirUbicacionPedido(pedido: PedidoDelivery): void {
+    const latitud = Number(pedido.latitud ?? 0);
+    const longitud = Number(pedido.longitud ?? 0);
+
+    if (Number.isFinite(latitud) && Number.isFinite(longitud) && (latitud !== 0 || longitud !== 0)) {
+      window.open(`https://www.google.com/maps?q=${latitud},${longitud}`, '_blank');
+      return;
+    }
+
+    const direccion = pedido.cliente?.direccion || pedido.cliente?.direccion_fiscal;
+    if (direccion) {
+      window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(direccion)}`, '_blank');
+      return;
+    }
+
+    this.mensajeError = 'Este pedido no tiene ubicación registrada aún.';
+  }
+
+  verFotoFrontis(pedido: PedidoDelivery): void {
+    if (!pedido.foto_frontis_url) {
+      this.mensajeError = 'Este pedido no tiene foto de frontis registrada aún.';
+      return;
+    }
+
+    window.open(pedido.foto_frontis_url, '_blank');
+  }
+
   obtenerEtiquetaEstado(estadoId: number): string {
     if (estadoId === 2) {
       return 'ENTREGADO';
@@ -548,6 +565,61 @@ export class PrivadoPedidos implements OnInit {
       return 'CANCELADO';
     }
     return 'PENDIENTE';
+  }
+
+  obtenerEtiquetaEstadoPago(pedido: PedidoDelivery): string {
+    const estado = this.obtenerUltimoPago(pedido)?.estado_pago;
+    return estado ?? 'SIN REGISTRO';
+  }
+
+  obtenerDetalleEstadoPago(pedido: PedidoDelivery): string {
+    const ultimoPago = this.obtenerUltimoPago(pedido);
+    if (!ultimoPago) {
+      return '';
+    }
+
+    const montoParcial = Number(ultimoPago.pago_parcial ?? 0);
+    const total = Number(pedido.total ?? 0);
+
+    if (ultimoPago.estado_pago === 'PARCIAL') {
+      const saldo = Math.max(0, Number((total - montoParcial).toFixed(2)));
+      return `Pagó S/ ${montoParcial.toFixed(2)} · Debe S/ ${saldo.toFixed(2)}`;
+    }
+
+    if (ultimoPago.estado_pago === 'COMPLETO' && Number(ultimoPago.vuelto ?? 0) > 0) {
+      return `Vuelto: S/ ${Number(ultimoPago.vuelto).toFixed(2)}`;
+    }
+
+    if (ultimoPago.estado_pago === 'PENDIENTE') {
+      return `Debe S/ ${total.toFixed(2)}`;
+    }
+
+    return '';
+  }
+
+  obtenerFechaPago(pedido: PedidoDelivery | null): string | null {
+    if (!pedido) {
+      return null;
+    }
+    return this.obtenerUltimoPago(pedido)?.fecha_hora ?? null;
+  }
+
+  calcularVuelto(): number {
+    if (!this.pedidoSeleccionado || this.estadoPago !== 'COMPLETO') {
+      return 0;
+    }
+
+    const monto = Number(this.montoRecibido ?? 0);
+    return Math.max(0, Number((monto - this.pedidoSeleccionado.total).toFixed(2)));
+  }
+
+  calcularSaldoPendiente(): number {
+    if (!this.pedidoSeleccionado || this.estadoPago !== 'PARCIAL') {
+      return 0;
+    }
+
+    const parcial = Number(this.pagoParcial ?? 0);
+    return Math.max(0, Number((this.pedidoSeleccionado.total - parcial).toFixed(2)));
   }
 
   private cargarProductos(search = ''): void {
@@ -761,6 +833,14 @@ export class PrivadoPedidos implements OnInit {
       }
     }
     return errorApi?.error?.message ?? fallback;
+  }
+
+  private obtenerUltimoPago(pedido: PedidoDelivery): PedidoPago | null {
+    if (!pedido.pagos?.length) {
+      return null;
+    }
+
+    return [...pedido.pagos].sort((a, b) => b.pedido_pago_id - a.pedido_pago_id)[0] ?? null;
   }
 
   private normalizarNumero(numero: string): string {

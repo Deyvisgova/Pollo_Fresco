@@ -112,42 +112,13 @@ class PedidoDeliveryController extends Controller
     }
 
     /**
-     * Permite al delivery cambiar estado a entregado o cancelado.
+     * Guarda estado del pedido y control de pagos en una sola operación.
      */
-    public function actualizarEstado(Request $request, Pedido $pedido)
+    public function gestionarEstadoPago(Request $request, Pedido $pedido)
     {
         $payload = $request->validate([
             'estado_id' => ['required', Rule::in([2, 3])],
             'motivo_cancelacion' => ['nullable', 'string', 'max:250', 'required_if:estado_id,3'],
-        ]);
-
-        if ($pedido->delivery_usuario_id !== null && $pedido->delivery_usuario_id !== $request->user()->id) {
-            return response()->json(['message' => 'Este pedido no está asignado al delivery autenticado.'], 403);
-        }
-
-        $pedido->estado_id = (int) $payload['estado_id'];
-
-        if ($pedido->estado_id === 2) {
-            $pedido->fecha_hora_entrega = now();
-            $pedido->motivo_cancelacion = null;
-        }
-
-        if ($pedido->estado_id === 3) {
-            $pedido->motivo_cancelacion = trim((string) ($payload['motivo_cancelacion'] ?? ''));
-            $pedido->fecha_hora_entrega = null;
-        }
-
-        $pedido->save();
-
-        return response()->json($pedido->fresh(['cliente', 'detalles', 'pagos']));
-    }
-
-    /**
-     * Registra pagos de un pedido (completo, pendiente o parcial) con vuelto.
-     */
-    public function registrarPago(Request $request, Pedido $pedido)
-    {
-        $payload = $request->validate([
             'estado_pago' => ['required', Rule::in(['COMPLETO', 'PENDIENTE', 'PARCIAL'])],
             'pago_parcial' => ['nullable', 'numeric', 'min:0'],
             'monto_recibido' => ['nullable', 'numeric', 'min:0'],
@@ -157,19 +128,42 @@ class PedidoDeliveryController extends Controller
             return response()->json(['message' => 'Para pago parcial debes indicar el monto pagado.'], 422);
         }
 
-        $montoRecibido = (float) ($payload['monto_recibido'] ?? 0);
-        $vuelto = max(0, round($montoRecibido - (float) $pedido->total, 2));
+        if ($pedido->delivery_usuario_id !== null && $pedido->delivery_usuario_id !== $request->user()->id) {
+            return response()->json(['message' => 'Este pedido no está asignado al delivery autenticado.'], 403);
+        }
 
-        $pago = PedidoPago::create([
-            'pedido_id' => $pedido->pedido_id,
-            'registrado_por' => $request->user()->id,
-            'fecha_hora' => now(),
-            'estado_pago' => $payload['estado_pago'],
-            'pago_parcial' => $payload['pago_parcial'] ?? null,
-            'vuelto' => $vuelto,
-        ]);
+        DB::transaction(function () use ($pedido, $payload, $request) {
+            $pedido->estado_id = (int) $payload['estado_id'];
 
-        return response()->json($pago, 201);
+            if ($pedido->estado_id === 2) {
+                $pedido->fecha_hora_entrega = now();
+                $pedido->motivo_cancelacion = null;
+            }
+
+            if ($pedido->estado_id === 3) {
+                $pedido->motivo_cancelacion = trim((string) ($payload['motivo_cancelacion'] ?? ''));
+                $pedido->fecha_hora_entrega = null;
+            }
+
+            $pedido->save();
+
+            $montoRecibido = (float) ($payload['monto_recibido'] ?? 0);
+            $basePago = $payload['estado_pago'] === 'PARCIAL'
+                ? (float) ($payload['pago_parcial'] ?? 0)
+                : $montoRecibido;
+            $vuelto = max(0, round($montoRecibido - (float) $pedido->total, 2));
+
+            PedidoPago::create([
+                'pedido_id' => $pedido->pedido_id,
+                'registrado_por' => $request->user()->id,
+                'fecha_hora' => now(),
+                'estado_pago' => $payload['estado_pago'],
+                'pago_parcial' => $basePago,
+                'vuelto' => $vuelto,
+            ]);
+        });
+
+        return response()->json($pedido->fresh(['cliente', 'detalles', 'pagos']));
     }
 
     /**
