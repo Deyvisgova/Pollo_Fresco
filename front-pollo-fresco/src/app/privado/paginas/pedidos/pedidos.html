@@ -5,13 +5,14 @@
   </div>
 
   <div class="tabs-vista">
-    <button type="button" [class.activo]="vista === 'vendedor'" (click)="cambiarVista('vendedor')">Vista vendedor</button>
-    <button type="button" [class.activo]="vista === 'delivery'" (click)="cambiarVista('delivery')">Vista delivery</button>
+    <button type="button" [class.activo]="subpaginaActiva === 'registrar'" (click)="cambiarSubpagina('registrar')">Registrar pedido</button>
+    <button type="button" [class.activo]="subpaginaActiva === 'registros'" (click)="cambiarSubpagina('registros')">Pedidos registrados</button>
+    <button type="button" [class.activo]="subpaginaActiva === 'delivery'" (click)="cambiarSubpagina('delivery')">Vista delivery</button>
   </div>
 
   <p class="mensaje-error" *ngIf="mensajeError">{{ mensajeError }}</p>
 
-  <div class="contenido-pedidos" *ngIf="vista === 'vendedor'">
+  <div class="contenido-pedidos" *ngIf="subpaginaActiva === 'registrar'">
     <article class="tarjeta">
       <div class="tarjeta__titulo">
         <h4>Registrar pedido</h4>
@@ -100,6 +101,9 @@
       </button>
     </article>
 
+  </div>
+
+  <div class="contenido-pedidos" *ngIf="subpaginaActiva === 'registros'">
     <article class="tarjeta tabla-pedidos">
       <div class="tarjeta__titulo">
         <h4>Pedidos registrados</h4>
@@ -132,7 +136,7 @@
     </article>
   </div>
 
-  <div class="contenido-delivery" *ngIf="vista === 'delivery'">
+  <div class="contenido-delivery" *ngIf="subpaginaActiva === 'delivery'">
     <article class="tarjeta tarjetas-delivery">
       <div class="tarjeta__titulo">
         <h4>Pedidos asignados</h4>
