@@ -47,7 +47,7 @@
 .delivery-card__fila { display: flex; justify-content: space-between; gap: 10px; font-size: 0.88rem; }
 .delivery-card__fila span { color: #64748b; }
 .delivery-card__acciones { display: flex; gap: 8px; }
-.delivery-card__acciones button { border: 1px solid #bfdbfe; background: #eff6ff; color: #1e40af; border-radius: 8px; padding: 6px 8px; cursor: pointer; }
+.delivery-card__acciones button { border: 1px solid #bfdbfe; background: #eff6ff; color: #1e40af; border-radius: 999px; width: 34px; height: 34px; cursor: pointer; display: grid; place-items: center; font-size: 16px; }
 
 .bloque { border-top: 1px solid #e2e8f0; padding-top: 10px; display: flex; flex-direction: column; gap: 10px; }
 .formulario-grid { display: grid; gap: 10px; }
@@ -144,3 +144,6 @@ input[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;
 }
+
+.modal-contenido--gestion { width: min(980px, 100%); }
+.campo small { color: #1e40af; font-weight: 600; }

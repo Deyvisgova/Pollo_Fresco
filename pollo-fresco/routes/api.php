@@ -114,7 +114,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('pedidos-delivery', [PedidoDeliveryController::class, 'index']);
     Route::post('pedidos-delivery', [PedidoDeliveryController::class, 'store']);
-    Route::patch('pedidos-delivery/{pedido}/estado', [PedidoDeliveryController::class, 'actualizarEstado']);
-    Route::post('pedidos-delivery/{pedido}/pagos', [PedidoDeliveryController::class, 'registrarPago']);
+    Route::patch('pedidos-delivery/{pedido}/gestion', [PedidoDeliveryController::class, 'gestionarEstadoPago']);
     Route::patch('pedidos-delivery/{pedido}/ubicacion-evidencia', [PedidoDeliveryController::class, 'actualizarUbicacionEvidencia']);
 });
