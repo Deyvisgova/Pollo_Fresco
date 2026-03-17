@@ -136,7 +136,7 @@
     </article>
   </div>
 
-  <div class="contenido-delivery" [class.contenido-delivery--detalle]="!!pedidoSeleccionado" *ngIf="subpaginaActiva === 'delivery'">
+  <div class="contenido-delivery" *ngIf="subpaginaActiva === 'delivery'">
     <article class="tarjeta tarjetas-delivery">
       <div class="tarjeta__titulo">
         <h4>Pedidos asignados</h4>
@@ -150,86 +150,102 @@
           <div class="delivery-card__fila"><span>Cliente</span><strong>{{ pedido.cliente.nombres }} {{ pedido.cliente.apellidos || '' }}</strong></div>
           <div class="delivery-card__fila"><span>DNI</span><strong>{{ pedido.cliente.dni || 'S/D' }}</strong></div>
           <div class="delivery-card__fila"><span>Estado</span><strong>{{ obtenerEtiquetaEstado(pedido.estado_id) }}</strong></div>
+          <div class="delivery-card__fila"><span>Estado de pago</span><strong>{{ obtenerEtiquetaEstadoPago(pedido) }}</strong></div>
           <div class="delivery-card__fila"><span>Total</span><strong>S/ {{ pedido.total | number: '1.2-2' }}</strong></div>
           <div class="delivery-card__acciones">
-            <button type="button" (click)="$event.stopPropagation(); abrirWhatsapp(pedido)">WhatsApp</button>
-            <button type="button" (click)="$event.stopPropagation(); llamarCliente(pedido)">Llamar</button>
+            <button type="button" aria-label="WhatsApp" title="WhatsApp" (click)="$event.stopPropagation(); abrirWhatsapp(pedido)">💬</button>
+            <button type="button" aria-label="Llamar" title="Llamar" (click)="$event.stopPropagation(); llamarCliente(pedido)">📞</button>
+            <button type="button" aria-label="Ubicación" title="Ver ubicación" (click)="$event.stopPropagation(); abrirUbicacionPedido(pedido)">📍</button>
+            <button type="button" aria-label="Ver foto" title="Ver foto" (click)="$event.stopPropagation(); verFotoFrontis(pedido)">👁️</button>
           </div>
         </div>
       </div>
     </article>
-
-    <article class="tarjeta" *ngIf="pedidoSeleccionado">
-      <h4>Gestión de entrega · Pedido #{{ pedidoSeleccionado.pedido_id }}</h4>
-
-      <section class="bloque">
-        <h5>Estado del pedido</h5>
-        <div class="formulario-grid formulario-grid--comprobante">
-          <div class="campo">
-            <label>Estado</label>
-            <select [(ngModel)]="estadoDestino">
-              <option [ngValue]="2">ENTREGADO</option>
-              <option [ngValue]="3">CANCELADO</option>
-            </select>
-          </div>
-          <div class="campo" *ngIf="estadoDestino === 3">
-            <label>Motivo de cancelación</label>
-            <input type="text" [(ngModel)]="motivoCancelacion" />
-          </div>
-        </div>
-        <button type="button" class="boton boton--primario" [disabled]="guardandoEstado" (click)="actualizarEstadoPedido()">
-          {{ guardandoEstado ? 'Guardando...' : 'Guardar estado' }}
-        </button>
-      </section>
-
-      <section class="bloque">
-        <h5>Control de pagos</h5>
-        <div class="formulario-grid formulario-grid--comprobante">
-          <div class="campo">
-            <label>Estado de pago</label>
-            <select [(ngModel)]="estadoPago">
-              <option value="COMPLETO">Completo</option>
-              <option value="PENDIENTE">Pendiente</option>
-              <option value="PARCIAL">Parcial</option>
-            </select>
-          </div>
-          <div class="campo" *ngIf="estadoPago === 'PARCIAL'">
-            <label>Pago parcial</label>
-            <input type="number" min="0" step="0.01" [(ngModel)]="pagoParcial" />
-          </div>
-          <div class="campo">
-            <label>Monto recibido</label>
-            <input type="number" min="0" step="0.01" [(ngModel)]="montoRecibido" />
-          </div>
-        </div>
-        <button type="button" class="boton boton--primario" [disabled]="registrandoPago" (click)="registrarPagoPedido()">
-          {{ registrandoPago ? 'Registrando...' : 'Registrar pago' }}
-        </button>
-      </section>
-
-      <section class="bloque">
-        <h5>Ubicación y evidencia</h5>
-        <div class="formulario-grid formulario-grid--comprobante">
-          <div class="campo">
-            <label>Latitud</label>
-            <input type="number" step="0.0000001" [(ngModel)]="latitud" />
-          </div>
-          <div class="campo">
-            <label>Longitud</label>
-            <input type="number" step="0.0000001" [(ngModel)]="longitud" />
-          </div>
-          <div class="campo campo--doble">
-            <label>URL foto frontis</label>
-            <input type="text" [(ngModel)]="fotoFrontisUrl" />
-          </div>
-        </div>
-        <button type="button" class="boton boton--primario" [disabled]="guardandoUbicacion" (click)="guardarUbicacionEvidencia()">
-          {{ guardandoUbicacion ? 'Guardando...' : 'Guardar ubicación y evidencia' }}
-        </button>
-      </section>
-    </article>
   </div>
 </section>
+
+
+<div class="modal-fondo" *ngIf="pedidoSeleccionado" (click)="cerrarModalGestion()">
+  <article class="modal-contenido modal-contenido--gestion" (click)="$event.stopPropagation()">
+    <header class="tarjeta__encabezado tarjeta__encabezado--acciones">
+      <h4>Gestión de entrega · Pedido #{{ pedidoSeleccionado.pedido_id }}</h4>
+      <button type="button" class="boton boton--secundario" (click)="cerrarModalGestion()">Cerrar</button>
+    </header>
+
+    <section class="bloque">
+      <h5>Estado del pedido</h5>
+      <div class="formulario-grid formulario-grid--comprobante">
+        <div class="campo">
+          <label>Estado</label>
+          <select [(ngModel)]="estadoDestino">
+            <option [ngValue]="2">ENTREGADO</option>
+            <option [ngValue]="3">CANCELADO</option>
+          </select>
+        </div>
+        <div class="campo" *ngIf="estadoDestino === 3">
+          <label>Motivo de cancelación</label>
+          <input type="text" [(ngModel)]="motivoCancelacion" />
+        </div>
+      </div>
+    </section>
+
+    <section class="bloque">
+      <h5>Control de pagos</h5>
+      <div class="formulario-grid formulario-grid--comprobante">
+        <div class="campo">
+          <label>Estado de pago</label>
+          <select [(ngModel)]="estadoPago">
+            <option value="COMPLETO">Completo</option>
+            <option value="PENDIENTE">Pendiente</option>
+            <option value="PARCIAL">Parcial</option>
+          </select>
+        </div>
+
+        <div class="campo" *ngIf="estadoPago === 'COMPLETO'">
+          <label>Monto total recibido</label>
+          <input type="number" min="0" step="0.01" [(ngModel)]="montoRecibido" />
+          <small *ngIf="calcularVuelto() > 0">Vuelto: S/ {{ calcularVuelto() | number: '1.2-2' }}</small>
+        </div>
+
+        <div class="campo" *ngIf="estadoPago === 'PENDIENTE'">
+          <label>Monto a pagar</label>
+          <input type="number" min="0" step="0.01" [(ngModel)]="montoRecibido" />
+        </div>
+
+        <div class="campo" *ngIf="estadoPago === 'PARCIAL'">
+          <label>Valor a pagar</label>
+          <input type="number" min="0" step="0.01" [(ngModel)]="pagoParcial" />
+          <small>Saldo pendiente: S/ {{ calcularSaldoPendiente() | number: '1.2-2' }}</small>
+        </div>
+      </div>
+    </section>
+
+    <button type="button" class="boton boton--primario" [disabled]="guardandoGestion" (click)="guardarEstadoYPago()">
+      {{ guardandoGestion ? 'Guardando...' : 'Guardar estado y pago' }}
+    </button>
+
+    <section class="bloque">
+      <h5>Ubicación y evidencia</h5>
+      <div class="formulario-grid formulario-grid--comprobante">
+        <div class="campo">
+          <label>Latitud</label>
+          <input type="number" step="0.0000001" [(ngModel)]="latitud" />
+        </div>
+        <div class="campo">
+          <label>Longitud</label>
+          <input type="number" step="0.0000001" [(ngModel)]="longitud" />
+        </div>
+        <div class="campo campo--doble">
+          <label>URL foto frontis</label>
+          <input type="text" [(ngModel)]="fotoFrontisUrl" />
+        </div>
+      </div>
+      <button type="button" class="boton boton--primario" [disabled]="guardandoUbicacion" (click)="guardarUbicacionEvidencia()">
+        {{ guardandoUbicacion ? 'Guardando...' : 'Guardar ubicación y evidencia' }}
+      </button>
+    </section>
+  </article>
+</div>
 
 <div class="modal-fondo" *ngIf="mostrarModalCliente">
   <section class="modal-contenido">
