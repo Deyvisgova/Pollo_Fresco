@@ -87,7 +87,8 @@ interface LoteApi {
 export class PrivadoPedidos implements OnInit {
   private token = 'f3ba6fa1f3a2b2d1a6390dc06d831ebad2f218a9d3ba43e7f1f42b425dd03e26';
 
-  vista: 'vendedor' | 'delivery' = 'vendedor';
+  subpaginaActiva: 'registrar' | 'registros' | 'delivery' = 'registrar';
+  private solicitudPedidosId = 0;
 
   pedidos: PedidoDelivery[] = [];
   pedidosFiltrados: PedidoDelivery[] = [];
@@ -135,26 +136,41 @@ export class PrivadoPedidos implements OnInit {
 
   ngOnInit(): void {
     this.fechaHoraCreacion = this.fechaActualIsoLocal();
-    this.cargarPedidos();
+    this.cargarPedidos('vendedor');
     this.cargarProductos();
     this.cargarStockDisponible();
   }
 
-  cambiarVista(vista: 'vendedor' | 'delivery'): void {
-    this.vista = vista;
+  cambiarSubpagina(subpagina: 'registrar' | 'registros' | 'delivery'): void {
+    this.subpaginaActiva = subpagina;
     this.pedidoSeleccionado = null;
-    this.cargarPedidos();
+
+    if (subpagina === 'registros') {
+      this.cargarPedidos('vendedor');
+      return;
+    }
+
+    if (subpagina === 'delivery') {
+      this.cargarPedidos('delivery');
+    }
   }
 
-  cargarPedidos(): void {
+  cargarPedidos(rol: 'vendedor' | 'delivery'): void {
+    const solicitudActual = ++this.solicitudPedidosId;
     this.cargando = true;
-    this.http.get<PedidoDelivery[]>(`/api/pedidos-delivery?rol=${this.vista}`, { headers: this.obtenerHeaders() }).subscribe({
+    this.http.get<PedidoDelivery[]>(`/api/pedidos-delivery?rol=${rol}`, { headers: this.obtenerHeaders() }).subscribe({
       next: (pedidos) => {
+        if (solicitudActual !== this.solicitudPedidosId) {
+          return;
+        }
         this.pedidos = pedidos;
         this.aplicarFiltro();
         this.cargando = false;
       },
       error: (error) => {
+        if (solicitudActual !== this.solicitudPedidosId) {
+          return;
+        }
         this.pedidos = [];
         this.pedidosFiltrados = [];
         this.cargando = false;
@@ -408,7 +424,7 @@ export class PrivadoPedidos implements OnInit {
         this.enviarFilasAVentasDiarias(detallesValidos);
         this.guardandoPedido = false;
         this.reiniciarFormularioPedido();
-        this.cargarPedidos();
+        this.cargarPedidos('vendedor');
       },
       error: (error) => {
         this.guardandoPedido = false;
@@ -445,7 +461,7 @@ export class PrivadoPedidos implements OnInit {
       .subscribe({
         next: () => {
           this.guardandoEstado = false;
-          this.cargarPedidos();
+          this.cargarPedidos('delivery');
         },
         error: (error) => {
           this.guardandoEstado = false;
@@ -474,7 +490,7 @@ export class PrivadoPedidos implements OnInit {
       .subscribe({
         next: () => {
           this.registrandoPago = false;
-          this.cargarPedidos();
+          this.cargarPedidos('delivery');
         },
         error: (error) => {
           this.registrandoPago = false;
@@ -499,7 +515,7 @@ export class PrivadoPedidos implements OnInit {
       .subscribe({
         next: () => {
           this.guardandoUbicacion = false;
-          this.cargarPedidos();
+          this.cargarPedidos('delivery');
         },
         error: (error) => {
           this.guardandoUbicacion = false;
