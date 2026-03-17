@@ -6,8 +6,9 @@
 .tabs-vista button { border-radius: 12px; border: 1px solid #cbd5e1; background: #fff; color: #334155; padding: 10px 14px; font-weight: 600; cursor: pointer; }
 .tabs-vista button.activo { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
 
-.contenido-pedidos { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr); gap: 16px; align-items: start; }
-.contenido-delivery { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 16px; align-items: start; }
+.contenido-pedidos { display: grid; grid-template-columns: 1fr; gap: 16px; align-items: start; }
+.contenido-delivery { display: grid; grid-template-columns: 1fr; gap: 16px; align-items: start; }
+.contenido-delivery--detalle { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); }
 
 .tarjeta { background: #fff; border-radius: 16px; padding: 18px; border: 1px solid #e2e8f0; box-shadow: 0 10px 20px rgba(15, 23, 42, 0.05); display: flex; flex-direction: column; gap: 14px; }
 .tarjeta__titulo { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
