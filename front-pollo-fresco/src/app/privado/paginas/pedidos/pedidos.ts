@@ -130,6 +130,10 @@ export class PrivadoPedidos implements OnInit {
   guardandoUbicacion = false;
   mensajeError = '';
   filtro = '';
+  filtroEstadoRegistros = '';
+  filtroEstadoPagoRegistros = '';
+  private readonly claveVueltosPagados = 'pedidos_delivery_vueltos_pagados';
+  private vueltosPagados = new Set<number>();
 
   constructor(
     private readonly http: HttpClient,
@@ -137,6 +141,7 @@ export class PrivadoPedidos implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.cargarVueltosPagados();
     this.fechaHoraCreacion = this.fechaActualIsoLocal();
     this.cargarPedidos('vendedor');
     this.cargarProductos();
@@ -183,15 +188,15 @@ export class PrivadoPedidos implements OnInit {
 
   aplicarFiltro(): void {
     const termino = this.filtro.trim().toLowerCase();
-    if (!termino) {
-      this.pedidosFiltrados = [...this.pedidos];
-      return;
-    }
-
     this.pedidosFiltrados = this.pedidos.filter((pedido) => {
       const nombre = `${pedido.cliente?.nombres ?? ''} ${pedido.cliente?.apellidos ?? ''}`.toLowerCase();
       const dni = (pedido.cliente?.dni ?? '').toLowerCase();
-      return `${pedido.pedido_id}`.includes(termino) || nombre.includes(termino) || dni.includes(termino);
+      const coincideTexto = !termino || `${pedido.pedido_id}`.includes(termino) || nombre.includes(termino) || dni.includes(termino);
+      const usarFiltrosRegistros = this.subpaginaActiva === 'registros';
+      const coincideEstado = !usarFiltrosRegistros || !this.filtroEstadoRegistros || this.obtenerEtiquetaEstado(pedido.estado_id) === this.filtroEstadoRegistros;
+      const coincideEstadoPago = !usarFiltrosRegistros || !this.filtroEstadoPagoRegistros || this.obtenerEtiquetaEstadoPago(pedido) === this.filtroEstadoPagoRegistros;
+
+      return coincideTexto && coincideEstado && coincideEstadoPago;
     });
   }
 
@@ -421,9 +426,9 @@ export class PrivadoPedidos implements OnInit {
       }))
     };
 
-    this.http.post('/api/pedidos-delivery', payload, { headers: this.obtenerHeaders() }).subscribe({
-      next: () => {
-        this.enviarFilasAVentasDiarias(detallesValidos);
+    this.http.post<PedidoDelivery>('/api/pedidos-delivery', payload, { headers: this.obtenerHeaders() }).subscribe({
+      next: (pedidoCreado) => {
+        this.enviarFilasAVentasDiarias(detallesValidos, pedidoCreado.pedido_id);
         this.guardandoPedido = false;
         this.reiniciarFormularioPedido();
         this.cargarPedidos('vendedor');
@@ -450,6 +455,20 @@ export class PrivadoPedidos implements OnInit {
 
   cerrarModalGestion(): void {
     this.pedidoSeleccionado = null;
+  }
+
+  abrirDetallePedido(pedido: PedidoDelivery): void {
+    this.seleccionarPedido(pedido);
+  }
+
+  marcarVueltoPagado(pedido: PedidoDelivery): void {
+    const ultimoPago = this.obtenerUltimoPago(pedido);
+    if (!ultimoPago || Number(ultimoPago.vuelto ?? 0) <= 0) {
+      return;
+    }
+
+    this.vueltosPagados.add(ultimoPago.pedido_pago_id);
+    this.guardarVueltosPagados();
   }
 
   guardarEstadoYPago(): void {
@@ -568,11 +587,104 @@ export class PrivadoPedidos implements OnInit {
   }
 
   obtenerEtiquetaEstadoPago(pedido: PedidoDelivery): string {
+    if (pedido.estado_id === 3) {
+      return 'NULO';
+    }
+
     const estado = this.obtenerUltimoPago(pedido)?.estado_pago;
     return estado ?? 'SIN REGISTRO';
   }
 
+  obtenerClaseBadgeEstado(estadoId: number): string {
+    if (estadoId === 2) {
+      return 'badge--success';
+    }
+    if (estadoId === 3) {
+      return 'badge--danger';
+    }
+    return 'badge--warning';
+  }
+
+  obtenerClaseBadgePago(pedido: PedidoDelivery): string {
+    const estado = this.obtenerEtiquetaEstadoPago(pedido);
+    const ultimoPago = this.obtenerUltimoPago(pedido);
+
+    if (ultimoPago && Number(ultimoPago.vuelto ?? 0) > 0 && this.estaVueltoPagado(pedido)) {
+      return 'badge--success';
+    }
+
+    if (estado === 'COMPLETO') {
+      return 'badge--success';
+    }
+    if (estado === 'PARCIAL') {
+      return 'badge--info';
+    }
+    if (estado === 'PENDIENTE') {
+      return 'badge--warning';
+    }
+
+    return 'badge--neutral';
+  }
+
+  obtenerResumenEstadoPago(pedido: PedidoDelivery): string {
+    if (pedido.estado_id === 3) {
+      return 'NULO';
+    }
+
+    const estado = this.obtenerEtiquetaEstadoPago(pedido);
+    const detalle = this.obtenerDetalleEstadoPago(pedido);
+    const ultimoPago = this.obtenerUltimoPago(pedido);
+
+    if (ultimoPago && Number(ultimoPago.vuelto ?? 0) > 0 && this.estaVueltoPagado(pedido)) {
+      return 'COMPLETO · Vuelto pagado';
+    }
+
+    return detalle ? `${estado} · ${detalle}` : estado;
+  }
+
+  obtenerFechaHoraCorta(fecha: string | null | undefined): string {
+    if (!fecha) {
+      return '—';
+    }
+
+    const date = new Date(fecha);
+    if (Number.isNaN(date.getTime())) {
+      return '—';
+    }
+
+    return new Intl.DateTimeFormat('es-PE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    }).format(date);
+  }
+
+  obtenerEstadoPagoTabla(pedido: PedidoDelivery): string {
+    return this.obtenerResumenEstadoPago(pedido);
+  }
+
+  mostrarAccionPagarVuelto(pedido: PedidoDelivery): boolean {
+    const ultimoPago = this.obtenerUltimoPago(pedido);
+    return !!ultimoPago && Number(ultimoPago.vuelto ?? 0) > 0 && !this.estaVueltoPagado(pedido);
+  }
+
+  mostrarAccionVerDetalle(pedido: PedidoDelivery): boolean {
+    return pedido.estado_id !== 3 && this.obtenerEtiquetaEstadoPago(pedido) === 'PARCIAL';
+  }
+
+  estaVueltoPagado(pedido: PedidoDelivery): boolean {
+    const ultimoPago = this.obtenerUltimoPago(pedido);
+    return !!ultimoPago && this.vueltosPagados.has(ultimoPago.pedido_pago_id);
+  }
+
   obtenerDetalleEstadoPago(pedido: PedidoDelivery): string {
+    if (pedido.estado_id === 3) {
+      return '';
+    }
+
     const ultimoPago = this.obtenerUltimoPago(pedido);
     if (!ultimoPago) {
       return '';
@@ -598,7 +710,7 @@ export class PrivadoPedidos implements OnInit {
   }
 
   obtenerFechaPago(pedido: PedidoDelivery | null): string | null {
-    if (!pedido) {
+    if (!pedido || pedido.estado_id === 3) {
       return null;
     }
     return this.obtenerUltimoPago(pedido)?.fecha_hora ?? null;
@@ -701,7 +813,7 @@ export class PrivadoPedidos implements OnInit {
   /**
    * Envía en paralelo las filas del pedido al módulo de ventas diarias manuales.
    */
-  private enviarFilasAVentasDiarias(detallesValidos: DetalleFormulario[]): void {
+  private enviarFilasAVentasDiarias(detallesValidos: DetalleFormulario[], pedidoId: number): void {
     const filas = detallesValidos
       .map((detalle) => {
         const producto = this.productosDisponibles.find(
@@ -714,12 +826,14 @@ export class PrivadoPedidos implements OnInit {
 
         return {
           producto_id: producto.id,
+          pedido_id: pedidoId,
+          origen: 'PEDIDO_DELIVERY',
           cantidad: Number(detalle.cantidad),
           precio: Number(detalle.precioUnitario),
           fecha_hora: this.formatearFechaHoraApi(this.fechaHoraCreacion)
         };
       })
-      .filter((fila): fila is { producto_id: number; cantidad: number; precio: number; fecha_hora: string } => fila !== null);
+      .filter((fila): fila is { producto_id: number; pedido_id: number; origen: string; cantidad: number; precio: number; fecha_hora: string } => fila !== null);
 
     if (!filas.length) {
       return;
@@ -841,6 +955,32 @@ export class PrivadoPedidos implements OnInit {
     }
 
     return [...pedido.pagos].sort((a, b) => b.pedido_pago_id - a.pedido_pago_id)[0] ?? null;
+  }
+
+  private cargarVueltosPagados(): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const guardado = window.localStorage.getItem(this.claveVueltosPagados);
+    if (!guardado) {
+      return;
+    }
+
+    try {
+      const ids = JSON.parse(guardado) as number[];
+      this.vueltosPagados = new Set(ids.filter((id) => Number.isFinite(id)));
+    } catch {
+      this.vueltosPagados = new Set<number>();
+    }
+  }
+
+  private guardarVueltosPagados(): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.localStorage.setItem(this.claveVueltosPagados, JSON.stringify([...this.vueltosPagados]));
   }
 
   private normalizarNumero(numero: string): string {

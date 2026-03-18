@@ -147,6 +147,17 @@ class PedidoDeliveryController extends Controller
 
             $pedido->save();
 
+            if ($pedido->estado_id === 3) {
+                DB::table('otros_productos_ventas_diarias')
+                    ->where('usuario_id', $pedido->vendedor_usuario_id)
+                    ->where('pedido_id', $pedido->pedido_id)
+                    ->where('origen', 'PEDIDO_DELIVERY')
+                    ->whereNull('cerrado_en')
+                    ->delete();
+
+                return;
+            }
+
             $montoRecibido = (float) ($payload['monto_recibido'] ?? 0);
             $basePago = $payload['estado_pago'] === 'PARCIAL'
                 ? (float) ($payload['pago_parcial'] ?? 0)
