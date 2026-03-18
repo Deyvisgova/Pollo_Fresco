@@ -45,12 +45,20 @@
 .delivery-card { border: 1px solid #dbeafe; border-radius: 12px; padding: 10px; background: #f8fafc; display: flex; flex-direction: column; gap: 6px; cursor: pointer; }
 .delivery-card h5 { margin: 0 0 6px; color: #1e3a8a; }
 .delivery-card__fila { display: flex; justify-content: space-between; gap: 10px; font-size: 0.88rem; }
+.delivery-card__fila--inicio { align-items: flex-start; }
 .delivery-card__fila span { color: #64748b; }
 .delivery-card__nota { margin: 0; font-size: .75rem; }
 .delivery-card__acciones { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 6px; padding-top: 8px; border-top: 1px dashed #cbd5e1; }
 .delivery-card__acciones button { border: 1px solid #bfdbfe; background: #eff6ff; color: #1e40af; border-radius: 999px; width: 34px; height: 34px; cursor: pointer; display: grid; place-items: center; transition: transform 0.15s ease, background-color 0.2s ease; }
 .delivery-card__acciones button svg { width: 16px; height: 16px; fill: #1e40af; }
 .delivery-card__acciones button:hover { background: #dbeafe; transform: translateY(-1px); }
+.badge { display: inline-flex; align-items: center; justify-content: center; padding: 4px 10px; border-radius: 999px; font-size: 0.76rem; font-weight: 700; line-height: 1.25; border: 1px solid transparent; }
+.badge--wrap { white-space: normal; text-align: right; max-width: 220px; }
+.badge--success { background: #dcfce7; border-color: #86efac; color: #166534; }
+.badge--danger { background: #fee2e2; border-color: #fca5a5; color: #991b1b; }
+.badge--warning { background: #fef3c7; border-color: #fcd34d; color: #92400e; }
+.badge--info { background: #dbeafe; border-color: #93c5fd; color: #1d4ed8; }
+.badge--neutral { background: #e2e8f0; border-color: #cbd5e1; color: #334155; }
 
 .bloque { border-top: 1px solid #e2e8f0; padding-top: 10px; display: flex; flex-direction: column; gap: 10px; }
 .formulario-grid { display: grid; gap: 10px; }
@@ -158,5 +166,6 @@ input[type="number"] {
 .gestion-layout { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 10px; }
 .detalle-pedido { display: flex; flex-direction: column; gap: 8px; }
 .detalle-pedido__fila { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; border-bottom: 1px dashed #dbe3ef; padding-bottom: 6px; font-size: 0.8rem; }
+.detalle-pedido__total { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding-top: 8px; margin-top: 4px; border-top: 1px solid #cbd5e1; font-size: 0.9rem; font-weight: 700; color: #0f172a; }
 .detalle-pedido__vacio { margin: 0; color: #64748b; }
 @media (max-width: 900px) { .gestion-layout { grid-template-columns: 1fr; } }

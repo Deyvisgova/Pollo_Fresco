@@ -572,6 +572,38 @@ export class PrivadoPedidos implements OnInit {
     return estado ?? 'SIN REGISTRO';
   }
 
+  obtenerClaseBadgeEstado(estadoId: number): string {
+    if (estadoId === 2) {
+      return 'badge--success';
+    }
+    if (estadoId === 3) {
+      return 'badge--danger';
+    }
+    return 'badge--warning';
+  }
+
+  obtenerClaseBadgePago(pedido: PedidoDelivery): string {
+    const estado = this.obtenerEtiquetaEstadoPago(pedido);
+
+    if (estado === 'COMPLETO') {
+      return 'badge--success';
+    }
+    if (estado === 'PARCIAL') {
+      return 'badge--info';
+    }
+    if (estado === 'PENDIENTE') {
+      return 'badge--warning';
+    }
+
+    return 'badge--neutral';
+  }
+
+  obtenerResumenEstadoPago(pedido: PedidoDelivery): string {
+    const estado = this.obtenerEtiquetaEstadoPago(pedido);
+    const detalle = this.obtenerDetalleEstadoPago(pedido);
+    return detalle ? `${estado} · ${detalle}` : estado;
+  }
+
   obtenerDetalleEstadoPago(pedido: PedidoDelivery): string {
     const ultimoPago = this.obtenerUltimoPago(pedido);
     if (!ultimoPago) {

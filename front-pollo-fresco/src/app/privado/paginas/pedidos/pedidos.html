@@ -144,14 +144,18 @@
       </div>
 
       <div class="delivery-grid">
-        <div class="delivery-card" *ngFor="let pedido of pedidosFiltrados; let i = index" (click)="seleccionarPedido(pedido)">
-          <h5>Pedido {{ i + 1 }}</h5>
+        <div class="delivery-card" *ngFor="let pedido of pedidosFiltrados" (click)="seleccionarPedido(pedido)">
+          <h5>Pedido {{ pedido.pedido_id }}</h5>
           <div class="delivery-card__fila"><span>Cliente</span><strong>{{ pedido.cliente.nombres }} {{ pedido.cliente.apellidos || '' }}</strong></div>
-          <div class="delivery-card__fila"><span>DNI</span><strong>{{ pedido.cliente.dni || 'S/D' }}</strong></div>
-          <div class="delivery-card__fila"><span>Estado</span><strong>{{ obtenerEtiquetaEstado(pedido.estado_id) }}</strong></div>
+          <div class="delivery-card__fila">
+            <span>Estado</span>
+            <strong class="badge" [ngClass]="obtenerClaseBadgeEstado(pedido.estado_id)">{{ obtenerEtiquetaEstado(pedido.estado_id) }}</strong>
+          </div>
           <p class="delivery-card__nota" *ngIf="pedido.estado_id === 3 && pedido.motivo_cancelacion">Motivo: {{ pedido.motivo_cancelacion }}</p>
-          <div class="delivery-card__fila"><span>Estado de pago</span><strong>{{ obtenerEtiquetaEstadoPago(pedido) }}</strong></div>
-          <p class="delivery-card__nota" *ngIf="obtenerDetalleEstadoPago(pedido)">{{ obtenerDetalleEstadoPago(pedido) }}</p>
+          <div class="delivery-card__fila delivery-card__fila--inicio">
+            <span>Estado de pago</span>
+            <strong class="badge badge--wrap" [ngClass]="obtenerClaseBadgePago(pedido)">{{ obtenerResumenEstadoPago(pedido) }}</strong>
+          </div>
           <div class="delivery-card__fila" *ngIf="obtenerFechaPago(pedido)"><span>Fecha pago</span><strong>{{ obtenerFechaPago(pedido) | date: "short" }}</strong></div>
           <div class="delivery-card__fila"><span>Total</span><strong>S/ {{ pedido.total | number: '1.2-2' }}</strong></div>
           <div class="delivery-card__acciones">
@@ -248,6 +252,10 @@
             <span>{{ detalle.cantidad }} {{ detalle.unidad }}</span>
             <strong>{{ detalle.descripcion }}</strong>
             <span>S/ {{ detalle.subtotal | number: '1.2-2' }}</span>
+          </div>
+          <div class="detalle-pedido__total">
+            <span>Total</span>
+            <strong>S/ {{ pedidoSeleccionado?.total | number: '1.2-2' }}</strong>
           </div>
         </div>
         <ng-template #sinDetallePedido>
