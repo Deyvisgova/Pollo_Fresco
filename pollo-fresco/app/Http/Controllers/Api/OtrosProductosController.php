@@ -465,6 +465,8 @@ class OtrosProductosController extends Controller
             'filas.*.cantidad' => ['required', 'numeric', 'min:0.01'],
             'filas.*.precio' => ['required', 'numeric', 'min:0'],
             'filas.*.fecha_hora' => ['nullable', 'date'],
+            'filas.*.pedido_id' => ['nullable', 'integer'],
+            'filas.*.origen' => ['nullable', 'string', 'max:20'],
         ]);
 
         if ($validator->fails()) {
@@ -506,6 +508,8 @@ class OtrosProductosController extends Controller
 
                 DB::table('otros_productos_ventas_diarias')->insert([
                     'usuario_id' => $usuario->usuario_id,
+                    'pedido_id' => isset($fila['pedido_id']) ? (int) $fila['pedido_id'] : null,
+                    'origen' => isset($fila['origen']) ? trim((string) $fila['origen']) : null,
                     'producto_id' => (int) $fila['producto_id'],
                     'compra_lote_detalle_id' => null,
                     'cantidad' => (float) $fila['cantidad'],
