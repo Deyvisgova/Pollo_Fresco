@@ -461,6 +461,41 @@ export class PrivadoPedidos implements OnInit {
     this.seleccionarPedido(pedido);
   }
 
+  prepararPagoParcial(pedido: PedidoDelivery): void {
+    this.seleccionarPedido(pedido);
+    this.estadoPago = 'PARCIAL';
+    this.pagoParcial = this.obtenerMontoParcialSugerido(pedido);
+    this.montoRecibido = null;
+  }
+
+  marcarPagoPendiente(pedido: PedidoDelivery): void {
+    if (pedido.estado_id === 3) {
+      return;
+    }
+
+    this.mensajeError = '';
+    this.http
+      .patch(
+        `/api/pedidos-delivery/${pedido.pedido_id}/gestion`,
+        {
+          estado_id: pedido.estado_id,
+          motivo_cancelacion: null,
+          estado_pago: 'PENDIENTE',
+          monto_recibido: null,
+          pago_parcial: 0
+        },
+        { headers: this.obtenerHeaders() }
+      )
+      .subscribe({
+        next: () => {
+          this.cargarPedidos('vendedor');
+        },
+        error: (error) => {
+          this.mensajeError = this.extraerError(error, 'No se pudo actualizar el pago a pendiente.');
+        }
+      });
+  }
+
   marcarVueltoPagado(pedido: PedidoDelivery): void {
     const ultimoPago = this.obtenerUltimoPago(pedido);
     if (!ultimoPago || Number(ultimoPago.vuelto ?? 0) <= 0) {
@@ -671,8 +706,8 @@ export class PrivadoPedidos implements OnInit {
     return !!ultimoPago && Number(ultimoPago.vuelto ?? 0) > 0 && !this.estaVueltoPagado(pedido);
   }
 
-  mostrarAccionVerDetalle(pedido: PedidoDelivery): boolean {
-    return pedido.estado_id !== 3 && this.obtenerEtiquetaEstadoPago(pedido) === 'PARCIAL';
+  mostrarAccionVerDetalle(_pedido: PedidoDelivery): boolean {
+    return true;
   }
 
   estaVueltoPagado(pedido: PedidoDelivery): boolean {
@@ -732,6 +767,16 @@ export class PrivadoPedidos implements OnInit {
 
     const parcial = Number(this.pagoParcial ?? 0);
     return Math.max(0, Number((this.pedidoSeleccionado.total - parcial).toFixed(2)));
+  }
+
+  private obtenerMontoParcialSugerido(pedido: PedidoDelivery): number {
+    const ultimoPago = this.obtenerUltimoPago(pedido);
+    const montoAnterior = Number(ultimoPago?.pago_parcial ?? 0);
+    if (montoAnterior > 0) {
+      return montoAnterior;
+    }
+
+    return Number((Number(pedido.total ?? 0) / 2).toFixed(2));
   }
 
   private cargarProductos(search = ''): void {

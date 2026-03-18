@@ -105,26 +105,39 @@
 
   <div class="contenido-pedidos" *ngIf="subpaginaActiva === 'registros'">
     <article class="tarjeta tabla-pedidos">
-      <div class="tarjeta__titulo">
-        <h4>Pedidos registrados</h4>
-        <input type="text" [(ngModel)]="filtro" (ngModelChange)="aplicarFiltro()" placeholder="Buscar pedido..." />
+      <div class="tarjeta__titulo tarjeta__titulo--registros">
+        <div>
+          <h4>Pedidos registrados</h4>
+          <p class="tarjeta__subtitulo">Consulta, filtra y revisa cada pedido registrado.</p>
+        </div>
       </div>
 
       <div class="filtros-registros">
-        <select [(ngModel)]="filtroEstadoRegistros" (ngModelChange)="aplicarFiltro()">
-          <option value="">Todos los estados</option>
-          <option value="PENDIENTE">Pendiente</option>
-          <option value="ENTREGADO">Entregado</option>
-          <option value="CANCELADO">Cancelado</option>
-        </select>
+        <label class="filtro-campo filtro-campo--buscar">
+          <span>Cliente</span>
+          <input type="text" [(ngModel)]="filtro" (ngModelChange)="aplicarFiltro()" placeholder="Buscar por pedido, cliente o DNI..." />
+        </label>
 
-        <select [(ngModel)]="filtroEstadoPagoRegistros" (ngModelChange)="aplicarFiltro()">
-          <option value="">Todos los pagos</option>
-          <option value="PENDIENTE">Pendiente</option>
-          <option value="PARCIAL">Parcial</option>
-          <option value="COMPLETO">Completo</option>
-          <option value="SIN REGISTRO">Sin registro</option>
-        </select>
+        <label class="filtro-campo">
+          <span>Estado</span>
+          <select [(ngModel)]="filtroEstadoRegistros" (ngModelChange)="aplicarFiltro()">
+            <option value="">Todos los estados</option>
+            <option value="PENDIENTE">Pendiente</option>
+            <option value="ENTREGADO">Entregado</option>
+            <option value="CANCELADO">Cancelado</option>
+          </select>
+        </label>
+
+        <label class="filtro-campo">
+          <span>Estado de pago</span>
+          <select [(ngModel)]="filtroEstadoPagoRegistros" (ngModelChange)="aplicarFiltro()">
+            <option value="">Todos los pagos</option>
+            <option value="PENDIENTE">Pendiente</option>
+            <option value="PARCIAL">Parcial</option>
+            <option value="COMPLETO">Completo</option>
+            <option value="SIN REGISTRO">Sin registro</option>
+          </select>
+        </label>
       </div>
 
       <table class="tabla">
@@ -147,20 +160,17 @@
             <td>S/ {{ pedido.total | number: '1.2-2' }}</td>
             <td>{{ obtenerEtiquetaEstado(pedido.estado_id) }}</td>
             <td>
-              <span class="badge badge--wrap badge--tabla" [ngClass]="obtenerClaseBadgePago(pedido)">{{ obtenerEstadoPagoTabla(pedido) }}</span>
+              <div class="estado-pago-columna">
+                <span class="badge badge--wrap badge--tabla" [ngClass]="obtenerClaseBadgePago(pedido)">{{ obtenerEstadoPagoTabla(pedido) }}</span>
+                <div class="estado-pago-acciones" *ngIf="pedido.estado_id !== 3">
+                  <button type="button" class="boton-chip" (click)="marcarPagoPendiente(pedido)">Pago pendiente</button>
+                  <button type="button" class="boton-chip boton-chip--info" (click)="prepararPagoParcial(pedido)">Pago parcial</button>
+                </div>
+              </div>
             </td>
             <td>
               <div class="tabla-acciones">
                 <button
-                  *ngIf="mostrarAccionPagarVuelto(pedido)"
-                  type="button"
-                  class="boton boton--secundario boton-tabla"
-                  (click)="marcarVueltoPagado(pedido)">
-                  Pagar vuelto
-                </button>
-
-                <button
-                  *ngIf="mostrarAccionVerDetalle(pedido)"
                   type="button"
                   class="boton-icono boton-icono--ojo"
                   title="Ver detalle"
@@ -168,8 +178,6 @@
                   (click)="abrirDetallePedido(pedido)">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5c-7 0-11 7-11 7s4 7 11 7 11-7 11-7-4-7-11-7Zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm0-2.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/></svg>
                 </button>
-
-                <span *ngIf="!mostrarAccionPagarVuelto(pedido) && !mostrarAccionVerDetalle(pedido)" class="tabla-acciones__vacio">—</span>
               </div>
             </td>
           </tr>
@@ -230,7 +238,7 @@
 <div class="modal-fondo" *ngIf="pedidoSeleccionado" (click)="cerrarModalGestion()">
   <article class="modal-contenido modal-contenido--gestion" (click)="$event.stopPropagation()">
     <header class="tarjeta__encabezado tarjeta__encabezado--acciones">
-      <h4>Gestión de entrega · Pedido #{{ pedidoSeleccionado.pedido_id }}</h4>
+      <h4>Detalle del pedido · Pedido #{{ pedidoSeleccionado.pedido_id }}</h4>
       <button type="button" class="boton boton--secundario" (click)="cerrarModalGestion()">Cerrar</button>
     </header>
 
@@ -303,7 +311,7 @@
           </div>
           <div class="detalle-pedido__total">
             <span>Total</span>
-            <strong>S/ {{ pedidoSeleccionado?.total | number: '1.2-2' }}</strong>
+            <strong>S/ {{ pedidoSeleccionado.total | number: '1.2-2' }}</strong>
           </div>
         </div>
         <ng-template #sinDetallePedido>
