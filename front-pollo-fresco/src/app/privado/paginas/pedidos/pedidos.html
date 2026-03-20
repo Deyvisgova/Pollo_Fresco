@@ -183,7 +183,16 @@
             <td>S/ {{ pedido.total | number: '1.2-2' }}</td>
             <td>{{ obtenerEtiquetaEstado(pedido.estado_id) }}</td>
             <td>
-              <span class="badge badge--wrap badge--tabla" [ngClass]="obtenerClaseBadgePago(pedido)">{{ obtenerEstadoPagoTabla(pedido) }}</span>
+              <div class="estado-pago-tabla">
+                <span class="badge badge--wrap badge--tabla" [ngClass]="obtenerClaseBadgePago(pedido)">{{ obtenerEstadoPagoTabla(pedido) }}</span>
+                <button
+                  *ngIf="mostrarAccionPagarTodo(pedido)"
+                  type="button"
+                  class="boton boton-tabla boton-tabla--estado-pago"
+                  (click)="pagarTodoPedido(pedido)">
+                  Pagar todo
+                </button>
+              </div>
             </td>
             <td>
               <div class="tabla-acciones tabla-acciones--centradas">
