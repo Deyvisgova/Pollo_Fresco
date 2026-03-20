@@ -110,24 +110,60 @@
         <input type="text" [(ngModel)]="filtro" (ngModelChange)="aplicarFiltro()" placeholder="Buscar pedido..." />
       </div>
 
-      <div class="filtros-registros">
-        <select [(ngModel)]="filtroEstadoRegistros" (ngModelChange)="aplicarFiltro()">
-          <option value="">Todos los estados</option>
-          <option value="PENDIENTE">Pendiente</option>
-          <option value="ENTREGADO">Entregado</option>
-          <option value="CANCELADO">Cancelado</option>
-        </select>
+      <div class="filtros-registros filtros-registros--panel">
+        <div class="filtros-registros__encabezado">
+          <div>
+            <strong>Filtros avanzados</strong>
+            <p>Encuentra pedidos por cliente, fechas y estados.</p>
+          </div>
 
-        <select [(ngModel)]="filtroEstadoPagoRegistros" (ngModelChange)="aplicarFiltro()">
-          <option value="">Todos los pagos</option>
-          <option value="PENDIENTE">Pendiente</option>
-          <option value="PARCIAL">Parcial</option>
-          <option value="COMPLETO">Completo</option>
-          <option value="SIN REGISTRO">Sin registro</option>
-        </select>
+          <button type="button" class="boton boton--secundario filtros-registros__limpiar" (click)="limpiarFiltrosRegistros()">
+            Limpiar filtros
+          </button>
+        </div>
+
+        <div class="filtros-registros__grid">
+          <label class="filtros-registros__campo">
+            <span>Cliente</span>
+            <input class="filtros-registros__control" type="text" [(ngModel)]="filtroClienteRegistros" (ngModelChange)="aplicarFiltro()" placeholder="Nombre o DNI del cliente" />
+          </label>
+
+          <label class="filtros-registros__campo">
+            <span>Fecha desde</span>
+            <input class="filtros-registros__control" type="date" [(ngModel)]="filtroFechaDesdeRegistros" (ngModelChange)="aplicarFiltro()" />
+          </label>
+
+          <label class="filtros-registros__campo">
+            <span>Fecha hasta</span>
+            <input class="filtros-registros__control" type="date" [(ngModel)]="filtroFechaHastaRegistros" (ngModelChange)="aplicarFiltro()" />
+          </label>
+
+          <label class="filtros-registros__campo">
+            <span>Estado del pedido</span>
+            <select class="filtros-registros__control" [(ngModel)]="filtroEstadoRegistros" (ngModelChange)="aplicarFiltro()">
+              <option value="">Todos los estados</option>
+              <option value="PENDIENTE">Pendiente</option>
+              <option value="ENTREGADO">Entregado</option>
+              <option value="CANCELADO">Cancelado</option>
+            </select>
+          </label>
+
+          <label class="filtros-registros__campo">
+            <span>Estado de pago</span>
+            <select class="filtros-registros__control" [(ngModel)]="filtroEstadoPagoRegistros" (ngModelChange)="aplicarFiltro()">
+              <option value="">Todos los pagos</option>
+              <option value="PENDIENTE">Pendiente</option>
+              <option value="PARCIAL">Parcial</option>
+              <option value="COMPLETO">Completo</option>
+              <option value="SIN REGISTRO">Sin registro</option>
+              <option value="NULO">Nulo</option>
+            </select>
+          </label>
+        </div>
       </div>
 
-      <table class="tabla">
+      <div class="tabla-pedidos__contenedor">
+        <table class="tabla tabla--registros">
         <thead>
           <tr>
             <th>N°</th>
@@ -160,6 +196,15 @@
                 </button>
 
                 <button
+                  *ngIf="mostrarAccionPagarTodo(pedido)"
+                  type="button"
+                  class="boton boton--primario boton-tabla"
+                  [disabled]="guardandoGestion"
+                  (click)="pagarTodoPedido(pedido)">
+                  Pagar todo
+                </button>
+
+                <button
                   *ngIf="mostrarAccionVerDetalle(pedido)"
                   type="button"
                   class="boton-icono boton-icono--ojo"
@@ -169,7 +214,7 @@
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5c-7 0-11 7-11 7s4 7 11 7 11-7 11-7-4-7-11-7Zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm0-2.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/></svg>
                 </button>
 
-                <span *ngIf="!mostrarAccionPagarVuelto(pedido) && !mostrarAccionVerDetalle(pedido)" class="tabla-acciones__vacio">—</span>
+                <span *ngIf="!mostrarAccionPagarVuelto(pedido) && !mostrarAccionPagarTodo(pedido) && !mostrarAccionVerDetalle(pedido)" class="tabla-acciones__vacio">—</span>
               </div>
             </td>
           </tr>
@@ -178,6 +223,7 @@
           </tr>
         </tbody>
       </table>
+      </div>
     </article>
   </div>
 
@@ -303,7 +349,7 @@
           </div>
           <div class="detalle-pedido__total">
             <span>Total</span>
-            <strong>S/ {{ pedidoSeleccionado?.total | number: '1.2-2' }}</strong>
+            <strong>S/ {{ pedidoSeleccionado.total | number: '1.2-2' }}</strong>
           </div>
         </div>
         <ng-template #sinDetallePedido>
