@@ -220,13 +220,13 @@
   <div class="contenido-delivery" *ngIf="subpaginaActiva === 'delivery'">
     <article class="tarjeta tarjetas-delivery">
       <div class="tarjeta__titulo">
-        <h4>Pedidos asignados</h4>
-        <input type="text" [(ngModel)]="filtro" (ngModelChange)="aplicarFiltro()" placeholder="Buscar pedido..." />
+        <h4>Pedidos asignados de hoy</h4>
+        <input type="text" [(ngModel)]="filtro" (ngModelChange)="aplicarFiltro()" placeholder="Buscar pedido del día..." />
       </div>
 
       <div class="delivery-grid">
         <div class="delivery-card" *ngFor="let pedido of pedidosFiltrados" (click)="seleccionarPedido(pedido)">
-          <h5>Pedido {{ pedido.pedido_id }}</h5>
+          <h5>Pedido {{ obtenerNumeroVisualPedido(pedido) }}</h5>
           <div class="delivery-card__fila"><span>Cliente</span><strong>{{ pedido.cliente.nombres }} {{ pedido.cliente.apellidos || '' }}</strong></div>
           <div class="delivery-card__fila">
             <span>Estado</span>
@@ -258,6 +258,10 @@
           </div>
         </div>
       </div>
+
+      <p class="tabla__sin-resultados" *ngIf="!cargando && pedidosFiltrados.length === 0">
+        No hay pedidos visibles para hoy en la vista delivery.
+      </p>
     </article>
   </div>
 </section>
