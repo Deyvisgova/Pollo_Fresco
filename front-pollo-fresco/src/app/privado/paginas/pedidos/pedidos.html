@@ -186,35 +186,16 @@
               <span class="badge badge--wrap badge--tabla" [ngClass]="obtenerClaseBadgePago(pedido)">{{ obtenerEstadoPagoTabla(pedido) }}</span>
             </td>
             <td>
-              <div class="tabla-acciones">
-                <button
-                  *ngIf="mostrarAccionPagarVuelto(pedido)"
-                  type="button"
-                  class="boton boton--secundario boton-tabla"
-                  (click)="marcarVueltoPagado(pedido)">
-                  Pagar vuelto
-                </button>
-
-                <button
-                  *ngIf="mostrarAccionPagarTodo(pedido)"
-                  type="button"
-                  class="boton boton--primario boton-tabla"
-                  [disabled]="guardandoGestion"
-                  (click)="pagarTodoPedido(pedido)">
-                  Pagar todo
-                </button>
-
+              <div class="tabla-acciones tabla-acciones--centradas">
                 <button
                   *ngIf="mostrarAccionVerDetalle(pedido)"
                   type="button"
                   class="boton-icono boton-icono--ojo"
-                  title="Ver detalle"
-                  aria-label="Ver detalle"
+                  title="Ver detalle del pedido"
+                  aria-label="Ver detalle del pedido"
                   (click)="abrirDetallePedido(pedido)">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5c-7 0-11 7-11 7s4 7 11 7 11-7 11-7-4-7-11-7Zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm0-2.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/></svg>
                 </button>
-
-                <span *ngIf="!mostrarAccionPagarVuelto(pedido) && !mostrarAccionPagarTodo(pedido) && !mostrarAccionVerDetalle(pedido)" class="tabla-acciones__vacio">—</span>
               </div>
             </td>
           </tr>
@@ -271,6 +252,35 @@
     </article>
   </div>
 </section>
+
+<div class="modal-fondo" *ngIf="pedidoDetalleModal" (click)="cerrarModalDetallePedido()">
+  <article class="modal-contenido modal-contenido--detalle-pedido" (click)="$event.stopPropagation()">
+    <header class="tarjeta__encabezado tarjeta__encabezado--acciones">
+      <div>
+        <h4>Detalle del pedido #{{ pedidoDetalleModal.pedido_id }}</h4>
+        <p>Solo se muestra el detalle de productos registrados para este pedido.</p>
+      </div>
+      <button type="button" class="boton boton--secundario" (click)="cerrarModalDetallePedido()">Cerrar</button>
+    </header>
+
+    <section class="bloque bloque--sin-borde">
+      <div class="detalle-pedido detalle-pedido--modal" *ngIf="pedidoDetalleModal.detalles?.length; else sinDetallePedidoModal">
+        <div class="detalle-pedido__fila" *ngFor="let detalle of pedidoDetalleModal.detalles">
+          <span>{{ detalle.cantidad }} {{ detalle.unidad }}</span>
+          <strong>{{ detalle.descripcion }}</strong>
+          <span>S/ {{ detalle.subtotal | number: '1.2-2' }}</span>
+        </div>
+        <div class="detalle-pedido__total">
+          <span>Total</span>
+          <strong>S/ {{ pedidoDetalleModal.total | number: '1.2-2' }}</strong>
+        </div>
+      </div>
+      <ng-template #sinDetallePedidoModal>
+        <p class="detalle-pedido__vacio">Sin detalle registrado.</p>
+      </ng-template>
+    </section>
+  </article>
+</div>
 
 
 <div class="modal-fondo" *ngIf="pedidoSeleccionado" (click)="cerrarModalGestion()">
