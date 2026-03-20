@@ -176,8 +176,8 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let pedido of pedidosFiltrados; let i = index">
-            <td>{{ i + 1 }}</td>
+          <tr *ngFor="let pedido of pedidosFiltrados">
+            <td>{{ obtenerNumeroVisualPedido(pedido) }}</td>
             <td>{{ pedido.cliente.nombres }} {{ pedido.cliente.apellidos || '' }}</td>
             <td>{{ obtenerFechaHoraCorta(pedido.fecha_hora_creacion) }}</td>
             <td>S/ {{ pedido.total | number: '1.2-2' }}</td>
@@ -220,13 +220,13 @@
   <div class="contenido-delivery" *ngIf="subpaginaActiva === 'delivery'">
     <article class="tarjeta tarjetas-delivery">
       <div class="tarjeta__titulo">
-        <h4>Pedidos asignados</h4>
-        <input type="text" [(ngModel)]="filtro" (ngModelChange)="aplicarFiltro()" placeholder="Buscar pedido..." />
+        <h4>Pedidos asignados de hoy</h4>
+        <input type="text" [(ngModel)]="filtro" (ngModelChange)="aplicarFiltro()" placeholder="Buscar pedido del día..." />
       </div>
 
       <div class="delivery-grid">
         <div class="delivery-card" *ngFor="let pedido of pedidosFiltrados" (click)="seleccionarPedido(pedido)">
-          <h5>Pedido {{ pedido.pedido_id }}</h5>
+          <h5>Pedido {{ obtenerNumeroVisualPedido(pedido) }}</h5>
           <div class="delivery-card__fila"><span>Cliente</span><strong>{{ pedido.cliente.nombres }} {{ pedido.cliente.apellidos || '' }}</strong></div>
           <div class="delivery-card__fila">
             <span>Estado</span>
@@ -258,6 +258,10 @@
           </div>
         </div>
       </div>
+
+      <p class="tabla__sin-resultados" *ngIf="!cargando && pedidosFiltrados.length === 0">
+        No hay pedidos visibles para hoy en la vista delivery.
+      </p>
     </article>
   </div>
 </section>
@@ -266,7 +270,7 @@
   <article class="modal-contenido modal-contenido--detalle-pedido" (click)="$event.stopPropagation()">
     <header class="tarjeta__encabezado tarjeta__encabezado--acciones">
       <div>
-        <h4>Detalle del pedido #{{ pedidoDetalleModal.pedido_id }}</h4>
+        <h4>Detalle del pedido #{{ obtenerNumeroVisualPedido(pedidoDetalleModal) }}</h4>
         <p>Solo se muestra el detalle de productos registrados para este pedido.</p>
       </div>
       <button type="button" class="boton boton--secundario" (click)="cerrarModalDetallePedido()">Cerrar</button>
@@ -295,7 +299,7 @@
 <div class="modal-fondo" *ngIf="pedidoSeleccionado" (click)="cerrarModalGestion()">
   <article class="modal-contenido modal-contenido--gestion" (click)="$event.stopPropagation()">
     <header class="tarjeta__encabezado tarjeta__encabezado--acciones">
-      <h4>Gestión de entrega · Pedido #{{ pedidoSeleccionado.pedido_id }}</h4>
+      <h4>Gestión de entrega · Pedido #{{ obtenerNumeroVisualPedido(pedidoSeleccionado) }}</h4>
       <button type="button" class="boton boton--secundario" (click)="cerrarModalGestion()">Cerrar</button>
     </header>
 

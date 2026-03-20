@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule, HttpHeaders, HttpParams } from '@angular/common/http';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { SesionServicio } from '../../../servicios/sesion.servicio';
 
@@ -85,7 +85,7 @@ interface LoteApi {
   templateUrl: './pedidos.html',
   styleUrl: './pedidos.css'
 })
-export class PrivadoPedidos implements OnInit {
+export class PrivadoPedidos implements OnInit, OnDestroy {
   private token = 'f3ba6fa1f3a2b2d1a6390dc06d831ebad2f218a9d3ba43e7f1f42b425dd03e26';
 
   subpaginaActiva: 'registrar' | 'registros' | 'delivery' = 'registrar';
@@ -138,6 +138,7 @@ export class PrivadoPedidos implements OnInit {
   filtroEstadoPagoRegistros = '';
   private readonly claveVueltosPagados = 'pedidos_delivery_vueltos_pagados';
   private vueltosPagados = new Set<number>();
+  private reinicioVistaDeliveryTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
     private readonly http: HttpClient,
@@ -147,9 +148,17 @@ export class PrivadoPedidos implements OnInit {
   ngOnInit(): void {
     this.cargarVueltosPagados();
     this.fechaHoraCreacion = this.fechaActualIsoLocal();
+    this.programarReinicioVistaDelivery();
     this.cargarPedidos('vendedor');
     this.cargarProductos();
     this.cargarStockDisponible();
+  }
+
+  ngOnDestroy(): void {
+    if (this.reinicioVistaDeliveryTimer !== null) {
+      clearTimeout(this.reinicioVistaDeliveryTimer);
+      this.reinicioVistaDeliveryTimer = null;
+    }
   }
 
   cambiarSubpagina(subpagina: 'registrar' | 'registros' | 'delivery'): void {
@@ -204,15 +213,21 @@ export class PrivadoPedidos implements OnInit {
       const dniCliente = (pedido.cliente?.dni ?? '').toLowerCase();
       // Fecha real registrada al crear el pedido, usada para los filtros de rango.
       const fechaPedido = pedido.fecha_hora_creacion ? new Date(pedido.fecha_hora_creacion) : null;
-      const coincideTexto = !termino || `${pedido.pedido_id}`.includes(termino) || nombreCliente.includes(termino) || dniCliente.includes(termino);
+      const numeroVisual = `${this.obtenerNumeroVisualPedido(pedido)}`;
+      const coincideTexto = !termino
+        || `${pedido.pedido_id}`.includes(termino)
+        || numeroVisual.includes(termino)
+        || nombreCliente.includes(termino)
+        || dniCliente.includes(termino);
       const usarFiltrosRegistros = this.subpaginaActiva === 'registros';
+      const coincideFechaDelivery = this.subpaginaActiva !== 'delivery' || this.esPedidoDelDiaActual(pedido);
       const coincideCliente = !usarFiltrosRegistros || !clienteFiltro || nombreCliente.includes(clienteFiltro) || dniCliente.includes(clienteFiltro);
       const coincideEstado = !usarFiltrosRegistros || !this.filtroEstadoRegistros || this.obtenerEtiquetaEstado(pedido.estado_id) === this.filtroEstadoRegistros;
       const coincideEstadoPago = !usarFiltrosRegistros || !this.filtroEstadoPagoRegistros || this.obtenerEtiquetaEstadoPago(pedido) === this.filtroEstadoPagoRegistros;
       const coincideFechaDesde = !usarFiltrosRegistros || !fechaDesde || !fechaPedido || fechaPedido >= fechaDesde;
       const coincideFechaHasta = !usarFiltrosRegistros || !fechaHasta || !fechaPedido || fechaPedido <= fechaHasta;
 
-      return coincideTexto && coincideCliente && coincideEstado && coincideEstadoPago && coincideFechaDesde && coincideFechaHasta;
+      return coincideTexto && coincideFechaDelivery && coincideCliente && coincideEstado && coincideEstadoPago && coincideFechaDesde && coincideFechaHasta;
     });
   }
 
@@ -601,7 +616,7 @@ export class PrivadoPedidos implements OnInit {
     if (!numero) {
       return;
     }
-    window.open(`https://wa.me/51${numero}?text=${encodeURIComponent(`Hola, tu pedido #${pedido.pedido_id} está en ruta.`)}`, '_blank');
+    window.open(`https://wa.me/51${numero}?text=${encodeURIComponent(`Hola, tu pedido #${this.obtenerNumeroVisualPedido(pedido)} está en ruta.`)}`, '_blank');
   }
 
   llamarCliente(pedido: PedidoDelivery): void {
@@ -723,6 +738,19 @@ export class PrivadoPedidos implements OnInit {
       minute: '2-digit',
       hour12: false
     }).format(date);
+  }
+
+  obtenerNumeroVisualPedido(pedido: PedidoDelivery | null): number | string {
+    if (!pedido) {
+      return '—';
+    }
+
+    const pedidosDelDia = this.pedidos
+      .filter((item) => this.esPedidoDelMismoDia(item, pedido))
+      .sort((a, b) => a.pedido_id - b.pedido_id);
+
+    const indice = pedidosDelDia.findIndex((item) => item.pedido_id === pedido.pedido_id);
+    return indice >= 0 ? indice + 1 : pedido.pedido_id;
   }
 
   obtenerEstadoPagoTabla(pedido: PedidoDelivery): string {
@@ -1002,6 +1030,58 @@ export class PrivadoPedidos implements OnInit {
     const ahora = new Date();
     const offset = ahora.getTimezoneOffset() * 60000;
     return new Date(ahora.getTime() - offset).toISOString().slice(0, 16);
+  }
+
+  private programarReinicioVistaDelivery(): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    if (this.reinicioVistaDeliveryTimer !== null) {
+      clearTimeout(this.reinicioVistaDeliveryTimer);
+    }
+
+    const ahora = new Date();
+    const siguienteMedianoche = new Date(ahora);
+    siguienteMedianoche.setHours(24, 0, 0, 0);
+    const milisegundosRestantes = Math.max(1000, siguienteMedianoche.getTime() - ahora.getTime());
+
+    this.reinicioVistaDeliveryTimer = window.setTimeout(() => {
+      this.aplicarFiltro();
+      this.programarReinicioVistaDelivery();
+    }, milisegundosRestantes);
+  }
+
+  private esPedidoDelDiaActual(pedido: PedidoDelivery): boolean {
+    if (!pedido.fecha_hora_creacion) {
+      return false;
+    }
+
+    const fechaPedido = new Date(pedido.fecha_hora_creacion);
+    const hoy = new Date();
+
+    if (Number.isNaN(fechaPedido.getTime())) {
+      return false;
+    }
+
+    return this.esMismaFechaLocal(fechaPedido, hoy);
+  }
+
+  private esPedidoDelMismoDia(origen: PedidoDelivery, comparado: PedidoDelivery): boolean {
+    const fechaOrigen = new Date(origen.fecha_hora_creacion);
+    const fechaComparada = new Date(comparado.fecha_hora_creacion);
+
+    if (Number.isNaN(fechaOrigen.getTime()) || Number.isNaN(fechaComparada.getTime())) {
+      return false;
+    }
+
+    return this.esMismaFechaLocal(fechaOrigen, fechaComparada);
+  }
+
+  private esMismaFechaLocal(fechaA: Date, fechaB: Date): boolean {
+    return fechaA.getFullYear() === fechaB.getFullYear()
+      && fechaA.getMonth() === fechaB.getMonth()
+      && fechaA.getDate() === fechaB.getDate();
   }
 
   private extraerError(error: unknown, fallback: string): string {
