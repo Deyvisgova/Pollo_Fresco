@@ -94,6 +94,7 @@ export class PrivadoPedidos implements OnInit {
   pedidos: PedidoDelivery[] = [];
   pedidosFiltrados: PedidoDelivery[] = [];
   pedidoSeleccionado: PedidoDelivery | null = null;
+  pedidoDetalleSeleccionado: PedidoDelivery | null = null;
 
   terminoCliente = '';
   clientesSugeridos: PedidoCliente[] = [];
@@ -130,6 +131,9 @@ export class PrivadoPedidos implements OnInit {
   guardandoUbicacion = false;
   mensajeError = '';
   filtro = '';
+  filtroClienteRegistros = '';
+  filtroFechaDesdeRegistros = '';
+  filtroFechaHastaRegistros = '';
   filtroEstadoRegistros = '';
   filtroEstadoPagoRegistros = '';
   private readonly claveVueltosPagados = 'pedidos_delivery_vueltos_pagados';
@@ -188,16 +192,37 @@ export class PrivadoPedidos implements OnInit {
 
   aplicarFiltro(): void {
     const termino = this.filtro.trim().toLowerCase();
+    const clienteFiltro = this.filtroClienteRegistros.trim().toLowerCase();
+    const fechaDesde = this.filtroFechaDesdeRegistros ? new Date(`${this.filtroFechaDesdeRegistros}T00:00:00`) : null;
+    const fechaHasta = this.filtroFechaHastaRegistros ? new Date(`${this.filtroFechaHastaRegistros}T23:59:59`) : null;
+
     this.pedidosFiltrados = this.pedidos.filter((pedido) => {
-      const nombre = `${pedido.cliente?.nombres ?? ''} ${pedido.cliente?.apellidos ?? ''}`.toLowerCase();
-      const dni = (pedido.cliente?.dni ?? '').toLowerCase();
-      const coincideTexto = !termino || `${pedido.pedido_id}`.includes(termino) || nombre.includes(termino) || dni.includes(termino);
+      // Fuente principal del nombre mostrado en la tabla y tarjetas del pedido.
+      const nombreCliente = `${pedido.cliente?.nombres ?? ''} ${pedido.cliente?.apellidos ?? ''}`.trim().toLowerCase();
+      // Fuente secundaria para búsquedas rápidas por documento.
+      const dniCliente = (pedido.cliente?.dni ?? '').toLowerCase();
+      // Fecha real registrada al crear el pedido, usada para los filtros de rango.
+      const fechaPedido = pedido.fecha_hora_creacion ? new Date(pedido.fecha_hora_creacion) : null;
+      const coincideTexto = !termino || `${pedido.pedido_id}`.includes(termino) || nombreCliente.includes(termino) || dniCliente.includes(termino);
       const usarFiltrosRegistros = this.subpaginaActiva === 'registros';
+      const coincideCliente = !usarFiltrosRegistros || !clienteFiltro || nombreCliente.includes(clienteFiltro) || dniCliente.includes(clienteFiltro);
       const coincideEstado = !usarFiltrosRegistros || !this.filtroEstadoRegistros || this.obtenerEtiquetaEstado(pedido.estado_id) === this.filtroEstadoRegistros;
       const coincideEstadoPago = !usarFiltrosRegistros || !this.filtroEstadoPagoRegistros || this.obtenerEtiquetaEstadoPago(pedido) === this.filtroEstadoPagoRegistros;
+      const coincideFechaDesde = !usarFiltrosRegistros || !fechaDesde || !fechaPedido || fechaPedido >= fechaDesde;
+      const coincideFechaHasta = !usarFiltrosRegistros || !fechaHasta || !fechaPedido || fechaPedido <= fechaHasta;
 
-      return coincideTexto && coincideEstado && coincideEstadoPago;
+      return coincideTexto && coincideCliente && coincideEstado && coincideEstadoPago && coincideFechaDesde && coincideFechaHasta;
     });
+  }
+
+  limpiarFiltrosRegistros(): void {
+    this.filtro = '';
+    this.filtroClienteRegistros = '';
+    this.filtroFechaDesdeRegistros = '';
+    this.filtroFechaHastaRegistros = '';
+    this.filtroEstadoRegistros = '';
+    this.filtroEstadoPagoRegistros = '';
+    this.aplicarFiltro();
   }
 
   buscarClientes(): void {
@@ -457,8 +482,12 @@ export class PrivadoPedidos implements OnInit {
     this.pedidoSeleccionado = null;
   }
 
-  abrirDetallePedido(pedido: PedidoDelivery): void {
-    this.seleccionarPedido(pedido);
+  abrirModalDetallePedido(pedido: PedidoDelivery): void {
+    this.pedidoDetalleSeleccionado = pedido;
+  }
+
+  cerrarModalDetallePedido(): void {
+    this.pedidoDetalleSeleccionado = null;
   }
 
   marcarVueltoPagado(pedido: PedidoDelivery): void {
@@ -469,6 +498,39 @@ export class PrivadoPedidos implements OnInit {
 
     this.vueltosPagados.add(ultimoPago.pedido_pago_id);
     this.guardarVueltosPagados();
+  }
+
+  pagarTodoPedido(pedido: PedidoDelivery): void {
+    if (!this.mostrarAccionPagarTodo(pedido)) {
+      return;
+    }
+
+    this.guardandoGestion = true;
+    this.mensajeError = '';
+
+    this.http
+      .patch(
+        `/api/pedidos-delivery/${pedido.pedido_id}/gestion`,
+        {
+          estado_id: pedido.estado_id === 3 ? 3 : 2,
+          motivo_cancelacion: pedido.estado_id === 3 ? pedido.motivo_cancelacion : null,
+          estado_pago: 'COMPLETO',
+          // Se usa el total del pedido para cerrar el saldo pendiente desde la tabla de registros.
+          monto_recibido: Number(pedido.total),
+          pago_parcial: Number(pedido.total)
+        },
+        { headers: this.obtenerHeaders() }
+      )
+      .subscribe({
+        next: () => {
+          this.guardandoGestion = false;
+          this.cargarPedidos(this.subpaginaActiva === 'delivery' ? 'delivery' : 'vendedor');
+        },
+        error: (error) => {
+          this.guardandoGestion = false;
+          this.mensajeError = this.extraerError(error, 'No se pudo completar el pago del pedido.');
+        }
+      });
   }
 
   guardarEstadoYPago(): void {
@@ -671,8 +733,12 @@ export class PrivadoPedidos implements OnInit {
     return !!ultimoPago && Number(ultimoPago.vuelto ?? 0) > 0 && !this.estaVueltoPagado(pedido);
   }
 
-  mostrarAccionVerDetalle(pedido: PedidoDelivery): boolean {
+  mostrarAccionPagarTodo(pedido: PedidoDelivery): boolean {
     return pedido.estado_id !== 3 && this.obtenerEtiquetaEstadoPago(pedido) === 'PARCIAL';
+  }
+
+  mostrarAccionVerDetalle(pedido: PedidoDelivery): boolean {
+    return !!pedido.detalles?.length;
   }
 
   estaVueltoPagado(pedido: PedidoDelivery): boolean {
