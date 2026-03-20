@@ -192,6 +192,13 @@
                   (click)="pagarTodoPedido(pedido)">
                   Pagar todo
                 </button>
+                <button
+                  *ngIf="mostrarAccionPagarVuelto(pedido)"
+                  type="button"
+                  class="boton boton-tabla boton-tabla--estado-pago boton-tabla--vuelto"
+                  (click)="pagarVueltoPedido(pedido)">
+                  Pagar vuelto
+                </button>
               </div>
             </td>
             <td>
