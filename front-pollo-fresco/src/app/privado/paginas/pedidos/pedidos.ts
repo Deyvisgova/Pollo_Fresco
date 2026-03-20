@@ -94,6 +94,7 @@ export class PrivadoPedidos implements OnInit {
   pedidos: PedidoDelivery[] = [];
   pedidosFiltrados: PedidoDelivery[] = [];
   pedidoSeleccionado: PedidoDelivery | null = null;
+  pedidoDetalleModal: PedidoDelivery | null = null;
 
   terminoCliente = '';
   clientesSugeridos: PedidoCliente[] = [];
@@ -154,6 +155,7 @@ export class PrivadoPedidos implements OnInit {
   cambiarSubpagina(subpagina: 'registrar' | 'registros' | 'delivery'): void {
     this.subpaginaActiva = subpagina;
     this.pedidoSeleccionado = null;
+    this.pedidoDetalleModal = null;
 
     if (subpagina === 'registros') {
       this.cargarPedidos('vendedor');
@@ -482,7 +484,11 @@ export class PrivadoPedidos implements OnInit {
   }
 
   abrirDetallePedido(pedido: PedidoDelivery): void {
-    this.seleccionarPedido(pedido);
+    this.pedidoDetalleModal = pedido;
+  }
+
+  cerrarModalDetallePedido(): void {
+    this.pedidoDetalleModal = null;
   }
 
   marcarVueltoPagado(pedido: PedidoDelivery): void {
@@ -732,8 +738,8 @@ export class PrivadoPedidos implements OnInit {
     return pedido.estado_id !== 3 && this.obtenerEtiquetaEstadoPago(pedido) === 'PARCIAL';
   }
 
-  mostrarAccionVerDetalle(pedido: PedidoDelivery): boolean {
-    return pedido.estado_id !== 3 && this.obtenerEtiquetaEstadoPago(pedido) === 'PARCIAL';
+  mostrarAccionVerDetalle(_pedido: PedidoDelivery): boolean {
+    return true;
   }
 
   estaVueltoPagado(pedido: PedidoDelivery): boolean {
