@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 
 class OtrosProductosController extends Controller
@@ -358,24 +359,50 @@ class OtrosProductosController extends Controller
         }
 
         $fecha = $request->query('fecha');
-        $filas = DB::table('otros_productos_ventas_diarias as opvd')
+        $tienePedidoId = Schema::hasColumn('otros_productos_ventas_diarias', 'pedido_id');
+        $tieneOrigen = Schema::hasColumn('otros_productos_ventas_diarias', 'origen');
+
+        $columnasBase = [
+            'opvd.venta_op_diaria_id',
+            'opvd.producto_id',
+            'opvd.compra_lote_detalle_id',
+            'opvd.cantidad',
+            'opvd.precio',
+            'opvd.total',
+            'opvd.total_huevos',
+            'opvd.total_congelados',
+            'opvd.fecha_hora',
+            'opvd.cerrado_en',
+            'p.nombre as producto_nombre',
+            'p.grupo_venta',
+        ];
+
+        $columnasConOrigen = [
+            ...$columnasBase,
+            $tienePedidoId ? 'opvd.pedido_id' : DB::raw('NULL as pedido_id'),
+            $tieneOrigen ? 'opvd.origen' : DB::raw('NULL as origen'),
+        ];
+
+        $filasQuery = DB::table('otros_productos_ventas_diarias as opvd')
             ->join('productos as p', 'p.producto_id', '=', 'opvd.producto_id')
-            ->select([
-                'opvd.venta_op_diaria_id',
-                'opvd.producto_id',
-                'opvd.compra_lote_detalle_id',
-                'opvd.cantidad',
-                'opvd.precio',
-                'opvd.total',
-                'opvd.total_huevos',
-                'opvd.total_congelados',
-                'opvd.fecha_hora',
-                'opvd.cerrado_en',
-                'p.nombre as producto_nombre',
-                'p.grupo_venta',
-            ])
+            ->select($columnasConOrigen)
             ->where('opvd.usuario_id', $usuario->usuario_id)
-            ->whereDate('opvd.fecha_hora', $fecha)
+            ->whereDate('opvd.fecha_hora', $fecha);
+
+        if ($tienePedidoId && $tieneOrigen) {
+            $filasQuery
+                ->leftJoin('pedidos as pd', 'pd.pedido_id', '=', 'opvd.pedido_id')
+                ->where(function ($query) {
+                    $query
+                        ->whereNull('opvd.pedido_id')
+                        ->orWhereNull('opvd.origen')
+                        ->orWhere('opvd.origen', '!=', 'PEDIDO_DELIVERY')
+                        ->orWhereNull('pd.estado_id')
+                        ->orWhere('pd.estado_id', '!=', 3);
+                });
+        }
+
+        $filas = $filasQuery
             ->orderBy('opvd.venta_op_diaria_id')
             ->get();
 
@@ -480,6 +507,8 @@ class OtrosProductosController extends Controller
 
         $fecha = $request->input('fecha');
         $filas = collect($request->input('filas', []));
+        $tienePedidoId = Schema::hasColumn('otros_productos_ventas_diarias', 'pedido_id');
+        $tieneOrigen = Schema::hasColumn('otros_productos_ventas_diarias', 'origen');
 
         $hayCierre = DB::table('otros_productos_ventas_diarias')
             ->where('usuario_id', $usuario->usuario_id)
@@ -506,10 +535,8 @@ class OtrosProductosController extends Controller
                     ? Carbon::parse($fila['fecha_hora'])->format('Y-m-d H:i:s')
                     : Carbon::parse($fecha)->format('Y-m-d H:i:s');
 
-                DB::table('otros_productos_ventas_diarias')->insert([
+                $datosFila = [
                     'usuario_id' => $usuario->usuario_id,
-                    'pedido_id' => isset($fila['pedido_id']) ? (int) $fila['pedido_id'] : null,
-                    'origen' => isset($fila['origen']) ? trim((string) $fila['origen']) : null,
                     'producto_id' => (int) $fila['producto_id'],
                     'compra_lote_detalle_id' => null,
                     'cantidad' => (float) $fila['cantidad'],
@@ -520,7 +547,17 @@ class OtrosProductosController extends Controller
                     'total_congelados' => $totales['congelados'],
                     'cerrado_en' => null,
                     'creado_en' => now(),
-                ]);
+                ];
+
+                if ($tienePedidoId) {
+                    $datosFila['pedido_id'] = isset($fila['pedido_id']) ? (int) $fila['pedido_id'] : null;
+                }
+
+                if ($tieneOrigen) {
+                    $datosFila['origen'] = isset($fila['origen']) ? trim((string) $fila['origen']) : null;
+                }
+
+                DB::table('otros_productos_ventas_diarias')->insert($datosFila);
             }
 
             DB::commit();
