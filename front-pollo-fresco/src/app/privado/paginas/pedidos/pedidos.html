@@ -156,7 +156,7 @@
               <option value="PARCIAL">Parcial</option>
               <option value="COMPLETO">Completo</option>
               <option value="SIN REGISTRO">Sin registro</option>
-              <option value="NULO">Nulo</option>
+              <option value="CANCELADO">Cancelado</option>
             </select>
           </label>
         </div>
@@ -191,6 +191,13 @@
                   class="boton boton-tabla boton-tabla--estado-pago"
                   (click)="pagarTodoPedido(pedido)">
                   Pagar todo
+                </button>
+                <button
+                  *ngIf="mostrarAccionPagarVuelto(pedido)"
+                  type="button"
+                  class="boton boton-tabla boton-tabla--estado-pago boton-tabla--vuelto"
+                  (click)="pagarVueltoPedido(pedido)">
+                  Pagar vuelto
                 </button>
               </div>
             </td>

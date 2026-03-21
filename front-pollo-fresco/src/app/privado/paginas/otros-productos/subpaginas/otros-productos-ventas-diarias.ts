@@ -29,6 +29,8 @@ interface VentaDiariaItem {
   productoId: number | null;
   productoNombre: string;
   grupoVenta: 'HUEVOS' | 'CONGELADO' | 'OTROS' | null;
+  pedidoId: number | null;
+  origen: string | null;
   filtroProducto: string;
   dropdownAbierto: boolean;
   cantidad: string;
@@ -68,6 +70,8 @@ interface EstadoVentaApi {
     precio: number;
     fecha_hora: string;
     cerrado_en: string | null;
+    pedido_id?: number | null;
+    origen?: string | null;
   }>;
   cierres: Array<{
     fecha: string;
@@ -211,6 +215,8 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
       productoId: null,
       productoNombre: '',
       grupoVenta: null,
+      pedidoId: null,
+      origen: null,
       filtroProducto: '',
       dropdownAbierto: false,
       cantidad: '',
@@ -761,6 +767,8 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
           productoId: item.producto_id,
           productoNombre: item.producto_nombre,
           grupoVenta: item.grupo_venta,
+          pedidoId: item.pedido_id ?? null,
+          origen: item.origen ?? null,
           filtroProducto: item.producto_nombre,
           dropdownAbierto: false,
           cantidad: String(item.cantidad ?? ''),
@@ -819,7 +827,9 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
         producto_id: fila.productoId,
         cantidad: this.parseNumero(fila.cantidad),
         precio: this.parseNumero(fila.precio),
-        fecha_hora: this.formatearFechaHoraApi(fila.fechaHora)
+        fecha_hora: this.formatearFechaHoraApi(fila.fechaHora),
+        pedido_id: fila.pedidoId,
+        origen: fila.origen
       }));
 
     this.guardando = true;
