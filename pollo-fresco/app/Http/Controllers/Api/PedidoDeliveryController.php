@@ -9,6 +9,7 @@ use App\Models\PedidoDetalle;
 use App\Models\PedidoPago;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 
 class PedidoDeliveryController extends Controller
@@ -117,7 +118,7 @@ class PedidoDeliveryController extends Controller
     public function gestionarEstadoPago(Request $request, Pedido $pedido)
     {
         $payload = $request->validate([
-            'estado_id' => ['required', Rule::in([2, 3])],
+            'estado_id' => ['required', Rule::in([1, 2, 3])],
             'motivo_cancelacion' => ['nullable', 'string', 'max:250', 'required_if:estado_id,3'],
             'estado_pago' => ['required', Rule::in(['COMPLETO', 'PENDIENTE', 'PARCIAL'])],
             'pago_parcial' => ['nullable', 'numeric', 'min:0'],
@@ -135,6 +136,11 @@ class PedidoDeliveryController extends Controller
         DB::transaction(function () use ($pedido, $payload, $request) {
             $pedido->estado_id = (int) $payload['estado_id'];
 
+            if ($pedido->estado_id === 1) {
+                $pedido->fecha_hora_entrega = null;
+                $pedido->motivo_cancelacion = null;
+            }
+
             if ($pedido->estado_id === 2) {
                 $pedido->fecha_hora_entrega = now();
                 $pedido->motivo_cancelacion = null;
@@ -148,12 +154,17 @@ class PedidoDeliveryController extends Controller
             $pedido->save();
 
             if ($pedido->estado_id === 3) {
-                DB::table('otros_productos_ventas_diarias')
-                    ->where('usuario_id', $pedido->vendedor_usuario_id)
-                    ->where('pedido_id', $pedido->pedido_id)
-                    ->where('origen', 'PEDIDO_DELIVERY')
-                    ->whereNull('cerrado_en')
-                    ->delete();
+                $tienePedidoId = Schema::hasColumn('otros_productos_ventas_diarias', 'pedido_id');
+                $tieneOrigen = Schema::hasColumn('otros_productos_ventas_diarias', 'origen');
+
+                if ($tienePedidoId && $tieneOrigen) {
+                    DB::table('otros_productos_ventas_diarias')
+                        ->where('usuario_id', $pedido->vendedor_usuario_id)
+                        ->where('pedido_id', $pedido->pedido_id)
+                        ->where('origen', 'PEDIDO_DELIVERY')
+                        ->whereNull('cerrado_en')
+                        ->delete();
+                }
 
                 return;
             }
