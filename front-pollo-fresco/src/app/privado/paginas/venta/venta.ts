@@ -38,6 +38,8 @@ interface EstadoVentaDiariaApi {
     precio: number;
     fecha_hora: string;
     cerrado_en: string | null;
+    pedido_id?: number | null;
+    origen?: string | null;
   }>;
 }
 
@@ -46,6 +48,8 @@ interface FilaVentaDiariaPayload {
   cantidad: number;
   precio: number;
   fecha_hora: string;
+  pedido_id?: number | null;
+  origen?: string | null;
 }
 
 interface MetodoPago {
@@ -501,7 +505,9 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
                       producto_id: fila.producto_id,
                       cantidad: Number(fila.cantidad ?? 0),
                       precio: Number(fila.precio ?? 0),
-                      fecha_hora: fila.fecha_hora
+                      fecha_hora: fila.fecha_hora,
+                      pedido_id: fila.pedido_id ?? null,
+                      origen: fila.origen ?? null
                     })),
                     ...nuevasFilas
                   ];
