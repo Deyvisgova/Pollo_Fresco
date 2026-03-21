@@ -528,10 +528,10 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       .patch(
         `/api/pedidos-delivery/${pedido.pedido_id}/gestion`,
         {
-          estado_id: pedido.estado_id === 3 ? 3 : 2,
+          estado_id: pedido.estado_id,
           motivo_cancelacion: pedido.estado_id === 3 ? pedido.motivo_cancelacion : null,
           estado_pago: 'COMPLETO',
-          // Se usa el total del pedido para cerrar el saldo pendiente desde la tabla de registros.
+          // Se usa el total del pedido para cerrar el saldo pendiente o registrar el pago total desde la tabla.
           monto_recibido: Number(pedido.total),
           pago_parcial: Number(pedido.total)
         },
@@ -547,6 +547,15 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
           this.mensajeError = this.extraerError(error, 'No se pudo completar el pago del pedido.');
         }
       });
+  }
+
+  pagarVueltoPedido(pedido: PedidoDelivery): void {
+    if (!this.mostrarAccionPagarVuelto(pedido)) {
+      return;
+    }
+
+    this.marcarVueltoPagado(pedido);
+    this.cargarPedidos(this.subpaginaActiva === 'delivery' ? 'delivery' : 'vendedor');
   }
 
   guardarEstadoYPago(): void {
@@ -666,7 +675,7 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
 
   obtenerEtiquetaEstadoPago(pedido: PedidoDelivery): string {
     if (pedido.estado_id === 3) {
-      return 'NULO';
+      return 'CANCELADO';
     }
 
     const estado = this.obtenerUltimoPago(pedido)?.estado_pago;
@@ -700,13 +709,16 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     if (estado === 'PENDIENTE') {
       return 'badge--warning';
     }
+    if (estado === 'CANCELADO') {
+      return 'badge--danger';
+    }
 
     return 'badge--neutral';
   }
 
   obtenerResumenEstadoPago(pedido: PedidoDelivery): string {
     if (pedido.estado_id === 3) {
-      return 'NULO';
+      return 'CANCELADO';
     }
 
     const estado = this.obtenerEtiquetaEstadoPago(pedido);
@@ -763,7 +775,12 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
   }
 
   mostrarAccionPagarTodo(pedido: PedidoDelivery): boolean {
-    return pedido.estado_id !== 3 && this.obtenerEtiquetaEstadoPago(pedido) === 'PARCIAL';
+    if (pedido.estado_id === 3) {
+      return false;
+    }
+
+    const estadoPago = this.obtenerEtiquetaEstadoPago(pedido);
+    return estadoPago === 'PARCIAL' || estadoPago === 'PENDIENTE' || estadoPago === 'SIN REGISTRO';
   }
 
   mostrarAccionVerDetalle(_pedido: PedidoDelivery): boolean {

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 
 class OtrosProductosController extends Controller
@@ -480,6 +481,8 @@ class OtrosProductosController extends Controller
 
         $fecha = $request->input('fecha');
         $filas = collect($request->input('filas', []));
+        $tienePedidoId = Schema::hasColumn('otros_productos_ventas_diarias', 'pedido_id');
+        $tieneOrigen = Schema::hasColumn('otros_productos_ventas_diarias', 'origen');
 
         $hayCierre = DB::table('otros_productos_ventas_diarias')
             ->where('usuario_id', $usuario->usuario_id)
@@ -506,10 +509,8 @@ class OtrosProductosController extends Controller
                     ? Carbon::parse($fila['fecha_hora'])->format('Y-m-d H:i:s')
                     : Carbon::parse($fecha)->format('Y-m-d H:i:s');
 
-                DB::table('otros_productos_ventas_diarias')->insert([
+                $datosFila = [
                     'usuario_id' => $usuario->usuario_id,
-                    'pedido_id' => isset($fila['pedido_id']) ? (int) $fila['pedido_id'] : null,
-                    'origen' => isset($fila['origen']) ? trim((string) $fila['origen']) : null,
                     'producto_id' => (int) $fila['producto_id'],
                     'compra_lote_detalle_id' => null,
                     'cantidad' => (float) $fila['cantidad'],
@@ -520,7 +521,17 @@ class OtrosProductosController extends Controller
                     'total_congelados' => $totales['congelados'],
                     'cerrado_en' => null,
                     'creado_en' => now(),
-                ]);
+                ];
+
+                if ($tienePedidoId) {
+                    $datosFila['pedido_id'] = isset($fila['pedido_id']) ? (int) $fila['pedido_id'] : null;
+                }
+
+                if ($tieneOrigen) {
+                    $datosFila['origen'] = isset($fila['origen']) ? trim((string) $fila['origen']) : null;
+                }
+
+                DB::table('otros_productos_ventas_diarias')->insert($datosFila);
             }
 
             DB::commit();
