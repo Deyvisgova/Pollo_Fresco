@@ -655,6 +655,39 @@ input[type="number"] {
   color:#1e40af;
   font-weight:600
 }
+.campo-con-icono {
+  position:relative
+}
+.campo-con-icono input {
+  padding-right:42px
+}
+.boton-input-icono {
+  position:absolute;
+  right:8px;
+  top:50%;
+  transform:translateY(-50%);
+  border:1px solid #bfdbfe;
+  background:#eff6ff;
+  color:#1d4ed8;
+  border-radius:9px;
+  width:30px;
+  height:30px;
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+  padding:0
+}
+.boton-input-icono svg {
+  width:16px;
+  height:16px;
+  fill:currentColor
+}
+.boton-input-icono--label {
+  margin:0
+}
+.input-oculto {
+  display:none
+}
 .gestion-layout {
   display:grid;
   grid-template-columns:1.2fr 0.8fr;
@@ -705,4 +738,15 @@ input[type="number"] {
   color:#64748b;
   text-align:center;
   font-weight:600
+}
+.modal-contenido--foto-frontis {
+  width:min(640px,100%)
+}
+.foto-frontis-modal__imagen {
+  width:100%;
+  max-height:70vh;
+  object-fit:contain;
+  border-radius:10px;
+  border:1px solid #dbeafe;
+  background:#f8fafc
 }
