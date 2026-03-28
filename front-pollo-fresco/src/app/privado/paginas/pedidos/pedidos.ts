@@ -78,6 +78,11 @@ interface LoteApi {
   estado: 'ABIERTO' | 'CERRADO';
 }
 
+interface EvidenciaFrontisResponse {
+  message: string;
+  foto_frontis_url: string;
+}
+
 
 interface EstadoVentaDiariaPedidoApi {
   filas: Array<{
@@ -142,6 +147,7 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
   registrandoPago = false;
   guardandoGestion = false;
   guardandoUbicacion = false;
+  subiendoFotoFrontis = false;
   mensajeError = '';
   filtro = '';
   filtroClienteRegistros = '';
@@ -152,6 +158,7 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
   private readonly claveVueltosPagados = 'pedidos_delivery_vueltos_pagados';
   private vueltosPagados = new Set<number>();
   private reinicioVistaDeliveryTimer: ReturnType<typeof setTimeout> | null = null;
+  fotoFrontisModalUrl: string | null = null;
 
   constructor(
     private readonly http: HttpClient,
@@ -633,6 +640,59 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       });
   }
 
+  capturarUbicacionActual(): void {
+    this.mensajeError = '';
+    if (!('geolocation' in navigator)) {
+      this.mensajeError = 'Tu dispositivo no soporta geolocalización.';
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (posicion) => {
+        this.latitud = Number(posicion.coords.latitude.toFixed(7));
+        this.longitud = Number(posicion.coords.longitude.toFixed(7));
+      },
+      (error) => {
+        if (error.code === error.PERMISSION_DENIED) {
+          this.mensajeError = 'Activa el GPS y permite el acceso a ubicación para continuar.';
+          return;
+        }
+        this.mensajeError = 'No se pudo obtener tu ubicación actual.';
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  }
+
+  subirFotoFrontis(event: Event): void {
+    const input = event.target as HTMLInputElement | null;
+    const archivo = input?.files?.[0];
+    if (!archivo) {
+      return;
+    }
+
+    this.subiendoFotoFrontis = true;
+    this.mensajeError = '';
+    const formData = new FormData();
+    formData.append('foto_frontis', archivo);
+
+    this.http.post<EvidenciaFrontisResponse>('/api/pedidos-delivery/evidencia-frontis', formData, { headers: this.obtenerHeaders() }).subscribe({
+      next: (respuesta) => {
+        this.subiendoFotoFrontis = false;
+        this.fotoFrontisUrl = respuesta.foto_frontis_url;
+        if (input) {
+          input.value = '';
+        }
+      },
+      error: (error) => {
+        this.subiendoFotoFrontis = false;
+        this.mensajeError = this.extraerError(error, 'No se pudo subir la foto de evidencia.');
+        if (input) {
+          input.value = '';
+        }
+      }
+    });
+  }
+
   abrirWhatsapp(pedido: PedidoDelivery): void {
     const numero = this.normalizarNumero(pedido.cliente?.celular ?? '');
     if (!numero) {
@@ -654,7 +714,7 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     const longitud = Number(pedido.longitud ?? 0);
 
     if (Number.isFinite(latitud) && Number.isFinite(longitud) && (latitud !== 0 || longitud !== 0)) {
-      window.open(`https://www.google.com/maps?q=${latitud},${longitud}`, '_blank');
+      this.abrirRutaGoogleMaps(latitud, longitud);
       return;
     }
 
@@ -673,7 +733,11 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       return;
     }
 
-    window.open(pedido.foto_frontis_url, '_blank');
+    this.fotoFrontisModalUrl = pedido.foto_frontis_url;
+  }
+
+  cerrarModalFotoFrontis(): void {
+    this.fotoFrontisModalUrl = null;
   }
 
   obtenerEtiquetaEstado(estadoId: number): string {
@@ -1189,5 +1253,27 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
   private normalizarNumero(numero: string): string {
     const limpio = (numero || '').replace(/\D/g, '');
     return limpio.length === 9 ? limpio : '';
+  }
+
+  private abrirRutaGoogleMaps(destinoLatitud: number, destinoLongitud: number): void {
+    const destino = `${destinoLatitud},${destinoLongitud}`;
+    const abrirSoloDestino = () => window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destino)}`, '_blank');
+
+    if (!('geolocation' in navigator)) {
+      abrirSoloDestino();
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (posicion) => {
+        const origen = `${posicion.coords.latitude},${posicion.coords.longitude}`;
+        window.open(
+          `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origen)}&destination=${encodeURIComponent(destino)}&travelmode=driving`,
+          '_blank'
+        );
+      },
+      () => abrirSoloDestino(),
+      { enableHighAccuracy: true, timeout: 7000, maximumAge: 15000 }
+    );
   }
 }

@@ -397,11 +397,41 @@
         </div>
         <div class="campo">
           <label>Longitud</label>
-          <input type="number" step="0.0000001" [(ngModel)]="longitud" />
+          <div class="campo-con-icono">
+            <input type="number" step="0.0000001" [(ngModel)]="longitud" />
+            <button
+              type="button"
+              class="boton-input-icono"
+              title="Capturar ubicación actual"
+              aria-label="Capturar ubicación actual"
+              (click)="capturarUbicacionActual()">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 2a1 1 0 0 1 1 1v1.07a8.002 8.002 0 0 1 6.93 6.93H21a1 1 0 1 1 0 2h-1.07a8.002 8.002 0 0 1-6.93 6.93V21a1 1 0 1 1-2 0v-1.07a8.002 8.002 0 0 1-6.93-6.93H3a1 1 0 0 1 0-2h1.07a8.002 8.002 0 0 1 6.93-6.93V3a1 1 0 0 1 1-1Zm0 4a6 6 0 1 0 0 12 6 6 0 0 0 0-12Zm0 3a3 3 0 1 1 0 6 3 3 0 0 1 0-6Z" />
+              </svg>
+            </button>
+          </div>
         </div>
         <div class="campo campo--doble">
           <label>URL foto frontis</label>
-          <input type="text" [(ngModel)]="fotoFrontisUrl" />
+          <div class="campo-con-icono">
+            <input type="text" [(ngModel)]="fotoFrontisUrl" />
+            <label
+              class="boton-input-icono boton-input-icono--label"
+              title="Tomar foto con cámara"
+              aria-label="Tomar foto con cámara">
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                class="input-oculto"
+                [disabled]="subiendoFotoFrontis"
+                (change)="subirFotoFrontis($event)" />
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M9.5 5a1 1 0 0 0-.8.4L7.6 7H5a3 3 0 0 0-3 3v7a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3v-7a3 3 0 0 0-3-3h-2.6l-1.1-1.6a1 1 0 0 0-.8-.4h-5Zm2.5 4a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z" />
+              </svg>
+            </label>
+          </div>
+          <small *ngIf="subiendoFotoFrontis">Subiendo foto de evidencia...</small>
         </div>
       </div>
       <button type="button" class="boton boton--primario" [disabled]="guardandoUbicacion" (click)="guardarUbicacionEvidencia()">
@@ -477,4 +507,17 @@
       </div>
     </form>
   </section>
+</div>
+
+<div class="modal-fondo" *ngIf="fotoFrontisModalUrl" (click)="cerrarModalFotoFrontis()">
+  <article class="modal-contenido modal-contenido--foto-frontis" (click)="$event.stopPropagation()">
+    <header class="tarjeta__encabezado tarjeta__encabezado--acciones">
+      <div>
+        <h3>Evidencia de frontis</h3>
+        <p>Foto registrada para este pedido.</p>
+      </div>
+      <button class="boton boton--secundario" type="button" (click)="cerrarModalFotoFrontis()">Cerrar</button>
+    </header>
+    <img [src]="fotoFrontisModalUrl" alt="Foto de evidencia del pedido" class="foto-frontis-modal__imagen" />
+  </article>
 </div>

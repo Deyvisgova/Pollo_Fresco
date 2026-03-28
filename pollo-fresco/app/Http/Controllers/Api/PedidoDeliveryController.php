@@ -9,8 +9,11 @@ use App\Models\PedidoDetalle;
 use App\Models\PedidoPago;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Str;
 
 class PedidoDeliveryController extends Controller
 {
@@ -203,5 +206,59 @@ class PedidoDeliveryController extends Controller
         $pedido->save();
 
         return response()->json($pedido->fresh(['cliente', 'detalles', 'pagos']));
+    }
+
+    /**
+     * Sube la evidencia fotográfica del frontis y retorna una URL pública.
+     */
+    public function subirEvidenciaFrontis(Request $request)
+    {
+        $validated = $request->validate([
+            'foto_frontis' => ['required', 'file', 'max:5120'],
+        ]);
+
+        $archivo = $validated['foto_frontis'];
+        $mimeType = (string) $archivo->getMimeType();
+
+        if (! str_starts_with($mimeType, 'image/')) {
+            return response()->json([
+                'message' => 'El archivo debe ser una imagen válida.',
+            ], 422);
+        }
+
+        $extension = $archivo->getClientOriginalExtension() ?: $archivo->extension() ?: 'jpg';
+        $nombreArchivo = 'frontis-' . Str::uuid() . '.' . $extension;
+
+        $rutaPublica = public_path('assets/images/frontis');
+        if (! File::exists($rutaPublica)) {
+            File::makeDirectory($rutaPublica, 0755, true);
+        }
+
+        $archivo->move($rutaPublica, $nombreArchivo);
+
+        // Mantiene copia para desarrollo local del front.
+        $rutaFront = base_path('../front-pollo-fresco/src/assets/images');
+        if (File::isDirectory(dirname($rutaFront)) || File::isDirectory(base_path('../front-pollo-fresco/src/assets'))) {
+            try {
+                if (! File::exists($rutaFront)) {
+                    File::makeDirectory($rutaFront, 0755, true);
+                }
+
+                File::copy(
+                    $rutaPublica . DIRECTORY_SEPARATOR . $nombreArchivo,
+                    $rutaFront . DIRECTORY_SEPARATOR . $nombreArchivo
+                );
+            } catch (\Throwable $exception) {
+                Log::warning('No se pudo copiar la evidencia de frontis a assets del front.', [
+                    'archivo' => $nombreArchivo,
+                    'error' => $exception->getMessage(),
+                ]);
+            }
+        }
+
+        return response()->json([
+            'message' => 'Evidencia subida correctamente.',
+            'foto_frontis_url' => asset('assets/images/frontis/' . $nombreArchivo),
+        ]);
     }
 }
