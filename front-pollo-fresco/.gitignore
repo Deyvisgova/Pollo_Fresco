@@ -37,6 +37,8 @@ yarn-error.log
 testem.log
 /typings
 __screenshots__/
+/src/assets/images/img-frontis/
+/src/assets/images/logo/logo-sidebar-*
 
 # System files
 .DS_Store

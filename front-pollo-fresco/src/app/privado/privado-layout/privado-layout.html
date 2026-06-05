@@ -84,7 +84,7 @@
           <span class="panel__link-texto">{{ item.etiqueta }}</span>
         </a>
 
-        <div class="panel__accordion" [class.panel__accordion--abierto]="ventaMenuAbierto">
+        <div class="panel__accordion" *ngIf="!esDelivery" [class.panel__accordion--abierto]="ventaMenuAbierto">
           <button
             type="button"
             class="panel__link panel__link--trigger"

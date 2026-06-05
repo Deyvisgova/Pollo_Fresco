@@ -15,6 +15,10 @@ interface PedidoCliente {
   direccion: string | null;
   direccion_fiscal: string | null;
   referencias: string | null;
+  latitud?: number | null;
+  longitud?: number | null;
+  foto_frontis_url?: string | null;
+  ubicacion_actualizada_en?: string | null;
 }
 
 interface PedidoDetalleApi {
@@ -35,16 +39,22 @@ interface PedidoPago {
 
 interface PedidoDelivery {
   pedido_id: number;
-  estado_id: 1 | 2 | 3;
+  estado_id: 1 | 2 | 3 | 4 | 5;
+  tipo_pedido: 'MESA' | 'DELIVERY' | null;
+  mesa: string | null;
   fecha_hora_creacion: string;
   motivo_cancelacion: string | null;
   latitud: number | null;
   longitud: number | null;
   foto_frontis_url: string | null;
   total: number;
+  monto_pagado?: number;
+  saldo_pendiente?: number;
+  estado_pago_calculado?: 'COMPLETO' | 'PENDIENTE' | 'PARCIAL';
   cliente: PedidoCliente;
   detalles: PedidoDetalleApi[];
   pagos: PedidoPago[];
+  delivery_usuario_id?: number | null;
 }
 
 interface DetalleFormulario {
@@ -101,19 +111,23 @@ interface EstadoVentaDiariaPedidoApi {
 export class PrivadoPedidos implements OnInit, OnDestroy {
   private token = 'f3ba6fa1f3a2b2d1a6390dc06d831ebad2f218a9d3ba43e7f1f42b425dd03e26';
 
-  subpaginaActiva: 'registrar' | 'registros' | 'delivery' = 'registrar';
+  subpaginaActiva: 'registrar' | 'registros' | 'cuentas' | 'delivery' = 'registrar';
   private solicitudPedidosId = 0;
 
   pedidos: PedidoDelivery[] = [];
   pedidosFiltrados: PedidoDelivery[] = [];
   pedidoSeleccionado: PedidoDelivery | null = null;
   pedidoDetalleModal: PedidoDelivery | null = null;
+  pedidoPagoPendiente: PedidoDelivery | null = null;
+  montoPagoCuenta: number | null = null;
 
   terminoCliente = '';
   clientesSugeridos: PedidoCliente[] = [];
   clienteSeleccionado: PedidoCliente | null = null;
 
   fechaHoraCreacion = '';
+  tipoPedidoFormulario: 'MESA' | 'DELIVERY' = 'DELIVERY';
+  mesaFormulario = '';
   detalles: DetalleFormulario[] = [this.crearDetalleVacio()];
   productoSeleccionado = '';
   productosDisponibles: ProductoApi[] = [];
@@ -127,7 +141,7 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
   guardandoCliente = false;
   formularioCliente: ClienteFormulario = this.crearFormularioCliente();
 
-  estadoDestino: 2 | 3 = 2;
+  estadoDestino: 2 | 3 | 4 | 5 = 2;
   motivoCancelacion = '';
   estadoPago: 'COMPLETO' | 'PENDIENTE' | 'PARCIAL' = 'PENDIENTE';
   pagoParcial: number | null = null;
@@ -135,6 +149,8 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
   latitud: number | null = null;
   longitud: number | null = null;
   fotoFrontisUrl = '';
+  referenciasUbicacion = '';
+  fotoFrontisArchivo: File | null = null;
 
   cargando = false;
   guardandoPedido = false;
@@ -162,6 +178,13 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     this.cargarVueltosPagados();
     this.fechaHoraCreacion = this.fechaActualIsoLocal();
     this.programarReinicioVistaDelivery();
+
+    if (this.usuarioEsDelivery()) {
+      this.subpaginaActiva = 'delivery';
+      this.cargarPedidos('delivery');
+      return;
+    }
+
     this.cargarPedidos('vendedor');
     this.cargarProductos();
     this.cargarStockDisponible();
@@ -174,13 +197,25 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     }
   }
 
-  cambiarSubpagina(subpagina: 'registrar' | 'registros' | 'delivery'): void {
+  cambiarSubpagina(subpagina: 'registrar' | 'registros' | 'cuentas' | 'delivery'): void {
+    if (this.usuarioEsDelivery()) {
+      this.subpaginaActiva = 'delivery';
+      this.cargarPedidos('delivery');
+      return;
+    }
+
     this.subpaginaActiva = subpagina;
     this.pedidoSeleccionado = null;
     this.pedidoDetalleModal = null;
+    this.pedidoPagoPendiente = null;
 
     if (subpagina === 'registros') {
       this.cargarPedidos('vendedor');
+      return;
+    }
+
+    if (subpagina === 'cuentas') {
+      this.cargarCuentasPorCobrar();
       return;
     }
 
@@ -213,6 +248,30 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     });
   }
 
+  cargarCuentasPorCobrar(): void {
+    const solicitudActual = ++this.solicitudPedidosId;
+    this.cargando = true;
+    this.http.get<PedidoDelivery[]>('/api/cuentas-por-cobrar', { headers: this.obtenerHeaders() }).subscribe({
+      next: (pedidos) => {
+        if (solicitudActual !== this.solicitudPedidosId) {
+          return;
+        }
+        this.pedidos = pedidos;
+        this.aplicarFiltro();
+        this.cargando = false;
+      },
+      error: (error) => {
+        if (solicitudActual !== this.solicitudPedidosId) {
+          return;
+        }
+        this.pedidos = [];
+        this.pedidosFiltrados = [];
+        this.cargando = false;
+        this.mensajeError = this.extraerError(error, 'No se pudo cargar cuentas por cobrar.');
+      }
+    });
+  }
+
   aplicarFiltro(): void {
     const termino = this.filtro.trim().toLowerCase();
     const clienteFiltro = this.filtroClienteRegistros.trim().toLowerCase();
@@ -232,15 +291,16 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
         || numeroVisual.includes(termino)
         || nombreCliente.includes(termino)
         || dniCliente.includes(termino);
-      const usarFiltrosRegistros = this.subpaginaActiva === 'registros';
+      const usarFiltrosRegistros = this.subpaginaActiva === 'registros' || this.subpaginaActiva === 'cuentas';
       const coincideFechaDelivery = this.subpaginaActiva !== 'delivery' || this.esPedidoDelDiaActual(pedido);
+      const coincideCuentaPendiente = this.subpaginaActiva !== 'cuentas' || this.obtenerSaldoPendiente(pedido) > 0;
       const coincideCliente = !usarFiltrosRegistros || !clienteFiltro || nombreCliente.includes(clienteFiltro) || dniCliente.includes(clienteFiltro);
       const coincideEstado = !usarFiltrosRegistros || !this.filtroEstadoRegistros || this.obtenerEtiquetaEstado(pedido.estado_id) === this.filtroEstadoRegistros;
       const coincideEstadoPago = !usarFiltrosRegistros || !this.filtroEstadoPagoRegistros || this.obtenerEtiquetaEstadoPago(pedido) === this.filtroEstadoPagoRegistros;
       const coincideFechaDesde = !usarFiltrosRegistros || !fechaDesde || !fechaPedido || fechaPedido >= fechaDesde;
       const coincideFechaHasta = !usarFiltrosRegistros || !fechaHasta || !fechaPedido || fechaPedido <= fechaHasta;
 
-      return coincideTexto && coincideFechaDelivery && coincideCliente && coincideEstado && coincideEstadoPago && coincideFechaDesde && coincideFechaHasta;
+      return coincideTexto && coincideFechaDelivery && coincideCuentaPendiente && coincideCliente && coincideEstado && coincideEstadoPago && coincideFechaDesde && coincideFechaHasta;
     });
   }
 
@@ -471,6 +531,8 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
 
     const payload = {
       cliente_id: this.clienteSeleccionado.cliente_id,
+      tipo_pedido: this.tipoPedidoFormulario,
+      mesa: this.tipoPedidoFormulario === 'MESA' ? this.mesaFormulario.trim() || null : null,
       fecha_hora_creacion: this.fechaHoraCreacion,
       detalles: detallesValidos.map((item) => ({
         cantidad: item.cantidad,
@@ -496,15 +558,17 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
 
   seleccionarPedido(pedido: PedidoDelivery): void {
     this.pedidoSeleccionado = pedido;
-    this.estadoDestino = pedido.estado_id === 3 ? 3 : 2;
+    this.estadoDestino = [2, 3, 4, 5].includes(pedido.estado_id) ? pedido.estado_id as 2 | 3 | 4 | 5 : 2;
     this.motivoCancelacion = pedido.motivo_cancelacion ?? '';
     const ultimoPago = this.obtenerUltimoPago(pedido);
-    this.estadoPago = ultimoPago?.estado_pago ?? 'PENDIENTE';
-    this.pagoParcial = ultimoPago?.pago_parcial ?? null;
-    this.montoRecibido = ultimoPago?.estado_pago === 'COMPLETO' ? Number(pedido.total) : ultimoPago?.pago_parcial ?? null;
-    this.latitud = pedido.latitud;
-    this.longitud = pedido.longitud;
-    this.fotoFrontisUrl = pedido.foto_frontis_url ?? '';
+    this.estadoPago = this.obtenerEstadoPagoCalculado(pedido) === 'COMPLETO' ? 'COMPLETO' : (ultimoPago?.estado_pago ?? 'PENDIENTE');
+    this.pagoParcial = null;
+    this.montoRecibido = this.obtenerSaldoPendiente(pedido);
+    this.latitud = pedido.latitud ?? pedido.cliente?.latitud ?? null;
+    this.longitud = pedido.longitud ?? pedido.cliente?.longitud ?? null;
+    this.fotoFrontisUrl = pedido.foto_frontis_url ?? pedido.cliente?.foto_frontis_url ?? '';
+    this.referenciasUbicacion = pedido.cliente?.referencias ?? '';
+    this.fotoFrontisArchivo = null;
   }
 
   cerrarModalGestion(): void {
@@ -517,6 +581,74 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
 
   cerrarModalDetallePedido(): void {
     this.pedidoDetalleModal = null;
+  }
+
+  pedidosPendientesDelivery(): PedidoDelivery[] {
+    return this.pedidosFiltrados.filter((pedido) => pedido.estado_id === 1);
+  }
+
+  pedidosEnRutaDelivery(): PedidoDelivery[] {
+    return this.pedidosFiltrados.filter((pedido) => pedido.estado_id === 4);
+  }
+
+  pedidosEntregadosDelivery(): PedidoDelivery[] {
+    return this.pedidosFiltrados.filter((pedido) => pedido.estado_id === 2);
+  }
+
+  pedidosNoEntregadosDelivery(): PedidoDelivery[] {
+    return this.pedidosFiltrados.filter((pedido) => pedido.estado_id === 5 || pedido.estado_id === 3);
+  }
+
+  tomarPedido(pedido: PedidoDelivery): void {
+    this.guardandoGestion = true;
+    this.mensajeError = '';
+
+    this.http
+      .patch<PedidoDelivery>(`/api/pedidos-delivery/${pedido.pedido_id}/tomar`, {}, { headers: this.obtenerHeaders() })
+      .subscribe({
+        next: () => {
+          this.guardandoGestion = false;
+          this.recargarVistaActual();
+        },
+        error: (error) => {
+          this.guardandoGestion = false;
+          this.mensajeError = this.extraerError(error, 'No se pudo tomar el pedido.');
+        }
+      });
+  }
+
+  cambiarEstadoDelivery(pedido: PedidoDelivery, estadoId: 2 | 4 | 5): void {
+    if (!this.pedidoTomadoPorMi(pedido)) {
+      this.mensajeError = 'Primero debes tomar el pedido.';
+      return;
+    }
+
+    const motivo = estadoId === 5 ? 'No entregado por delivery' : null;
+    this.guardandoGestion = true;
+    this.mensajeError = '';
+
+    this.http
+      .patch(
+        `/api/pedidos-delivery/${pedido.pedido_id}/gestion`,
+        {
+          estado_id: estadoId,
+          motivo_cancelacion: motivo,
+          estado_pago: 'PENDIENTE',
+          monto_recibido: null,
+          pago_parcial: null
+        },
+        { headers: this.obtenerHeaders() }
+      )
+      .subscribe({
+        next: () => {
+          this.guardandoGestion = false;
+          this.recargarVistaActual();
+        },
+        error: (error) => {
+          this.guardandoGestion = false;
+          this.mensajeError = this.extraerError(error, 'No se pudo actualizar el estado del pedido.');
+        }
+      });
   }
 
   marcarVueltoPagado(pedido: PedidoDelivery): void {
@@ -534,6 +666,7 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       return;
     }
 
+    const saldo = this.obtenerSaldoPendiente(pedido);
     this.guardandoGestion = true;
     this.mensajeError = '';
 
@@ -544,16 +677,16 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
           estado_id: pedido.estado_id,
           motivo_cancelacion: pedido.estado_id === 3 ? pedido.motivo_cancelacion : null,
           estado_pago: 'COMPLETO',
-          // Se usa el total del pedido para cerrar el saldo pendiente o registrar el pago total desde la tabla.
-          monto_recibido: Number(pedido.total),
-          pago_parcial: Number(pedido.total)
+          // Se usa el saldo, no el total original, para no duplicar pagos parciales previos.
+          monto_recibido: saldo,
+          pago_parcial: saldo
         },
         { headers: this.obtenerHeaders() }
       )
       .subscribe({
         next: () => {
           this.guardandoGestion = false;
-          this.cargarPedidos(this.subpaginaActiva === 'delivery' ? 'delivery' : 'vendedor');
+          this.recargarVistaActual();
         },
         error: (error) => {
           this.guardandoGestion = false;
@@ -568,7 +701,51 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     }
 
     this.marcarVueltoPagado(pedido);
-    this.cargarPedidos(this.subpaginaActiva === 'delivery' ? 'delivery' : 'vendedor');
+    this.recargarVistaActual();
+  }
+
+  abrirRegistroPagoCuenta(pedido: PedidoDelivery): void {
+    this.pedidoPagoPendiente = pedido;
+    this.montoPagoCuenta = this.obtenerSaldoPendiente(pedido);
+    this.mensajeError = '';
+  }
+
+  cerrarRegistroPagoCuenta(): void {
+    this.pedidoPagoPendiente = null;
+    this.montoPagoCuenta = null;
+  }
+
+  registrarPagoCuenta(): void {
+    if (!this.pedidoPagoPendiente) {
+      return;
+    }
+
+    const monto = Number(this.montoPagoCuenta ?? 0);
+    if (!Number.isFinite(monto) || monto <= 0) {
+      this.mensajeError = 'Ingresa un monto mayor a 0.';
+      return;
+    }
+
+    this.registrandoPago = true;
+    this.mensajeError = '';
+
+    this.http
+      .post<PedidoDelivery>(
+        `/api/pedidos-delivery/${this.pedidoPagoPendiente.pedido_id}/pagos`,
+        { monto },
+        { headers: this.obtenerHeaders() }
+      )
+      .subscribe({
+        next: () => {
+          this.registrandoPago = false;
+          this.cerrarRegistroPagoCuenta();
+          this.recargarVistaActual();
+        },
+        error: (error) => {
+          this.registrandoPago = false;
+          this.mensajeError = this.extraerError(error, 'No se pudo registrar el pago.');
+        }
+      });
   }
 
   guardarEstadoYPago(): void {
@@ -588,7 +765,7 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
         `/api/pedidos-delivery/${this.pedidoSeleccionado.pedido_id}/gestion`,
         {
           estado_id: this.estadoDestino,
-          motivo_cancelacion: this.estadoDestino === 3 ? this.motivoCancelacion : null,
+          motivo_cancelacion: this.estadoDestino === 3 || this.estadoDestino === 5 ? this.motivoCancelacion : null,
           estado_pago: this.estadoPago,
           monto_recibido: this.estadoPago === 'PARCIAL' ? null : this.montoRecibido,
           pago_parcial: this.estadoPago === 'PARCIAL' ? this.pagoParcial : this.montoRecibido
@@ -599,7 +776,7 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
         next: (pedidoActualizado) => {
           this.guardandoGestion = false;
           this.pedidoSeleccionado = pedidoActualizado as PedidoDelivery;
-          this.cargarPedidos('delivery');
+          this.recargarVistaActual();
         },
         error: (error) => {
           this.guardandoGestion = false;
@@ -614,23 +791,74 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     }
 
     this.guardandoUbicacion = true;
+    const formData = new FormData();
+
+    if (this.latitud !== null && this.latitud !== undefined) {
+      formData.append('latitud', String(this.latitud));
+    }
+
+    if (this.longitud !== null && this.longitud !== undefined) {
+      formData.append('longitud', String(this.longitud));
+    }
+
+    if (this.fotoFrontisUrl) {
+      formData.append('foto_frontis_url', this.fotoFrontisUrl);
+    }
+
+    if (this.referenciasUbicacion) {
+      formData.append('referencias', this.referenciasUbicacion);
+    }
+
+    if (this.fotoFrontisArchivo) {
+      formData.append('frontis_foto', this.fotoFrontisArchivo);
+    }
 
     this.http
-      .patch(
+      .post(
         `/api/pedidos-delivery/${this.pedidoSeleccionado.pedido_id}/ubicacion-evidencia`,
-        { latitud: this.latitud, longitud: this.longitud, foto_frontis_url: this.fotoFrontisUrl || null },
+        formData,
         { headers: this.obtenerHeaders() }
       )
       .subscribe({
-        next: () => {
+        next: (pedidoActualizado) => {
           this.guardandoUbicacion = false;
-          this.cargarPedidos('delivery');
+          this.fotoFrontisArchivo = null;
+          this.pedidoSeleccionado = pedidoActualizado as PedidoDelivery;
+          this.recargarVistaActual();
         },
         error: (error) => {
           this.guardandoUbicacion = false;
           this.mensajeError = this.extraerError(error, 'No se pudo guardar la evidencia.');
         }
       });
+  }
+
+  capturarUbicacionActual(): void {
+    if (!navigator.geolocation) {
+      this.mensajeError = 'Este dispositivo no permite capturar ubicacion.';
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (posicion) => {
+        this.latitud = Number(posicion.coords.latitude.toFixed(7));
+        this.longitud = Number(posicion.coords.longitude.toFixed(7));
+      },
+      () => {
+        this.mensajeError = 'No se pudo obtener la ubicacion. Revisa permisos de GPS.';
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+    );
+  }
+
+  manejarFotoFrontis(evento: Event): void {
+    const input = evento.target as HTMLInputElement;
+    const archivo = input.files?.[0] ?? null;
+    this.fotoFrontisArchivo = archivo;
+
+    if (archivo) {
+      this.fotoFrontisUrl = archivo.name;
+    }
   }
 
   abrirWhatsapp(pedido: PedidoDelivery): void {
@@ -650,17 +878,17 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
   }
 
   abrirUbicacionPedido(pedido: PedidoDelivery): void {
-    const latitud = Number(pedido.latitud ?? 0);
-    const longitud = Number(pedido.longitud ?? 0);
+    const latitud = Number(pedido.latitud ?? pedido.cliente?.latitud ?? 0);
+    const longitud = Number(pedido.longitud ?? pedido.cliente?.longitud ?? 0);
 
     if (Number.isFinite(latitud) && Number.isFinite(longitud) && (latitud !== 0 || longitud !== 0)) {
-      window.open(`https://www.google.com/maps?q=${latitud},${longitud}`, '_blank');
+      window.open(`https://www.google.com/maps/dir/?api=1&destination=${latitud},${longitud}&travelmode=driving`, '_blank');
       return;
     }
 
     const direccion = pedido.cliente?.direccion || pedido.cliente?.direccion_fiscal;
     if (direccion) {
-      window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(direccion)}`, '_blank');
+      window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(direccion)}&travelmode=driving`, '_blank');
       return;
     }
 
@@ -668,20 +896,26 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
   }
 
   verFotoFrontis(pedido: PedidoDelivery): void {
-    if (!pedido.foto_frontis_url) {
-      this.mensajeError = 'Este pedido no tiene foto de frontis registrada aún.';
+    const foto = pedido.foto_frontis_url || pedido.cliente?.foto_frontis_url || '';
+    if (!foto) {
+      this.mensajeError = 'Este pedido no tiene foto de frontis registrada aun.';
       return;
     }
 
-    window.open(pedido.foto_frontis_url, '_blank');
+    window.open(foto, '_blank');
   }
-
   obtenerEtiquetaEstado(estadoId: number): string {
     if (estadoId === 2) {
       return 'ENTREGADO';
     }
     if (estadoId === 3) {
       return 'CANCELADO';
+    }
+    if (estadoId === 4) {
+      return 'EN RUTA';
+    }
+    if (estadoId === 5) {
+      return 'NO ENTREGADO';
     }
     return 'PENDIENTE';
   }
@@ -691,8 +925,7 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       return 'CANCELADO';
     }
 
-    const estado = this.obtenerUltimoPago(pedido)?.estado_pago;
-    return estado ?? 'SIN REGISTRO';
+    return this.obtenerEstadoPagoCalculado(pedido);
   }
 
   obtenerClaseBadgeEstado(estadoId: number): string {
@@ -700,6 +933,12 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       return 'badge--success';
     }
     if (estadoId === 3) {
+      return 'badge--danger';
+    }
+    if (estadoId === 4) {
+      return 'badge--info';
+    }
+    if (estadoId === 5) {
       return 'badge--danger';
     }
     return 'badge--warning';
@@ -793,7 +1032,7 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     }
 
     const estadoPago = this.obtenerEtiquetaEstadoPago(pedido);
-    return estadoPago === 'PARCIAL' || estadoPago === 'PENDIENTE' || estadoPago === 'SIN REGISTRO';
+    return estadoPago === 'PARCIAL' || estadoPago === 'PENDIENTE';
   }
 
   mostrarAccionVerDetalle(_pedido: PedidoDelivery): boolean {
@@ -810,30 +1049,65 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       return '';
     }
 
-    const ultimoPago = this.obtenerUltimoPago(pedido);
-    if (!ultimoPago) {
-      return '';
-    }
-
-    const montoParcial = Number(ultimoPago.pago_parcial ?? 0);
     const total = Number(pedido.total ?? 0);
+    const pagado = this.obtenerMontoPagado(pedido);
+    const saldo = this.obtenerSaldoPendiente(pedido);
 
-    if (ultimoPago.estado_pago === 'PARCIAL') {
-      const saldo = Math.max(0, Number((total - montoParcial).toFixed(2)));
-      return `Pagó S/ ${montoParcial.toFixed(2)} · Debe S/ ${saldo.toFixed(2)}`;
+    if (saldo > 0 && pagado > 0) {
+      return `Pago S/ ${pagado.toFixed(2)} - Debe S/ ${saldo.toFixed(2)}`;
     }
 
-    if (ultimoPago.estado_pago === 'COMPLETO' && Number(ultimoPago.vuelto ?? 0) > 0) {
+    const ultimoPago = this.obtenerUltimoPago(pedido);
+    if (ultimoPago && ultimoPago.estado_pago === 'COMPLETO' && Number(ultimoPago.vuelto ?? 0) > 0) {
       return `Vuelto: S/ ${Number(ultimoPago.vuelto).toFixed(2)}`;
     }
 
-    if (ultimoPago.estado_pago === 'PENDIENTE') {
+    if (saldo > 0) {
       return `Debe S/ ${total.toFixed(2)}`;
     }
 
     return '';
   }
 
+  obtenerTipoPedido(pedido: PedidoDelivery): string {
+    return pedido.tipo_pedido === 'MESA' ? `Mesa${pedido.mesa ? ` ${pedido.mesa}` : ''}` : 'Delivery';
+  }
+
+  obtenerMontoPagado(pedido: PedidoDelivery): number {
+    if (pedido.monto_pagado !== undefined && pedido.monto_pagado !== null) {
+      return Math.min(Number(pedido.total ?? 0), Number(pedido.monto_pagado ?? 0));
+    }
+
+    const total = Number(pedido.total ?? 0);
+    const pagado = (pedido.pagos ?? [])
+      .filter((pago) => pago.estado_pago !== 'PENDIENTE')
+      .reduce((acc, pago) => acc + Number(pago.pago_parcial ?? 0), 0);
+
+    return Math.min(total, Number(pagado.toFixed(2)));
+  }
+
+  obtenerSaldoPendiente(pedido: PedidoDelivery): number {
+    if (pedido.saldo_pendiente !== undefined && pedido.saldo_pendiente !== null) {
+      return Math.max(0, Number(pedido.saldo_pendiente ?? 0));
+    }
+
+    return Math.max(0, Number((Number(pedido.total ?? 0) - this.obtenerMontoPagado(pedido)).toFixed(2)));
+  }
+
+  obtenerEstadoPagoCalculado(pedido: PedidoDelivery): 'COMPLETO' | 'PENDIENTE' | 'PARCIAL' {
+    if (pedido.estado_pago_calculado) {
+      return pedido.estado_pago_calculado;
+    }
+
+    const saldo = this.obtenerSaldoPendiente(pedido);
+    const pagado = this.obtenerMontoPagado(pedido);
+
+    if (saldo <= 0) {
+      return 'COMPLETO';
+    }
+
+    return pagado > 0 ? 'PARCIAL' : 'PENDIENTE';
+  }
   obtenerFechaPago(pedido: PedidoDelivery | null): string | null {
     if (!pedido || pedido.estado_id === 3) {
       return null;
@@ -847,7 +1121,7 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     }
 
     const monto = Number(this.montoRecibido ?? 0);
-    return Math.max(0, Number((monto - this.pedidoSeleccionado.total).toFixed(2)));
+    return Math.max(0, Number((monto - this.obtenerSaldoPendiente(this.pedidoSeleccionado)).toFixed(2)));
   }
 
   calcularSaldoPendiente(): number {
@@ -856,7 +1130,7 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     }
 
     const parcial = Number(this.pagoParcial ?? 0);
-    return Math.max(0, Number((this.pedidoSeleccionado.total - parcial).toFixed(2)));
+    return Math.max(0, Number((this.obtenerSaldoPendiente(this.pedidoSeleccionado) - parcial).toFixed(2)));
   }
 
   private cargarProductos(search = ''): void {
@@ -1071,10 +1345,21 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
 
   private reiniciarFormularioPedido(): void {
     this.fechaHoraCreacion = this.fechaActualIsoLocal();
+    this.tipoPedidoFormulario = 'DELIVERY';
+    this.mesaFormulario = '';
     this.detalles = [this.crearDetalleVacio()];
     this.terminoCliente = '';
     this.clienteSeleccionado = null;
     this.clientesSugeridos = [];
+  }
+
+  private recargarVistaActual(): void {
+    if (this.subpaginaActiva === 'cuentas') {
+      this.cargarCuentasPorCobrar();
+      return;
+    }
+
+    this.cargarPedidos(this.subpaginaActiva === 'delivery' ? 'delivery' : 'vendedor');
   }
 
   private obtenerHeaders(): HttpHeaders {
@@ -1189,5 +1474,18 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
   private normalizarNumero(numero: string): string {
     const limpio = (numero || '').replace(/\D/g, '');
     return limpio.length === 9 ? limpio : '';
+  }
+
+  usuarioEsDelivery(): boolean {
+    return this.sesionServicio.obtenerUsuario()?.role === 'delivery';
+  }
+
+  pedidoTomadoPorMi(pedido: PedidoDelivery): boolean {
+    const usuarioId = this.sesionServicio.obtenerUsuario()?.id;
+    return !!usuarioId && Number(pedido.delivery_usuario_id ?? 0) === Number(usuarioId);
+  }
+
+  pedidoDisponibleParaTomar(pedido: PedidoDelivery): boolean {
+    return this.usuarioEsDelivery() && !pedido.delivery_usuario_id && pedido.estado_id === 1;
   }
 }

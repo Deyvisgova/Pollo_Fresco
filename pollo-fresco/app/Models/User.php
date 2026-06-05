@@ -21,13 +21,14 @@ class User extends Authenticatable
     public const UPDATED_AT = 'actualizado_en';
 
     public const ROLE_ADMIN = 'admin';
-    public const ROLE_MANAGER = 'manager';
+    public const ROLE_VENDOR = 'vendor';
     public const ROLE_CASHIER = 'cashier';
+    public const ROLE_DELIVERY = 'delivery';
 
     private const ROLE_ID_MAP = [
         1 => self::ROLE_ADMIN,
         2 => self::ROLE_CASHIER,
-        3 => self::ROLE_MANAGER,
+        3 => self::ROLE_DELIVERY,
     ];
 
     /**
@@ -84,8 +85,9 @@ class User extends Authenticatable
     {
         return [
             self::ROLE_ADMIN,
-            self::ROLE_MANAGER,
             self::ROLE_CASHIER,
+            self::ROLE_VENDOR,
+            self::ROLE_DELIVERY,
         ];
     }
 
@@ -128,7 +130,8 @@ class User extends Authenticatable
     {
         return match (strtolower($role)) {
             self::ROLE_ADMIN => 1,
-            self::ROLE_MANAGER => 3,
+            self::ROLE_DELIVERY => 3,
+            self::ROLE_VENDOR => 2,
             default => 2,
         };
     }

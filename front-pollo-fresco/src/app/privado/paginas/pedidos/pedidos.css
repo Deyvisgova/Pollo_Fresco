@@ -76,6 +76,12 @@
   gap:10px;
   align-items:start
 }
+.pedido-tipo-grid {
+  display:grid;
+  grid-template-columns:220px minmax(180px,1fr);
+  gap:10px;
+  align-items:end
+}
 .campo--fecha input {
   font-size:13px;
   padding:8px 10px
@@ -269,6 +275,9 @@
 .tabla--registros {
   min-width:980px
 }
+.tabla--cuentas {
+  min-width:1040px
+}
 .tabla th,.tabla td {
   padding:10px 12px;
   border-bottom:1px solid #e2e8f0;
@@ -325,6 +334,9 @@
   display:grid;
   grid-template-columns:repeat(4,minmax(0,1fr));
   gap:10px
+}
+.delivery-grid--movil {
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr))
 }
 .delivery-card {
   border:1px solid #dbeafe;
@@ -557,7 +569,7 @@
   display:flex;
   justify-content:center;
   align-items:center;
-  z-index:1000;
+  z-index:3000;
   padding:20px
 }
 .modal-contenido {
@@ -575,6 +587,27 @@
 }
 .modal-contenido--detalle-pedido {
   width:min(560px,100%)
+}
+.delivery-card__acciones--movil {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px
+}
+.modal-contenido--pago-cuenta {
+  width:min(520px,100%)
+}
+.resumen-cuenta {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px
+}
+.resumen-cuenta span {
+  border:1px solid #dbeafe;
+  border-radius:10px;
+  background:#f8fbff;
+  padding:10px;
+  color:#334155;
+  font-size:0.82rem
 }
 
 @media (max-width:1200px) {
@@ -601,6 +634,9 @@
   }
   .campo--doble {
     grid-column:span 1
+  }
+  .pedido-tipo-grid,.resumen-cuenta {
+    grid-template-columns:1fr
   }
 }
 .cliente-buscador__control input,.tarjeta__titulo input,.tabla-detalle__fila input,.tabla-detalle__fila select,.formulario-grid input,.formulario-grid select,.formulario input,.consulta input,.campo input,.campo select {

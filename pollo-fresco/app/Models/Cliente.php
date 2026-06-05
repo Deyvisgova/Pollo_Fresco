@@ -32,6 +32,11 @@ class Cliente extends Model
         'direccion',
         'direccion_fiscal',
         'referencias',
+        'latitud',
+        'longitud',
+        'foto_frontis_url',
+        'ubicacion_actualizada_por',
+        'ubicacion_actualizada_en',
     ];
 
     /**
@@ -42,5 +47,8 @@ class Cliente extends Model
     protected $casts = [
         'creado_en' => 'datetime',
         'actualizado_en' => 'datetime',
+        'latitud' => 'decimal:7',
+        'longitud' => 'decimal:7',
+        'ubicacion_actualizada_en' => 'datetime',
     ];
 }

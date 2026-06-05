@@ -70,10 +70,15 @@ export class Ingresar {
       .pipe(finalize(() => (this.estaCargando = false)))
       .subscribe({
         next: (usuario) => {
+          if (usuario.role === 'delivery') {
+            void this.router.navigate(['/privado/pedidos']);
+            return;
+          }
+
           if (usuario.role !== 'admin') {
             this.sesionServicio.limpiarSesion();
             this.mensajeError =
-              'Tu cuenta no tiene permisos de administrador.';
+              'Tu cuenta no tiene permisos para ingresar al panel.';
             return;
           }
 

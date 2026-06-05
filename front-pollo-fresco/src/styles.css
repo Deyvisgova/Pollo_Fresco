@@ -25,11 +25,17 @@ body {
   min-height: 100%;
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
 
 body {
   background-color: var(--app-bg);
   color: var(--text-primary);
   min-height: 100vh;
+  overflow-x: hidden;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
@@ -267,7 +273,94 @@ app-root {
   border-radius: 0;
 }
 
+.panel__rutas .modal,
+.panel__rutas .modal-fondo,
+.panel__rutas .modal--abierto {
+  z-index: 5000 !important;
+}
+
 @media (max-width: 900px) {
+  .panel__rutas,
+  .panel__rutas * {
+    min-width: 0;
+  }
+
+  .panel__rutas {
+    overflow: hidden;
+  }
+
+  .panel__rutas .seccion,
+  .panel__rutas .seccion__contenido,
+  .panel__rutas .seccion__tarjeta,
+  .panel__rutas .tarjeta,
+  .panel__rutas .card,
+  .panel__rutas [class*='tarjeta'],
+  .panel__rutas [class*='card'] {
+    max-width: 100%;
+  }
+
+  .panel__rutas .seccion__encabezado,
+  .panel__rutas .tarjeta__encabezado,
+  .panel__rutas .tarjeta__titulo,
+  .panel__rutas .barra,
+  .panel__rutas [class*='encabezado--acciones'],
+  .panel__rutas [class*='acciones'] {
+    align-items: stretch;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .panel__rutas .formulario-grid,
+  .panel__rutas .formulario__grid,
+  .panel__rutas .modal__grid,
+  .panel__rutas .seccion__grid,
+  .panel__rutas .resumen-cuenta,
+  .panel__rutas .gestion-layout,
+  .panel__rutas .detalle-resumen,
+  .panel__rutas .pedido-tipo-grid,
+  .panel__rutas .cliente-top,
+  .panel__rutas .bloque-dos-columnas {
+    grid-template-columns: 1fr !important;
+  }
+
+  .panel__rutas input,
+  .panel__rutas select,
+  .panel__rutas textarea,
+  .panel__rutas button {
+    max-width: 100%;
+  }
+
+  .panel__rutas .modal,
+  .panel__rutas .modal-fondo,
+  .panel__rutas .modal__overlay,
+  .panel__rutas .modal__fondo {
+    align-items: flex-start !important;
+    padding: 10px !important;
+    overflow-y: auto;
+  }
+
+  .panel__rutas .modal__contenido,
+  .panel__rutas .modal__contenedor,
+  .panel__rutas .modal-contenido {
+    width: min(100%, calc(100vw - 20px)) !important;
+    max-width: calc(100vw - 20px) !important;
+    max-height: calc(100dvh - 20px) !important;
+    overflow-y: auto;
+    border-radius: 16px !important;
+    padding: 14px !important;
+  }
+
+  .panel__rutas .tabla-contenedor,
+  .panel__rutas .tabla__contenedor,
+  .panel__rutas .tabla-pedidos__contenedor,
+  .panel__rutas .seccion__tabla,
+  .panel__rutas .modal__tabla,
+  .panel__rutas [class*='tabla-contenedor'],
+  .panel__rutas [class*='tabla__contenedor'] {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
   .panel__rutas table,
   .panel__rutas thead,
   .panel__rutas tbody,
@@ -320,6 +413,12 @@ app-root {
     text-align: left;
   }
 
+  .panel__rutas tbody td:not([data-label])::before {
+    content: none;
+    flex: none;
+    min-width: 0;
+  }
+
   .panel__rutas tbody td[data-label=""]::before {
     content: "";
     flex: 0 0 0;
@@ -331,5 +430,163 @@ app-root {
     text-align: left !important;
     justify-content: flex-start !important;
     margin-left: 0 !important;
+    overflow-wrap: anywhere;
+  }
+
+  .panel__rutas table:not(:has(td[data-label])),
+  .panel__rutas table:not(:has(td[data-label])) thead,
+  .panel__rutas table:not(:has(td[data-label])) tbody,
+  .panel__rutas table:not(:has(td[data-label])) tr,
+  .panel__rutas table:not(:has(td[data-label])) th,
+  .panel__rutas table:not(:has(td[data-label])) td {
+    width: auto;
+  }
+
+  .panel__rutas table:not(:has(td[data-label])) {
+    display: table;
+    width: 100%;
+    min-width: 720px;
+    border-collapse: collapse;
+  }
+
+  .panel__rutas table:not(:has(td[data-label])) thead {
+    display: table-header-group;
+  }
+
+  .panel__rutas table:not(:has(td[data-label])) tbody {
+    display: table-row-group;
+  }
+
+  .panel__rutas table:not(:has(td[data-label])) tr {
+    display: table-row;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+
+  .panel__rutas table:not(:has(td[data-label])) th,
+  .panel__rutas table:not(:has(td[data-label])) td {
+    display: table-cell;
+    padding: 10px;
+    border-bottom: 1px solid var(--border-soft) !important;
+    text-align: left !important;
+    vertical-align: top;
+  }
+
+  .panel__rutas table:not(:has(td[data-label])) td::before {
+    content: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .pagina-banner {
+    margin-bottom: 1rem;
+  }
+
+  .pagina-banner img {
+    max-height: 180px;
+    border-radius: 12px;
+  }
+
+  .panel__rutas .seccion__encabezado h2,
+  .panel__rutas .tarjeta__encabezado h3 {
+    font-size: clamp(1.25rem, 6vw, 1.55rem);
+    line-height: 1.15;
+  }
+
+  .panel__rutas .barra__busqueda,
+  .panel__rutas [class*='busqueda'],
+  .panel__rutas [class*='selector'] {
+    flex-basis: 100%;
+    width: 100%;
+  }
+
+  .panel__rutas tbody td {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .panel__rutas tbody td::before {
+    flex: none;
+    min-width: 0;
+  }
+
+  .panel__rutas .formulario__acciones,
+  .panel__rutas .modal__acciones,
+  .panel__rutas .tabla__acciones,
+  .panel__rutas .tabla-acciones,
+  .panel__rutas [class*='acciones'] {
+    width: 100%;
+  }
+
+  .panel__rutas .formulario__acciones button,
+  .panel__rutas .modal__acciones button,
+  .panel__rutas .tabla__acciones button,
+  .panel__rutas .tabla-acciones button {
+    flex: 1 1 auto;
+  }
+
+  .panel__rutas tbody td[data-label='Acciones'] {
+    align-items: flex-start;
+  }
+
+  .panel__rutas tbody td[data-label='Acciones'] .tabla-acciones,
+  .panel__rutas tbody td[data-label='Acciones'] .tabla__acciones,
+  .panel__rutas tbody td[data-label='Acciones'] .acciones-tabla,
+  .panel__rutas tbody td[data-label='Acciones'] .seccion__acciones-fila {
+    width: auto !important;
+    display: inline-flex !important;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .panel__rutas tbody td[data-label='Acciones'] button,
+  .panel__rutas tbody td[data-label='Acciones'] a {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    min-width: 0 !important;
+    min-height: 34px;
+    padding: 6px 10px !important;
+    font-size: 0.78rem !important;
+    line-height: 1.15;
+  }
+
+  .panel__rutas tbody td[data-label='Acciones'] .boton-icono,
+  .panel__rutas tbody td[data-label='Acciones'] button[aria-label] {
+    width: 34px !important;
+    height: 34px !important;
+    padding: 0 !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .panel__rutas tbody td[data-label='Acciones'] .boton-icono svg,
+  .panel__rutas tbody td[data-label='Acciones'] button[aria-label] svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .panel__rutas .tabs-vista,
+  .panel__rutas .seccion__tabs {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scroll-snap-type: x proximity;
+  }
+
+  .panel__rutas .tabs-vista button,
+  .panel__rutas .seccion__tabs button,
+  .panel__rutas .seccion__tabs a {
+    flex: 0 0 auto;
+    min-height: 42px;
+    max-width: 150px;
+    white-space: normal;
+    scroll-snap-align: start;
   }
 }

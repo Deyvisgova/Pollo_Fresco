@@ -102,6 +102,9 @@ class ClienteController extends Controller
             'direccion' => ['nullable', 'string', 'max:200'],
             'direccion_fiscal' => ['nullable', 'string', 'max:200'],
             'referencias' => ['nullable', 'string', 'max:250'],
+            'latitud' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitud' => ['nullable', 'numeric', 'between:-180,180'],
+            'foto_frontis_url' => ['nullable', 'string', 'max:255'],
         ]);
     }
 
@@ -117,6 +120,7 @@ class ClienteController extends Controller
         $payload['direccion'] = isset($payload['direccion']) ? trim((string) $payload['direccion']) : '';
         $payload['direccion_fiscal'] = isset($payload['direccion_fiscal']) ? trim((string) $payload['direccion_fiscal']) : '';
         $payload['referencias'] = isset($payload['referencias']) ? trim((string) $payload['referencias']) : '';
+        $payload['foto_frontis_url'] = isset($payload['foto_frontis_url']) ? trim((string) $payload['foto_frontis_url']) : null;
 
         return $payload;
     }

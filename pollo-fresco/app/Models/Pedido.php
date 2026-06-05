@@ -27,6 +27,8 @@ class Pedido extends Model
         'longitud',
         'foto_frontis_url',
         'total',
+        'tipo_pedido',
+        'mesa',
     ];
 
     protected $casts = [

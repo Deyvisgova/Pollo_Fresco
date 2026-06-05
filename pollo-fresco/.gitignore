@@ -3,6 +3,9 @@
 /public/build
 /public/hot
 /public/storage
+/public/assets/images/frontis/
+/public/assets/images/img-frontis/
+/public/assets/images/logo/logo-sidebar-*
 /storage/*.key
 /vendor
 .env

@@ -28,7 +28,7 @@ export class PrivadoLayout implements AfterViewInit {
   ];
 
   menuPosterior: ItemMenu[] = [
-    { etiqueta: 'Pedidos (delivery)', ruta: 'pedidos', icono: '📦' },
+    { etiqueta: 'Pedidos', ruta: 'pedidos', icono: '📦' },
     { etiqueta: 'Otros productos', ruta: 'otros-productos', icono: '🧺' },
     { etiqueta: 'Usuarios', ruta: 'usuarios', icono: '🧑‍💼' },
     { etiqueta: 'Gastos', ruta: 'gastos', icono: '💸' },
@@ -53,6 +53,13 @@ export class PrivadoLayout implements AfterViewInit {
     private readonly temaServicio: TemaServicio,
     private readonly router: Router
   ) {
+    if (this.usuarioEsDelivery()) {
+      this.menuPrincipal = [];
+      this.menuPosterior = [
+        { etiqueta: 'Pedidos', ruta: 'pedidos', icono: '📦' }
+      ];
+    }
+
     this.configuracionEmpresa = this.configuracionEmpresaServicio.configuracion;
     this.mostrarLogo = computed(() => Boolean(this.configuracionEmpresa().logoUrl));
     this.nombreUsuario = computed(() => {
@@ -62,10 +69,13 @@ export class PrivadoLayout implements AfterViewInit {
     this.temaActual = this.temaServicio.temaActual();
 
     this.sincronizarMenuVenta(this.router.url);
+    this.redirigirDeliverySiCorresponde(this.router.url);
     this.router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe((event) => {
-        this.sincronizarMenuVenta((event as NavigationEnd).urlAfterRedirects);
+        const url = (event as NavigationEnd).urlAfterRedirects;
+        this.sincronizarMenuVenta(url);
+        this.redirigirDeliverySiCorresponde(url);
         this.actualizarDataLabelsTablas();
         this.menuUsuarioAbierto = false;
       });
@@ -96,6 +106,10 @@ export class PrivadoLayout implements AfterViewInit {
 
   get rutaVentaActiva(): boolean {
     return this.esRutaVenta(this.router.url);
+  }
+
+  get esDelivery(): boolean {
+    return this.usuarioEsDelivery();
   }
 
   toggleVentaMenu(): void {
@@ -147,6 +161,20 @@ export class PrivadoLayout implements AfterViewInit {
 
   private esRutaVenta(url: string): boolean {
     return url.includes('/privado/venta');
+  }
+
+  private usuarioEsDelivery(): boolean {
+    return this.sesionServicio.obtenerUsuario()?.role === 'delivery';
+  }
+
+  private redirigirDeliverySiCorresponde(url: string): void {
+    if (!this.usuarioEsDelivery()) {
+      return;
+    }
+
+    if (!url.includes('/privado/pedidos')) {
+      void this.router.navigate(['/privado/pedidos']);
+    }
   }
 
   private actualizarDataLabelsTablas(): void {
