@@ -104,7 +104,7 @@ export class PrivadoProveedoresCrud implements OnInit {
     }
 
     if (!/^\d+$/.test(documento)) {
-      this.consultaError = 'El documento solo debe contener dígitos.';
+      this.consultaError = 'El documento solo debe contener digitos.';
       return;
     }
 
@@ -118,7 +118,7 @@ export class PrivadoProveedoresCrud implements OnInit {
       return;
     }
 
-    this.consultaError = 'El documento debe tener 8 dígitos (DNI) o 11 dígitos (RUC).';
+    this.consultaError = 'El documento debe tener 8 digitos (DNI) o 11 digitos (RUC).';
   }
 
   guardarProveedor(): void {
@@ -148,7 +148,7 @@ export class PrivadoProveedoresCrud implements OnInit {
       },
       error: (error) => {
         if (error?.status === 401) {
-          this.consultaError = 'Tu sesión expiró. Inicia sesión nuevamente para guardar el proveedor.';
+          this.consultaError = 'Tu sesion expiro. Inicia sesion nuevamente para guardar el proveedor.';
           return;
         }
 
@@ -187,7 +187,7 @@ export class PrivadoProveedoresCrud implements OnInit {
   eliminarProveedor(proveedor: ProveedorApi): void {
     this.consultaError = '';
 
-    const confirmar = window.confirm('¿Deseas eliminar este proveedor?');
+    const confirmar = window.confirm('Deseas eliminar este proveedor?');
     if (!confirmar) {
       return;
     }
@@ -197,7 +197,7 @@ export class PrivadoProveedoresCrud implements OnInit {
       next: () => this.cargarProveedores(this.filtro),
       error: (error) => {
         if (error?.status === 401) {
-          this.consultaError = 'Tu sesión expiró. Inicia sesión nuevamente para eliminar el proveedor.';
+          this.consultaError = 'Tu sesion expiro. Inicia sesion nuevamente para eliminar el proveedor.';
           return;
         }
 
@@ -237,7 +237,7 @@ export class PrivadoProveedoresCrud implements OnInit {
         autocompletar(datos);
       },
       error: () => {
-        this.consultaError = 'No pudimos conectar con la SUNAT/RENIEC. Revisa el número e intenta nuevamente.';
+        this.consultaError = 'No pudimos conectar con la SUNAT/RENIEC. Revisa el numero e intenta nuevamente.';
         this.consultaCargando = false;
       },
       complete: () => {

@@ -4,7 +4,7 @@ import { RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-privado-proveedores',
-  // Componente informativo para la sección de proveedores.
+  // Componente informativo para la seccion de proveedores.
   standalone: true,
   imports: [CommonModule, RouterModule],
   templateUrl: './proveedores.html',

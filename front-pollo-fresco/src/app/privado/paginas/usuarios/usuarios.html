@@ -1,7 +1,7 @@
 <section class="seccion">
   <div class="seccion__encabezado">
     <h2>Usuarios</h2>
-    <p>Administración integral de usuarios con búsqueda rápida y edición segura.</p>
+    <p>Administracion integral de usuarios con busqueda rapida y edicion segura.</p>
   </div>
 
   <div class="barra">
@@ -36,7 +36,7 @@
               <th>Nombre</th>
               <th>Usuario</th>
               <th>Email</th>
-              <th>Teléfono</th>
+              <th>Telefono</th>
               <th>Estado</th>
               <th>Creado</th>
               <th>Actualizado</th>
@@ -46,7 +46,7 @@
           <tbody>
             <tr *ngIf="!cargando && usuariosFiltrados.length === 0">
               <td colspan="10" class="tabla__vacia">
-                No hay usuarios que coincidan con tu búsqueda.
+                No hay usuarios que coincidan con tu busqueda.
               </td>
             </tr>
             <tr *ngFor="let usuario of usuariosFiltrados">
@@ -57,7 +57,7 @@
               </td>
               <td data-label="Usuario">{{ usuario.usuario }}</td>
               <td data-label="Email">{{ usuario.email }}</td>
-              <td data-label="Teléfono">{{ usuario.telefono || 'No registrado' }}</td>
+              <td data-label="Telefono">{{ usuario.telefono || 'No registrado' }}</td>
               <td data-label="Estado">
                 <span
                   class="estado"
@@ -109,12 +109,12 @@
       <div>
         <h3>{{ modoEdicion ? 'Editar usuario' : 'Registrar nuevo usuario' }}</h3>
         <p class="formulario__descripcion">
-          Completa todos los campos para asegurar una gestión clara de permisos,
+          Completa todos los campos para asegurar una gestion clara de permisos,
           credenciales y estado del usuario.
         </p>
       </div>
       <button class="boton boton--cerrar" type="button" (click)="cerrarModal()">
-        ✕
+        
       </button>
     </div>
 
@@ -142,7 +142,7 @@
             #usuarioField="ngModel"
           />
           <small class="mensaje-error" *ngIf="usuarioField.invalid && usuarioField.touched">
-            El usuario es obligatorio (mínimo 3 caracteres).
+            El usuario es obligatorio (minimo 3 caracteres).
           </small>
         </div>
         <div class="campo">
@@ -174,7 +174,7 @@
           </small>
         </div>
         <div class="campo">
-          <label for="email">Correo electrónico</label>
+          <label for="email">Correo electronico</label>
           <input
             id="email"
             name="email"
@@ -184,11 +184,11 @@
             #emailField="ngModel"
           />
           <small class="mensaje-error" *ngIf="emailField.invalid && emailField.touched">
-            Ingresa un correo válido.
+            Ingresa un correo valido.
           </small>
         </div>
         <div class="campo">
-          <label for="telefono">Teléfono</label>
+          <label for="telefono">Telefono</label>
           <input
             id="telefono"
             name="telefono"
@@ -198,12 +198,12 @@
             [(ngModel)]="formulario.telefono"
           />
           <small>
-            Opcional: ingresa 9 dígitos o deja el campo vacío.
+            Opcional: ingresa 9 digitos o deja el campo vacio.
           </small>
         </div>
         <div class="campo">
           <label for="password">
-            {{ modoEdicion ? 'Nueva contraseña' : 'Contraseña' }}
+            {{ modoEdicion ? 'Nueva contrasena' : 'Contrasena' }}
           </label>
           <div class="campo__password">
             <input
@@ -221,25 +221,25 @@
               type="button"
               (click)="mostrarPassword = !mostrarPassword"
             >
-              {{ mostrarPassword ? '🙈' : '👁️' }}
+              {{ mostrarPassword ? '' : '' }}
             </button>
           </div>
           <small>
             {{
               modoEdicion
                 ? 'Dejar en blanco si no deseas cambiarla.'
-                : 'Debe incluir letras y números.'
+                : 'Debe incluir letras y numeros.'
             }}
           </small>
           <small class="mensaje-error" *ngIf="!passwordValida">
-            La contraseña debe incluir letras y números (mínimo 6 caracteres).
+            La contrasena debe incluir letras y numeros (minimo 6 caracteres).
           </small>
           <small class="mensaje-error" *ngIf="passwordField.invalid && passwordField.touched">
-            La contraseña es obligatoria y debe cumplir el formato solicitado.
+            La contrasena es obligatoria y debe cumplir el formato solicitado.
           </small>
         </div>
         <div class="campo">
-          <label for="confirmacion">Confirmar contraseña</label>
+          <label for="confirmacion">Confirmar contrasena</label>
           <div class="campo__password">
             <input
               id="confirmacion"
@@ -255,17 +255,17 @@
               type="button"
               (click)="mostrarConfirmacion = !mostrarConfirmacion"
             >
-              {{ mostrarConfirmacion ? '🙈' : '👁️' }}
+              {{ mostrarConfirmacion ? '' : '' }}
             </button>
           </div>
           <small class="mensaje-error" *ngIf="!passwordsCoinciden">
-            Las contraseñas no coinciden.
+            Las contrasenas no coinciden.
           </small>
           <small
             class="mensaje-error"
             *ngIf="confirmacionField.invalid && confirmacionField.touched"
           >
-            Confirma la contraseña (mínimo 6 caracteres).
+            Confirma la contrasena (minimo 6 caracteres).
           </small>
         </div>
         <div class="campo campo--switch">
@@ -280,7 +280,7 @@
             <span class="switch__slider"></span>
           </label>
           <small>
-            Actívalo para permitir que el usuario pueda iniciar sesión.
+            Activalo para permitir que el usuario pueda iniciar sesion.
           </small>
         </div>
       </div>
@@ -303,17 +303,17 @@
         </button>
       </div>
       <small class="formulario__ayuda">
-        Verifica que todos los campos estén completos y que la contraseña cumpla con
+        Verifica que todos los campos esten completos y que la contrasena cumpla con
         los requisitos antes de guardar.
       </small>
       <small class="formulario__ayuda" *ngIf="!formularioValido">
-        Asegúrate de completar todos los campos obligatorios.
+        Asegurate de completar todos los campos obligatorios.
       </small>
       <small class="formulario__ayuda" *ngIf="!passwordsCoinciden">
-        Las contraseñas deben coincidir para poder guardar.
+        Las contrasenas deben coincidir para poder guardar.
       </small>
       <small class="formulario__ayuda" *ngIf="!passwordValida">
-        La contraseña debe contener letras y números.
+        La contrasena debe contener letras y numeros.
       </small>
 
       <div class="formulario__resumen" *ngIf="usuarioSeleccionado">

@@ -169,7 +169,7 @@ export class PrivadoUsuarios implements OnInit {
 
   eliminarUsuario(usuario: UsuarioApi): void {
     const confirmacion = confirm(
-      `¿Seguro que deseas eliminar al usuario ${usuario.nombres} ${usuario.apellidos}?`
+      `Seguro que deseas eliminar al usuario ${usuario.nombres} ${usuario.apellidos}?`
     );
     if (!confirmacion) {
       return;
@@ -292,7 +292,7 @@ export class PrivadoUsuarios implements OnInit {
 
   private obtenerMensajeError(error: any): string {
     if (error?.status === 401) {
-      return 'Tu sesión expiró. Inicia sesión nuevamente para continuar.';
+      return 'Tu sesion expiro. Inicia sesion nuevamente para continuar.';
     }
 
     if (error?.status === 422 && error?.error?.errors) {
@@ -300,10 +300,10 @@ export class PrivadoUsuarios implements OnInit {
         .flat()
         .filter((mensaje) => typeof mensaje === 'string');
       if (mensajes.length > 0) {
-        return `Revisa los datos: ${mensajes.join(' • ')}`;
+        return `Revisa los datos: ${mensajes.join('  ')}`;
       }
     }
 
-    return 'No se pudo completar la acción. Intenta nuevamente.';
+    return 'No se pudo completar la accion. Intenta nuevamente.';
   }
 }

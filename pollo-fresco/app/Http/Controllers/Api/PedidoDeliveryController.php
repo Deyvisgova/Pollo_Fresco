@@ -281,7 +281,7 @@ class PedidoDeliveryController extends Controller
     }
 
     /**
-     * Lista solo pedidos con saldo pendiente para la pantalla de cuentas por cobrar.
+     * Lista clientes con saldo pendiente para la pantalla de cuentas por cobrar.
      */
     public function cuentasPorCobrar()
     {
@@ -291,16 +291,79 @@ class PedidoDeliveryController extends Controller
             return response()->json(['message' => 'El rol delivery no puede consultar cuentas por cobrar.'], 403);
         }
 
-        $pedidos = Pedido::query()
+        $pedidosPendientes = Pedido::query()
             ->with(['cliente', 'detalles', 'pagos', 'delivery:usuario_id,nombres,apellidos', 'vendedor:usuario_id,nombres,apellidos'])
             ->where('estado_id', '<>', 3)
-            ->orderByDesc('pedido_id')
+            ->orderBy('fecha_hora_creacion')
+            ->orderBy('pedido_id')
             ->get()
             ->map(fn (Pedido $pedido) => $this->anexarResumenPago($pedido))
             ->filter(fn (Pedido $pedido) => (float) $pedido->saldo_pendiente > 0)
             ->values();
 
-        return response()->json($pedidos);
+        $cuentas = $pedidosPendientes
+            ->groupBy('cliente_id')
+            ->map(fn ($pedidosCliente, $clienteId) => $this->construirCuentaCliente((int) $clienteId, $pedidosCliente))
+            ->sortByDesc('saldo_pendiente')
+            ->values();
+
+        return response()->json($cuentas);
+    }
+
+    /**
+     * Registra un pago de cliente y lo aplica primero a la deuda mas antigua.
+     */
+    public function registrarPagoCliente(Request $request, Cliente $cliente)
+    {
+        $this->asegurarColumnasPedidos();
+
+        if ($this->usuarioEsDelivery($request->user())) {
+            return response()->json(['message' => 'El rol delivery no puede registrar pagos de cuenta corriente.'], 403);
+        }
+
+        $payload = $request->validate([
+            'monto' => ['required', 'numeric', 'gt:0'],
+        ]);
+
+        $montoRecibido = round((float) $payload['monto'], 2);
+
+        DB::transaction(function () use ($cliente, $montoRecibido, $request) {
+            $restante = $montoRecibido;
+
+            $pedidos = Pedido::query()
+                ->with(['pagos'])
+                ->where('cliente_id', $cliente->cliente_id)
+                ->where('estado_id', '<>', 3)
+                ->orderBy('fecha_hora_creacion')
+                ->orderBy('pedido_id')
+                ->lockForUpdate()
+                ->get()
+                ->map(fn (Pedido $pedido) => $this->anexarResumenPago($pedido))
+                ->filter(fn (Pedido $pedido) => (float) $pedido->saldo_pendiente > 0)
+                ->values();
+
+            foreach ($pedidos as $pedido) {
+                if ($restante <= 0) {
+                    break;
+                }
+
+                $saldoAntes = (float) $pedido->saldo_pendiente;
+                $pagoAplicado = min($saldoAntes, $restante);
+                $restante = round($restante - $pagoAplicado, 2);
+                $pagadoDespues = round($this->montoPagadoPedido($pedido) + $pagoAplicado, 2);
+
+                PedidoPago::create([
+                    'pedido_id' => $pedido->pedido_id,
+                    'registrado_por' => $request->user()->id,
+                    'fecha_hora' => now(),
+                    'estado_pago' => $pagadoDespues >= (float) $pedido->total ? 'COMPLETO' : 'PARCIAL',
+                    'pago_parcial' => $pagoAplicado,
+                    'vuelto' => 0,
+                ]);
+            }
+        });
+
+        return response()->json($this->construirCuentaCliente((int) $cliente->cliente_id));
     }
 
     /**
@@ -412,6 +475,66 @@ class PedidoDeliveryController extends Controller
         }
 
         return $pedido;
+    }
+
+    private function construirCuentaCliente(int $clienteId, $pedidosPendientes = null): array
+    {
+        $cliente = Cliente::find($clienteId);
+
+        $pedidosBase = Pedido::query()
+            ->with(['cliente', 'detalles', 'pagos', 'delivery:usuario_id,nombres,apellidos', 'vendedor:usuario_id,nombres,apellidos'])
+            ->where('cliente_id', $clienteId)
+            ->where('estado_id', '<>', 3)
+            ->orderBy('fecha_hora_creacion')
+            ->orderBy('pedido_id')
+            ->get()
+            ->map(fn (Pedido $pedido) => $this->anexarResumenPago($pedido));
+
+        $pendientes = collect($pedidosPendientes ?? $pedidosBase->filter(fn (Pedido $pedido) => (float) $pedido->saldo_pendiente > 0)->values())
+            ->values();
+
+        $historial = PedidoPago::query()
+            ->whereIn('pedido_id', $pedidosBase->pluck('pedido_id'))
+            ->where('estado_pago', '<>', 'PENDIENTE')
+            ->orderByDesc('fecha_hora')
+            ->orderByDesc('pedido_pago_id')
+            ->get()
+            ->map(function (PedidoPago $pago) use ($pedidosBase) {
+                $pedido = $pedidosBase->firstWhere('pedido_id', $pago->pedido_id);
+                $usuario = DB::table('usuarios')->where('usuario_id', $pago->registrado_por)->first();
+                $nombreUsuario = $usuario
+                    ? trim((string) (($usuario->nombres ?? '') . ' ' . ($usuario->apellidos ?? '')))
+                    : null;
+
+                return [
+                    'pedido_pago_id' => $pago->pedido_pago_id,
+                    'pedido_id' => $pago->pedido_id,
+                    'fecha_hora' => optional($pago->fecha_hora)->toDateTimeString(),
+                    'dia_nombre' => optional($pago->fecha_hora)->locale('es')->translatedFormat('l'),
+                    'monto' => round((float) $pago->pago_parcial, 2),
+                    'estado_pago' => $pago->estado_pago,
+                    'tipo_pedido' => $pedido?->tipo_pedido,
+                    'mesa' => $pedido?->mesa,
+                    'registrado_por' => $nombreUsuario ?: 'Sistema',
+                ];
+            })
+            ->values();
+
+        $total = round($pedidosBase->sum(fn (Pedido $pedido) => (float) $pedido->total), 2);
+        $pagado = round($pedidosBase->sum(fn (Pedido $pedido) => (float) $pedido->monto_pagado), 2);
+        $saldo = round($pendientes->sum(fn (Pedido $pedido) => (float) $pedido->saldo_pendiente), 2);
+
+        return [
+            'cliente' => $cliente,
+            'total_deuda' => $total,
+            'monto_pagado' => $pagado,
+            'saldo_pendiente' => $saldo,
+            'cantidad_pedidos_pendientes' => $pendientes->count(),
+            'fecha_deuda_mas_antigua' => optional($pendientes->first()?->fecha_hora_creacion)->toDateTimeString(),
+            'ultimo_pago' => $historial->first(),
+            'pedidos' => $pendientes->values(),
+            'historial_pagos' => $historial,
+        ];
     }
 
     private function montoPagadoPedido(Pedido $pedido): float

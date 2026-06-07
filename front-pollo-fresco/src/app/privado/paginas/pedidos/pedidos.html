@@ -1,7 +1,7 @@
 <section class="seccion">
   <div class="seccion__encabezado">
     <h2>Pedidos</h2>
-    <p>Gestión integral de pedidos delivery.</p>
+    <p>Gestion integral de pedidos delivery.</p>
   </div>
 
   <div class="tabs-vista" *ngIf="!usuarioEsDelivery()">
@@ -44,7 +44,7 @@
           </div>
           <div class="cliente-sugerencias" *ngIf="clientesSugeridos.length">
             <button type="button" *ngFor="let cliente of clientesSugeridos" (click)="seleccionarCliente(cliente)">
-              {{ cliente.nombres }} {{ cliente.apellidos || '' }} · DNI: {{ cliente.dni || 'S/D' }}
+              {{ cliente.nombres }} {{ cliente.apellidos || '' }} - DNI: {{ cliente.dni || 'S/D' }}
             </button>
           </div>
         </div>
@@ -89,21 +89,40 @@
         <div class="tabla-detalle__encabezado">
           <span>Cant.</span>
           <span>Unidad</span>
-          <span>Descripción</span>
-          <span>P. Unit</span>
+          <span>Descripcion</span>
+          <span>Precio</span>
           <span>Total</span>
           <span></span>
         </div>
         <div class="tabla-detalle__fila" *ngFor="let item of detalles; let i = index">
           <input [(ngModel)]="item.cantidad" (ngModelChange)="validarCantidadPorStock(i)" type="number" min="0" step="0.01" />
-          <select [(ngModel)]="item.unidad">
+          <select [(ngModel)]="item.unidad" *ngIf="!esDetalleHuevos(item); else presentacionHuevoPedido">
             <option value="KG">KG</option>
             <option value="UND">UND</option>
           </select>
+          <ng-template #presentacionHuevoPedido>
+            <select [(ngModel)]="item.presentacionVenta" (ngModelChange)="validarCantidadPorStock(i)">
+              <option *ngFor="let presentacion of presentacionesHuevo" [value]="presentacion.id">{{ presentacion.etiqueta }}</option>
+            </select>
+          </ng-template>
           <input [(ngModel)]="item.descripcion" type="text" placeholder="Escribe nombre del producto" />
-          <input [(ngModel)]="item.precioUnitario" type="number" min="0" step="0.01" />
+          <input
+            [(ngModel)]="item.precioUnitario"
+            type="number"
+            min="0"
+            step="0.01"
+            [placeholder]="esDetalleHuevos(item) ? 'Precio total' : 'Precio unitario'"
+          />
           <span class="tabla-detalle__total">S/ {{ totalDetalle(item) | number: '1.2-2' }}</span>
-          <button type="button" class="boton-icono" (click)="eliminarLineaDetalle(i)">✕</button>
+          <button
+            type="button"
+            class="boton-icono"
+            aria-label="Eliminar detalle"
+            title="Eliminar"
+            (click)="eliminarLineaDetalle(i)"
+          >
+            x
+          </button>
         </div>
       </div>
 
@@ -182,7 +201,7 @@
         <table class="tabla tabla--registros">
         <thead>
           <tr>
-            <th>N°</th>
+            <th>Nro</th>
             <th>Cliente</th>
             <th>Fecha</th>
             <th>Total</th>
@@ -193,7 +212,7 @@
         </thead>
         <tbody>
           <tr *ngFor="let pedido of pedidosFiltrados">
-            <td data-label="N°">{{ obtenerNumeroVisualPedido(pedido) }}</td>
+            <td data-label="Nro">{{ obtenerNumeroVisualPedido(pedido) }}</td>
             <td data-label="Cliente">{{ pedido.cliente.nombres }} {{ pedido.cliente.apellidos || '' }}</td>
             <td data-label="Fecha">{{ obtenerFechaHoraCorta(pedido.fecha_hora_creacion) }}</td>
             <td data-label="Total">S/ {{ pedido.total | number: '1.2-2' }}</td>
@@ -241,52 +260,52 @@
   </div>
 
   <div class="contenido-pedidos" *ngIf="subpaginaActiva === 'cuentas'">
-    <article class="tarjeta tabla-pedidos">
-      <div class="tarjeta__titulo">
-        <h4>Cuentas por cobrar</h4>
-        <input type="text" [(ngModel)]="filtro" (ngModelChange)="aplicarFiltro()" placeholder="Buscar cliente o pedido..." />
+    <article class="tarjeta cuentas-cartera">
+      <div class="tarjeta__titulo cuentas-cartera__header">
+        <div>
+          <h4>Cuentas por cobrar</h4>
+          <p>Cuenta corriente por cliente. Los pagos se aplican primero a la deuda mas antigua.</p>
+        </div>
+        <input type="text" [(ngModel)]="filtro" (ngModelChange)="aplicarFiltro()" placeholder="Buscar cliente, DNI o pedido..." />
       </div>
 
-      <div class="tabla-pedidos__contenedor">
-        <table class="tabla tabla--cuentas">
-          <thead>
-            <tr>
-              <th>N</th>
-              <th>Cliente</th>
-              <th>Tipo</th>
-              <th>Fecha</th>
-              <th>Total</th>
-              <th>Pagado</th>
-              <th>Saldo</th>
-              <th>Estado</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let pedido of pedidosFiltrados">
-              <td data-label="N°">{{ obtenerNumeroVisualPedido(pedido) }}</td>
-              <td data-label="Cliente">{{ pedido.cliente.nombres }} {{ pedido.cliente.apellidos || '' }}</td>
-              <td data-label="Tipo">{{ obtenerTipoPedido(pedido) }}</td>
-              <td data-label="Fecha">{{ obtenerFechaHoraCorta(pedido.fecha_hora_creacion) }}</td>
-              <td data-label="Total">S/ {{ pedido.total | number: '1.2-2' }}</td>
-              <td data-label="Pagado">S/ {{ obtenerMontoPagado(pedido) | number: '1.2-2' }}</td>
-              <td data-label="Saldo"><strong>S/ {{ obtenerSaldoPendiente(pedido) | number: '1.2-2' }}</strong></td>
-              <td data-label="Estado"><span class="badge badge--tabla" [ngClass]="obtenerClaseBadgePago(pedido)">{{ obtenerEtiquetaEstadoPago(pedido) }}</span></td>
-              <td data-label="Acciones">
-                <div class="tabla-acciones tabla-acciones--centradas">
-                  <button type="button" class="boton boton-tabla boton-tabla--estado-pago" (click)="abrirRegistroPagoCuenta(pedido)">Registrar pago</button>
-                  <button type="button" class="boton-icono boton-icono--ojo" title="Ver detalle" aria-label="Ver detalle" (click)="abrirDetallePedido(pedido)">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5c-7 0-11 7-11 7s4 7 11 7 11-7 11-7-4-7-11-7Zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm0-2.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/></svg>
-                  </button>
-                </div>
-              </td>
-            </tr>
-            <tr *ngIf="!cargando && pedidosFiltrados.length === 0">
-              <td data-label="" colspan="9">No hay cuentas pendientes.</td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="cuentas-grid" *ngIf="cuentasFiltradas.length; else sinCuentasPendientes">
+        <article class="cuenta-card" *ngFor="let cuenta of cuentasFiltradas">
+          <div class="cuenta-card__top">
+            <div class="cuenta-card__avatar">{{ obtenerInicialesCliente(cuenta.cliente) }}</div>
+            <div>
+              <h5>{{ obtenerNombreCliente(cuenta.cliente) }}</h5>
+              <p>{{ cuenta.cliente.celular || cuenta.cliente.dni || cuenta.cliente.ruc || 'Sin contacto registrado' }}</p>
+            </div>
+          </div>
+
+          <div class="cuenta-card__saldo">
+            <span>Saldo pendiente</span>
+            <strong>S/ {{ cuenta.saldo_pendiente | number: '1.2-2' }}</strong>
+          </div>
+
+          <div class="cuenta-card__metricas">
+            <span><small>Pagado</small><strong>S/ {{ cuenta.monto_pagado | number: '1.2-2' }}</strong></span>
+            <span><small>Pedidos</small><strong>{{ cuenta.cantidad_pedidos_pendientes }}</strong></span>
+            <span><small>Deuda antigua</small><strong>{{ obtenerFechaHoraCorta(cuenta.fecha_deuda_mas_antigua) }}</strong></span>
+          </div>
+
+          <div class="cuenta-card__ultimo">
+            <span>Ultimo pago</span>
+            <strong *ngIf="cuenta.ultimo_pago; else sinPagoCliente">{{ obtenerFechaHoraCorta(cuenta.ultimo_pago.fecha_hora) }} - S/ {{ cuenta.ultimo_pago.monto | number: '1.2-2' }}</strong>
+            <ng-template #sinPagoCliente><strong>Sin pagos registrados</strong></ng-template>
+          </div>
+
+          <div class="cuenta-card__acciones">
+            <button type="button" class="boton boton--primario" (click)="abrirRegistroPagoCliente(cuenta)">Registrar pago</button>
+            <button type="button" class="boton boton--secundario" (click)="abrirCuentaCliente(cuenta)">Ver cuenta</button>
+          </div>
+        </article>
       </div>
+
+      <ng-template #sinCuentasPendientes>
+        <p class="tabla__sin-resultados" *ngIf="!cargando">No hay cuentas pendientes.</p>
+      </ng-template>
     </article>
   </div>
 
@@ -430,21 +449,75 @@
 </div>
 
 
-<div class="modal-fondo" *ngIf="pedidoPagoPendiente" (click)="cerrarRegistroPagoCuenta()">
+<div class="modal-fondo" *ngIf="cuentaClienteSeleccionada" (click)="cerrarCuentaCliente()">
+  <article class="modal-contenido modal-contenido--cuenta-cliente" (click)="$event.stopPropagation()">
+    <header class="tarjeta__encabezado tarjeta__encabezado--acciones">
+      <div>
+        <h4>{{ obtenerNombreCliente(cuentaClienteSeleccionada.cliente) }}</h4>
+        <p>Historial de cuenta corriente y deudas pendientes.</p>
+      </div>
+      <button type="button" class="boton boton--secundario" (click)="cerrarCuentaCliente()">Cerrar</button>
+    </header>
+
+    <section class="cuenta-modal-resumen">
+      <span>Total deuda <strong>S/ {{ cuentaClienteSeleccionada.total_deuda | number: '1.2-2' }}</strong></span>
+      <span>Pagado <strong>S/ {{ cuentaClienteSeleccionada.monto_pagado | number: '1.2-2' }}</strong></span>
+      <span>Saldo <strong>S/ {{ cuentaClienteSeleccionada.saldo_pendiente | number: '1.2-2' }}</strong></span>
+    </section>
+
+    <section class="cuenta-modal-grid">
+      <div class="bloque bloque--sin-borde">
+        <h5>Pedidos pendientes</h5>
+        <div class="cuenta-pedido" *ngFor="let pedido of cuentaClienteSeleccionada.pedidos">
+          <div>
+            <strong>Pedido #{{ obtenerNumeroVisualPedido(pedido) }}  {{ obtenerTipoPedido(pedido) }}</strong>
+            <span>{{ obtenerFechaLarga(pedido.fecha_hora_creacion) }}</span>
+          </div>
+          <div>
+            <span>Total S/ {{ pedido.total | number: '1.2-2' }}</span>
+            <strong>Debe S/ {{ obtenerSaldoPendiente(pedido) | number: '1.2-2' }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="bloque bloque--sin-borde">
+        <h5>Historial de pagos</h5>
+        <div class="cuenta-pago" *ngFor="let pago of cuentaClienteSeleccionada.historial_pagos">
+          <div>
+            <strong>{{ obtenerFechaLarga(pago.fecha_hora) }}</strong>
+            <span>Pedido #{{ pago.pedido_id }}  {{ pago.registrado_por }}</span>
+          </div>
+          <strong>S/ {{ pago.monto | number: '1.2-2' }}</strong>
+        </div>
+        <p class="detalle-pedido__vacio" *ngIf="!cuentaClienteSeleccionada.historial_pagos.length">Sin pagos registrados.</p>
+      </div>
+    </section>
+
+    <button type="button" class="boton boton--primario" (click)="abrirRegistroPagoCliente(cuentaClienteSeleccionada)">Registrar pago</button>
+  </article>
+</div>
+
+<div class="modal-fondo" *ngIf="pedidoPagoPendiente || cuentaPagoPendiente" (click)="cerrarRegistroPagoCuenta()">
   <article class="modal-contenido modal-contenido--pago-cuenta" (click)="$event.stopPropagation()">
     <header class="tarjeta__encabezado tarjeta__encabezado--acciones">
       <div>
         <h4>Registrar pago</h4>
-        <p>{{ pedidoPagoPendiente.cliente.nombres }} {{ pedidoPagoPendiente.cliente.apellidos || '' }} - {{ obtenerTipoPedido(pedidoPagoPendiente) }}</p>
+        <p *ngIf="pedidoPagoPendiente">{{ obtenerNombreCliente(pedidoPagoPendiente.cliente) }} ? {{ obtenerTipoPedido(pedidoPagoPendiente) }}</p>
+        <p *ngIf="cuentaPagoPendiente">{{ obtenerNombreCliente(cuentaPagoPendiente.cliente) }} - se aplicara a la deuda mas antigua.</p>
       </div>
       <button type="button" class="boton boton--secundario" (click)="cerrarRegistroPagoCuenta()">Cerrar</button>
     </header>
 
     <section class="bloque bloque--sin-borde">
-      <div class="resumen-cuenta">
+      <div class="resumen-cuenta" *ngIf="pedidoPagoPendiente">
         <span>Total: <strong>S/ {{ pedidoPagoPendiente.total | number: '1.2-2' }}</strong></span>
         <span>Pagado: <strong>S/ {{ obtenerMontoPagado(pedidoPagoPendiente) | number: '1.2-2' }}</strong></span>
         <span>Saldo: <strong>S/ {{ obtenerSaldoPendiente(pedidoPagoPendiente) | number: '1.2-2' }}</strong></span>
+      </div>
+      <div class="resumen-cuenta" *ngIf="cuentaPagoPendiente">
+        <span>Total: <strong>S/ {{ cuentaPagoPendiente.total_deuda | number: '1.2-2' }}</strong></span>
+        <span>Pagado: <strong>S/ {{ cuentaPagoPendiente.monto_pagado | number: '1.2-2' }}</strong></span>
+        <span>Saldo: <strong>S/ {{ cuentaPagoPendiente.saldo_pendiente | number: '1.2-2' }}</strong></span>
       </div>
 
       <label class="campo">
@@ -463,7 +536,7 @@
 <div class="modal-fondo" *ngIf="pedidoSeleccionado" (click)="cerrarModalGestion()">
   <article class="modal-contenido modal-contenido--gestion" (click)="$event.stopPropagation()">
     <header class="tarjeta__encabezado tarjeta__encabezado--acciones">
-      <h4>Gestión de entrega · Pedido #{{ obtenerNumeroVisualPedido(pedidoSeleccionado) }}</h4>
+      <h4>Gestion de entrega A Pedido #{{ obtenerNumeroVisualPedido(pedidoSeleccionado) }}</h4>
       <button type="button" class="boton boton--secundario" (click)="cerrarModalGestion()">Cerrar</button>
     </header>
 
@@ -550,8 +623,8 @@
     <section class="bloque">
       <h5>Ficha de domicilio</h5>
       <div class="acciones-ubicacion">
-        <button type="button" class="boton boton--secundario" (click)="capturarUbicacionActual()">📍 Capturar GPS</button>
-        <button type="button" class="boton boton--secundario" (click)="frontisInput.click()">📷 Tomar frontis</button>
+        <button type="button" class="boton boton--secundario" (click)="capturarUbicacionActual()">Y Capturar GPS</button>
+        <button type="button" class="boton boton--secundario" (click)="frontisInput.click()">Y Tomar frontis</button>
         <input #frontisInput type="file" accept="image/*" capture="environment" hidden (change)="manejarFotoFrontis($event)" />
       </div>
       <div class="formulario-grid formulario-grid--comprobante">
@@ -594,7 +667,7 @@
       <label class="campo">
         <span>DNI o RUC</span>
         <div class="campo__acciones">
-          <input [(ngModel)]="consultaDocumento" type="text" placeholder="8 dígitos (DNI) o 11 dígitos (RUC)" />
+          <input [(ngModel)]="consultaDocumento" type="text" placeholder="8 digitos (DNI) o 11 digitos (RUC)" />
           <button class="boton boton--primario" type="button" (click)="consultarDocumentoApi()" [disabled]="consultaCargando">
             {{ consultaCargando ? 'Consultando...' : 'Consultar' }}
           </button>
@@ -605,11 +678,11 @@
     <form class="formulario" (ngSubmit)="guardarClienteDesdeModal()">
       <label class="campo">
         <span>DNI</span>
-        <input [(ngModel)]="formularioCliente.dni" name="dni" type="text" placeholder="8 dígitos" />
+        <input [(ngModel)]="formularioCliente.dni" name="dni" type="text" placeholder="8 digitos" />
       </label>
       <label class="campo">
         <span>RUC</span>
-        <input [(ngModel)]="formularioCliente.ruc" name="ruc" type="text" placeholder="11 dígitos" />
+        <input [(ngModel)]="formularioCliente.ruc" name="ruc" type="text" placeholder="11 digitos" />
       </label>
       <label class="campo">
         <span>Nombres</span>
@@ -625,14 +698,14 @@
       </label>
       <label class="campo">
         <span>Celular</span>
-        <input [(ngModel)]="formularioCliente.celular" name="celular" type="text" placeholder="9 dígitos" />
+        <input [(ngModel)]="formularioCliente.celular" name="celular" type="text" placeholder="9 digitos" />
       </label>
       <label class="campo">
-        <span>Dirección</span>
+        <span>Direccion</span>
         <input [(ngModel)]="formularioCliente.direccion" name="direccion" type="text" />
       </label>
       <label class="campo">
-        <span>Dirección fiscal</span>
+        <span>Direccion fiscal</span>
         <input [(ngModel)]="formularioCliente.direccionFiscal" name="direccionFiscal" type="text" />
       </label>
       <label class="campo">

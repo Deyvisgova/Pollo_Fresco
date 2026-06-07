@@ -15,7 +15,7 @@ interface RespuestaLoginApi {
 }
 
 /**
- * Servicio de autenticación que centraliza el inicio de sesión
+ * Servicio de autenticacion que centraliza el inicio de sesion
  * contra la API de Laravel.
  */
 @Injectable({ providedIn: 'root' })
@@ -29,7 +29,7 @@ export class AutenticacionServicio {
   ) {}
 
   /**
-   * Envía las credenciales al backend, guarda la sesión y retorna el usuario autenticado.
+   * Envia las credenciales al backend, guarda la sesion y retorna el usuario autenticado.
    */
   iniciarSesion(credenciales: CredencialesIngreso): Observable<UsuarioSesion> {
     return this.http
@@ -43,7 +43,7 @@ export class AutenticacionServicio {
   }
 
   /**
-   * Cierra la sesión actual en el backend y limpia la sesión local.
+   * Cierra la sesion actual en el backend y limpia la sesion local.
    */
   cerrarSesion(): Observable<void> {
     const token = this.sesionServicio.obtenerToken();

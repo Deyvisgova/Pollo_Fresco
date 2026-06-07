@@ -10,6 +10,9 @@ interface LoteRegistro {
   nombre: string;
   productoId: number;
   cantidad: number;
+  presentacionIngreso: PresentacionHuevo | null;
+  cantidadPresentacion: number | null;
+  factorConversion: number | null;
   costoKilo: number;
   precioVenta: number;
   codigoComprobante: string;
@@ -41,6 +44,9 @@ interface LoteApi {
   producto_id: number;
   producto_nombre: string;
   cantidad: number;
+  presentacion_ingreso: PresentacionHuevo | null;
+  cantidad_presentacion: number | null;
+  factor_conversion: number | null;
   costo_kilo: number;
   precio_venta: number;
   codigo_comprobante: string;
@@ -59,10 +65,15 @@ interface LoteForm {
   codigoComprobante: string;
   productoId: number | null;
   cantidad: number | null;
+  presentacionIngreso: PresentacionHuevo;
+  cantidadPresentacion: number | null;
+  costoTotalHuevos: number | null;
   costoKilo: number | null;
   precioVenta: number | null;
   proveedorId: number | null;
 }
+
+type PresentacionHuevo = 'UNIDAD' | 'MEDIO_CASILLERO' | 'CASILLERO' | 'MEDIA_JAVA' | 'JAVA';
 
 interface ProveedorApi {
   proveedor_id: number;
@@ -100,6 +111,9 @@ export class PrivadoOtrosProductosLotes implements OnInit {
     codigoComprobante: '',
     productoId: null,
     cantidad: null,
+    presentacionIngreso: 'JAVA',
+    cantidadPresentacion: null,
+    costoTotalHuevos: null,
     costoKilo: null,
     precioVenta: null,
     proveedorId: null
@@ -149,6 +163,9 @@ export class PrivadoOtrosProductosLotes implements OnInit {
       codigoComprobante: '',
       productoId: null,
       cantidad: null,
+      presentacionIngreso: 'JAVA',
+      cantidadPresentacion: null,
+      costoTotalHuevos: null,
       costoKilo: null,
       precioVenta: null,
       proveedorId: null
@@ -222,6 +239,10 @@ export class PrivadoOtrosProductosLotes implements OnInit {
     this.loteForm.productoId = producto.id;
     this.filtroProducto = producto.nombre;
     this.dropdownProductoAbierto = false;
+    if (producto.grupo_venta === 'HUEVOS') {
+      this.loteForm.presentacionIngreso = this.loteForm.presentacionIngreso || 'JAVA';
+      this.actualizarCantidadBaseHuevos();
+    }
   }
 
   seleccionarProveedor(proveedor: ProveedorApi): void {
@@ -260,8 +281,46 @@ export class PrivadoOtrosProductosLotes implements OnInit {
     return lote.estado === 'ABIERTO' && lote.cantidad <= 5;
   }
 
+  get productoSeleccionado(): Producto | null {
+    if (!this.loteForm.productoId) {
+      return null;
+    }
+    return this.productos.find((item) => item.id === this.loteForm.productoId) ?? null;
+  }
+
+  get loteEsHuevos(): boolean {
+    return this.productoSeleccionado?.grupo_venta === 'HUEVOS';
+  }
+
+  presentacionesHuevo = [
+    { id: 'UNIDAD' as PresentacionHuevo, etiqueta: 'Unidad', factor: 1 },
+    { id: 'MEDIO_CASILLERO' as PresentacionHuevo, etiqueta: 'Medio casillero', factor: 15 },
+    { id: 'CASILLERO' as PresentacionHuevo, etiqueta: 'Casillero', factor: 30 },
+    { id: 'MEDIA_JAVA' as PresentacionHuevo, etiqueta: 'Media java', factor: 180 },
+    { id: 'JAVA' as PresentacionHuevo, etiqueta: 'Java', factor: 360 },
+  ];
+
+  factorPresentacion(presentacion: PresentacionHuevo | null | undefined): number {
+    return this.presentacionesHuevo.find((item) => item.id === presentacion)?.factor ?? 1;
+  }
+
+  actualizarCantidadBaseHuevos(): void {
+    if (!this.loteEsHuevos) {
+      return;
+    }
+    const cantidadPresentacion = Number(this.loteForm.cantidadPresentacion ?? 0);
+    this.loteForm.cantidad = Number((cantidadPresentacion * this.factorPresentacion(this.loteForm.presentacionIngreso)).toFixed(2));
+    const costoTotal = Number(this.loteForm.costoTotalHuevos ?? 0);
+    this.loteForm.costoKilo = this.loteForm.cantidad > 0 ? Number((costoTotal / this.loteForm.cantidad).toFixed(6)) : null;
+    this.loteForm.precioVenta = 0;
+  }
+
   guardarLote(): void {
-    if (!this.loteForm.productoId || !this.loteForm.cantidad || !this.loteForm.proveedorId || !this.loteForm.costoKilo || !this.loteForm.precioVenta || !this.loteForm.codigoComprobante.trim()) {
+    if (this.loteEsHuevos) {
+      this.actualizarCantidadBaseHuevos();
+    }
+
+    if (!this.loteForm.productoId || !this.loteForm.cantidad || !this.loteForm.proveedorId || this.loteForm.costoKilo === null || this.loteForm.costoKilo < 0 || !this.loteForm.codigoComprobante.trim()) {
       this.mensajeError = 'Completa todos los campos obligatorios del lote y detalle.';
       return;
     }
@@ -271,7 +330,9 @@ export class PrivadoOtrosProductosLotes implements OnInit {
       producto_id: this.loteForm.productoId,
       cantidad: this.loteForm.cantidad,
       costo_kilo: this.loteForm.costoKilo,
-      precio_venta: this.loteForm.precioVenta,
+      precio_venta: this.loteForm.precioVenta ?? 0,
+      presentacion_ingreso: this.loteEsHuevos ? this.loteForm.presentacionIngreso : null,
+      cantidad_presentacion: this.loteEsHuevos ? this.loteForm.cantidadPresentacion : null,
       codigo_comprobante: this.loteForm.codigoComprobante.trim(),
       fecha_ingreso: this.loteForm.fechaIngreso,
       proveedor_id: this.loteForm.proveedorId
@@ -290,6 +351,9 @@ export class PrivadoOtrosProductosLotes implements OnInit {
           nombre: respuesta.producto_nombre,
           productoId: respuesta.producto_id,
           cantidad: respuesta.cantidad,
+          presentacionIngreso: respuesta.presentacion_ingreso,
+          cantidadPresentacion: respuesta.cantidad_presentacion,
+          factorConversion: respuesta.factor_conversion,
           costoKilo: respuesta.costo_kilo,
           precioVenta: respuesta.precio_venta,
           codigoComprobante: respuesta.codigo_comprobante,
@@ -333,6 +397,9 @@ export class PrivadoOtrosProductosLotes implements OnInit {
       codigoComprobante: lote.codigoComprobante,
       productoId: lote.productoId,
       cantidad: lote.cantidad,
+      presentacionIngreso: lote.presentacionIngreso ?? 'JAVA',
+      cantidadPresentacion: lote.cantidadPresentacion,
+      costoTotalHuevos: lote.totalCosto,
       costoKilo: lote.costoKilo,
       precioVenta: lote.precioVenta,
       proveedorId: lote.proveedorId
@@ -351,11 +418,11 @@ export class PrivadoOtrosProductosLotes implements OnInit {
 
     swal
       .fire({
-        title: '¿Eliminar lote?',
-        text: 'Esta acción no se puede deshacer.',
+        title: 'Eliminar lote - ',
+        text: 'Esta accion no se puede deshacer.',
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonText: 'Sí, eliminar',
+        confirmButtonText: 'Si, eliminar',
         cancelButtonText: 'Cancelar'
       })
       .then((resultado) => {
@@ -370,7 +437,7 @@ export class PrivadoOtrosProductosLotes implements OnInit {
               this.lotes = this.lotes.filter((item) => item.compraLoteId !== lote.compraLoteId);
               swal.fire({
                 title: 'Eliminado',
-                text: 'El lote se eliminó correctamente.',
+                text: 'El lote se elimino correctamente.',
                 icon: 'success',
               });
             },
@@ -413,6 +480,9 @@ export class PrivadoOtrosProductosLotes implements OnInit {
           nombre: lote.producto_nombre,
           productoId: lote.producto_id,
           cantidad: lote.cantidad,
+          presentacionIngreso: lote.presentacion_ingreso,
+          cantidadPresentacion: lote.cantidad_presentacion,
+          factorConversion: lote.factor_conversion,
           costoKilo: lote.costo_kilo,
           precioVenta: lote.precio_venta,
           codigoComprobante: lote.codigo_comprobante,

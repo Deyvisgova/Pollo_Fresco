@@ -6,9 +6,9 @@
       (click)="toggleSidebar()"
       [attr.aria-expanded]="esMovilOTablet ? sidebarMovilAbierto : !sidebarColapsadoDesktop"
       aria-controls="panel-sidebar"
-      aria-label="Mostrar u ocultar menú lateral"
+      aria-label="Mostrar u ocultar menu lateral"
     >
-      ☰
+      <span class="panel__toggle-linea" aria-hidden="true"></span>
     </button>
 
     <p class="panel__topbar-mensaje">Bienvenidos al sistema de EL POLLO FRESCO</p>
@@ -21,8 +21,8 @@
         (click)="toggleTema()"
         [attr.aria-label]="temaActual() === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
       >
-        <i class="fas fa-sun theme-track-icon theme-track-icon-sun" aria-hidden="true"></i>
-        <i class="fas fa-moon theme-track-icon theme-track-icon-moon" aria-hidden="true"></i>
+        <span class="theme-track-icon theme-track-icon-sun" aria-hidden="true"></span>
+        <span class="theme-track-icon theme-track-icon-moon" aria-hidden="true"></span>
         <span class="theme-toggle__knob" aria-hidden="true"></span>
       </button>
 
@@ -33,18 +33,18 @@
         [attr.aria-expanded]="menuUsuarioAbierto"
         (click)="toggleMenuUsuario($event)"
       >
-        <span class="panel__usuario-icono" aria-hidden="true">👤</span>
+        <span class="panel__usuario-icono" aria-hidden="true"></span>
         <span class="panel__usuario-nombre">{{ nombreUsuario() }}</span>
-        <span class="panel__usuario-flecha" aria-hidden="true">⌄</span>
+        <span class="panel__usuario-flecha" aria-hidden="true"></span>
       </button>
 
       <div class="panel__usuario-menu" *ngIf="menuUsuarioAbierto">
         <p class="panel__usuario-titulo">{{ nombreUsuario() }}</p>
         <button type="button" class="panel__usuario-item" (click)="irACambiarContrasena()">
-          Cambiar contraseña
+          Cambiar contrasena
         </button>
         <button type="button" class="panel__usuario-item panel__usuario-item--salir" (click)="cerrarSesion()">
-          Cerrar sesión
+          Cerrar sesion
         </button>
       </div>
       </div>
@@ -71,7 +71,7 @@
         <p class="panel__empresa">{{ configuracionEmpresa().nombreEmpresa }}</p>
       </div>
 
-      <nav class="panel__menu" aria-label="Navegación del panel">
+      <nav class="panel__menu" aria-label="Navegacion del panel">
         <a
           *ngFor="let item of menuPrincipal"
           [routerLink]="item.ruta"
@@ -80,7 +80,7 @@
           [attr.title]="item.etiqueta"
           (click)="cerrarSidebarEnMovil()"
         >
-          <span class="panel__link-icono" aria-hidden="true">{{ item.icono }}</span>
+          <span class="panel__link-icono" [attr.data-icon]="item.icono" aria-hidden="true"></span>
           <span class="panel__link-texto">{{ item.etiqueta }}</span>
         </a>
 
@@ -93,9 +93,9 @@
             [attr.aria-expanded]="ventaMenuAbierto"
             title="Venta"
           >
-            <span class="panel__link-icono" aria-hidden="true">🧾</span>
+            <span class="panel__link-icono" data-icon="venta" aria-hidden="true"></span>
             <span class="panel__link-texto">Venta</span>
-            <span class="panel__chevron" aria-hidden="true">⌄</span>
+            <span class="panel__chevron" aria-hidden="true"></span>
           </button>
 
           <div class="panel__submenu" *ngIf="ventaMenuAbierto">
@@ -127,14 +127,14 @@
           [attr.title]="item.etiqueta"
           (click)="cerrarSidebarEnMovil()"
         >
-          <span class="panel__link-icono" aria-hidden="true">{{ item.icono }}</span>
+          <span class="panel__link-icono" [attr.data-icon]="item.icono" aria-hidden="true"></span>
           <span class="panel__link-texto">{{ item.etiqueta }}</span>
         </a>
       </nav>
 
-      <button class="panel__salir panel__salir--fijo" type="button" (click)="cerrarSesion()" title="Cerrar sesión">
-        <span class="panel__link-icono" aria-hidden="true">🚪</span>
-        <span class="panel__link-texto">Cerrar sesión</span>
+      <button class="panel__salir panel__salir--fijo" type="button" (click)="cerrarSesion()" title="Cerrar sesion">
+        <span class="panel__link-icono" data-icon="salir" aria-hidden="true"></span>
+        <span class="panel__link-texto">Cerrar sesion</span>
       </button>
     </aside>
 

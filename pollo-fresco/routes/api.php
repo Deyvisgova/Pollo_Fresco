@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\UsuariosController;
 use App\Http\Controllers\Api\ClienteController;
 use App\Http\Controllers\Api\ConfiguracionController;
 use App\Http\Controllers\Api\EntregaProveedorController;
+use App\Http\Controllers\Api\GastoController;
 use App\Http\Controllers\Api\OtrosProductosController;
 use App\Http\Controllers\Api\PagoProveedorController;
 use App\Http\Controllers\Api\PedidoDeliveryController;
@@ -91,6 +92,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('pagos-proveedor/pdf', [PagoProveedorController::class, 'pdf']);
     Route::post('pagos-proveedor', [PagoProveedorController::class, 'store']);
 
+    Route::get('gastos/resumen', [GastoController::class, 'resumen']);
+    Route::get('gastos/categorias', [GastoController::class, 'categorias']);
+    Route::post('gastos/categorias', [GastoController::class, 'guardarCategoria']);
+    Route::post('gastos', [GastoController::class, 'guardarGasto']);
+    Route::patch('gastos/{gastoId}/anular', [GastoController::class, 'eliminarGasto']);
+    Route::delete('gastos/{gastoId}', [GastoController::class, 'eliminarGasto']);
+    Route::put('gastos/venta-pollo-gallina', [GastoController::class, 'guardarVentaPolloGallina']);
+    Route::post('gastos/cierre-mensual', [GastoController::class, 'cerrarMes']);
+
     Route::get('otros-productos/productos', [OtrosProductosController::class, 'productosIndex']);
     Route::post('otros-productos/productos', [OtrosProductosController::class, 'productosStore']);
     Route::put('otros-productos/productos/{productoId}', [OtrosProductosController::class, 'productosUpdate']);
@@ -115,6 +125,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('pedidos-delivery', [PedidoDeliveryController::class, 'index']);
     Route::post('pedidos-delivery', [PedidoDeliveryController::class, 'store']);
     Route::get('cuentas-por-cobrar', [PedidoDeliveryController::class, 'cuentasPorCobrar']);
+    Route::post('cuentas-por-cobrar/clientes/{cliente}/pagos', [PedidoDeliveryController::class, 'registrarPagoCliente']);
     Route::patch('pedidos-delivery/{pedido}/tomar', [PedidoDeliveryController::class, 'tomarPedido']);
     Route::post('pedidos-delivery/{pedido}/pagos', [PedidoDeliveryController::class, 'registrarPago']);
     Route::patch('pedidos-delivery/{pedido}/gestion', [PedidoDeliveryController::class, 'gestionarEstadoPago']);

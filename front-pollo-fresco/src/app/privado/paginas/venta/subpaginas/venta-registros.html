@@ -6,13 +6,13 @@
 
   <article class="tarjeta">
     <div class="filtros">
-      <input type="text" [(ngModel)]="buscando" placeholder="Buscar por cliente, serie, número o documento" />
+      <input type="text" [(ngModel)]="buscando" placeholder="Buscar por cliente, serie, numero o documento" />
       <input type="date" [(ngModel)]="fechaDesde" />
       <input type="date" [(ngModel)]="fechaHasta" />
       <select [(ngModel)]="formatoVoucher">
         <option value="a4">A4</option>
-        <option value="ticket-80">Tiquetera láser 8 cm</option>
-        <option value="ticket-57">Tiquetera láser 5.7 cm</option>
+        <option value="ticket-80">Tiquetera laser 8 cm</option>
+        <option value="ticket-57">Tiquetera laser 5.7 cm</option>
       </select>
       <button type="button" class="boton" (click)="cargarVentas()">Buscar</button>
       <button type="button" class="boton boton--suave" (click)="limpiarFiltros()">Limpiar</button>
@@ -38,19 +38,19 @@
             <td data-label="Comprobante">{{ venta.serie }}-{{ venta.numero }}</td>
             <td data-label="Tipo">{{ venta.tipo_comprobante }}</td>
             <td data-label="Fecha">{{ venta.fecha_emision | date: 'dd/MM/yyyy' }}</td>
-            <td data-label="Cliente">{{ venta.cliente_nombre || 'Público general' }}</td>
+            <td data-label="Cliente">{{ venta.cliente_nombre || 'Publico general' }}</td>
             <td data-label="Total">{{ venta.moneda }} {{ venta.total | number: '1.2-2' }}</td>
             <td data-label="Acciones">
               <div class="acciones-fila">
-                <button type="button" class="icono" (click)="imprimir(venta)" title="Imprimir">🖨️</button>
-                <button type="button" class="icono" (click)="descargar(venta)" title="Descargar PDF">⬇️</button>
-                <button type="button" class="icono" (click)="compartir(venta)" title="Compartir">📤</button>
-                <button type="button" class="icono" (click)="descargarXml(venta)" title="Descargar XML">🧾</button>
+                <button type="button" class="icono" (click)="imprimir(venta)" title="Imprimir">Imp.</button>
+                <button type="button" class="icono" (click)="descargar(venta)" title="Descargar PDF">PDF</button>
+                <button type="button" class="icono" (click)="compartir(venta)" title="Compartir">Env.</button>
+                <button type="button" class="icono" (click)="descargarXml(venta)" title="Descargar XML">XML</button>
               </div>
             </td>
           </tr>
           <tr *ngIf="!ventasRegistradas.length">
-            <td colspan="6">No hay ventas registradas todavía.</td>
+            <td colspan="6">No hay ventas registradas todavia.</td>
           </tr>
         </tbody>
       </table>

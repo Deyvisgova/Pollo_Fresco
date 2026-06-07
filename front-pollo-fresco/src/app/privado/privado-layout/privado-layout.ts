@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { AfterViewInit, Component, HostListener, computed } from '@angular/core';
+import { AfterViewInit, Component, HostListener, OnDestroy, computed } from '@angular/core';
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { AutenticacionServicio } from '../../servicios/autenticacion.servicio';
@@ -20,26 +20,28 @@ interface ItemMenu {
   templateUrl: './privado-layout.html',
   styleUrl: './privado-layout.css'
 })
-export class PrivadoLayout implements AfterViewInit {
+export class PrivadoLayout implements AfterViewInit, OnDestroy {
   menuPrincipal: ItemMenu[] = [
-    { etiqueta: 'Inicio', ruta: 'inicio', icono: '🏠' },
-    { etiqueta: 'Proveedores', ruta: 'proveedores', icono: '🚚' },
-    { etiqueta: 'Clientes', ruta: 'clientes', icono: '👥' }
+    { etiqueta: 'Inicio', ruta: 'inicio', icono: 'inicio' },
+    { etiqueta: 'Proveedores', ruta: 'proveedores', icono: 'proveedores' },
+    { etiqueta: 'Clientes', ruta: 'clientes', icono: 'clientes' }
   ];
 
   menuPosterior: ItemMenu[] = [
-    { etiqueta: 'Pedidos', ruta: 'pedidos', icono: '📦' },
-    { etiqueta: 'Otros productos', ruta: 'otros-productos', icono: '🧺' },
-    { etiqueta: 'Usuarios', ruta: 'usuarios', icono: '🧑‍💼' },
-    { etiqueta: 'Gastos', ruta: 'gastos', icono: '💸' },
-    { etiqueta: 'Configuración', ruta: 'configuracion', icono: '⚙️' },
-    { etiqueta: 'Reportes', ruta: 'reportes', icono: '📊' }
+    { etiqueta: 'Pedidos', ruta: 'pedidos', icono: 'pedidos' },
+    { etiqueta: 'Otros productos', ruta: 'otros-productos', icono: 'productos' },
+    { etiqueta: 'Usuarios', ruta: 'usuarios', icono: 'usuarios' },
+    { etiqueta: 'Gastos', ruta: 'gastos', icono: 'gastos' },
+    { etiqueta: 'Configuracion', ruta: 'configuracion', icono: 'configuracion' },
+    { etiqueta: 'Reportes', ruta: 'reportes', icono: 'reportes' }
   ];
 
   ventaMenuAbierto = false;
   sidebarMovilAbierto = false;
   sidebarColapsadoDesktop = false;
   menuUsuarioAbierto = false;
+  private observadorTablas: MutationObserver | null = null;
+  private actualizacionTablasTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly configuracionEmpresa;
   readonly mostrarLogo;
@@ -56,7 +58,7 @@ export class PrivadoLayout implements AfterViewInit {
     if (this.usuarioEsDelivery()) {
       this.menuPrincipal = [];
       this.menuPosterior = [
-        { etiqueta: 'Pedidos', ruta: 'pedidos', icono: '📦' }
+        { etiqueta: 'Pedidos', ruta: 'pedidos', icono: 'pedidos' }
       ];
     }
 
@@ -102,6 +104,15 @@ export class PrivadoLayout implements AfterViewInit {
 
   ngAfterViewInit(): void {
     this.actualizarDataLabelsTablas();
+    this.iniciarObservadorTablas();
+  }
+
+  ngOnDestroy(): void {
+    this.observadorTablas?.disconnect();
+
+    if (this.actualizacionTablasTimer) {
+      clearTimeout(this.actualizacionTablasTimer);
+    }
   }
 
   get rutaVentaActiva(): boolean {
@@ -178,10 +189,20 @@ export class PrivadoLayout implements AfterViewInit {
   }
 
   private actualizarDataLabelsTablas(): void {
-    setTimeout(() => {
+    if (this.actualizacionTablasTimer) {
+      clearTimeout(this.actualizacionTablasTimer);
+    }
+
+    this.actualizacionTablasTimer = setTimeout(() => {
       const tablas = Array.from(document.querySelectorAll('table'));
 
       tablas.forEach((tabla) => {
+        if (tabla.closest('.tabla-sin-estilo')) {
+          return;
+        }
+
+        tabla.classList.add('tabla-sistema');
+
         let encabezados = Array.from(tabla.querySelectorAll('thead th')).map((th) =>
           (th.textContent || '').trim()
         );
@@ -214,6 +235,98 @@ export class PrivadoLayout implements AfterViewInit {
           });
         });
       });
+
+      this.actualizarBotonesSistema();
+    }, 60);
+  }
+
+  private actualizarBotonesSistema(): void {
+    const controles = Array.from(
+      document.querySelectorAll('.panel__rutas button, .panel__rutas a')
+    );
+
+    controles.forEach((control) => {
+      if (!(control instanceof HTMLElement) || control.closest('.tabla-sin-estilo')) {
+        return;
+      }
+
+      control.classList.remove(
+        'accion-sistema',
+        'accion-editar',
+        'accion-eliminar',
+        'accion-primaria',
+        'accion-secundaria',
+        'accion-buscar',
+        'accion-icono'
+      );
+
+      const texto = this.normalizarTextoAccion(
+        [
+          control.textContent || '',
+          control.getAttribute('title') || '',
+          control.getAttribute('aria-label') || ''
+        ].join(' ')
+      );
+
+      const clases = control.className.toString().toLowerCase();
+      const esBotonComun =
+        clases.includes('boton') ||
+        clases.includes('btn') ||
+        clases.includes('formulario__boton');
+      const esIcono =
+        texto.length <= 2 ||
+        clases.includes('boton-icono') ||
+        clases.includes('icono-accion');
+
+      let tipo: string | null = null;
+
+      if (/\b(editar|edicion)\b/.test(texto)) {
+        tipo = 'accion-editar';
+      } else if (/\b(eliminar|quitar|borrar|remover)\b/.test(texto) || texto === 'x') {
+        tipo = 'accion-eliminar';
+      } else if (/\b(guardar|crear|registrar|agregar|actualizar|emitir|cerrar dia|cerrar mes)\b/.test(texto)) {
+        tipo = 'accion-primaria';
+      } else if (/\b(buscar|consultar)\b/.test(texto)) {
+        tipo = 'accion-buscar';
+      } else if (/\b(limpiar|cancelar|cerrar|volver)\b/.test(texto)) {
+        tipo = 'accion-secundaria';
+      }
+
+      if (!tipo && !esBotonComun) {
+        return;
+      }
+
+      control.classList.add('accion-sistema');
+
+      if (tipo) {
+        control.classList.add(tipo);
+      }
+
+      if (esIcono && (tipo === 'accion-eliminar' || tipo === 'accion-editar')) {
+        control.classList.add('accion-icono');
+      }
+    });
+  }
+
+  private normalizarTextoAccion(valor: string): string {
+    return valor
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase();
+  }
+
+  private iniciarObservadorTablas(): void {
+    const contenedor = document.querySelector('.panel__rutas');
+    if (!contenedor) {
+      return;
+    }
+
+    this.observadorTablas = new MutationObserver(() => this.actualizarDataLabelsTablas());
+    this.observadorTablas.observe(contenedor, {
+      childList: true,
+      subtree: true
     });
   }
 }

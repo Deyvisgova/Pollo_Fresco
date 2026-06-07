@@ -9,7 +9,7 @@ export interface UsuarioSesion {
 }
 
 /**
- * Servicio encargado de persistir la información de sesión.
+ * Servicio encargado de persistir la informacion de sesion.
  * Se guarda en localStorage para mantener el acceso mientras el usuario navega.
  */
 @Injectable({ providedIn: 'root' })
@@ -19,7 +19,7 @@ export class SesionServicio {
   private readonly llaveToken = 'token_api';
 
   /**
-   * Guarda el usuario y token emitidos por el backend luego del inicio de sesión.
+   * Guarda el usuario y token emitidos por el backend luego del inicio de sesion.
    */
   guardarSesion(usuario: UsuarioSesion, token: string): void {
     localStorage.setItem(this.llaveUsuario, JSON.stringify(usuario));
@@ -42,7 +42,7 @@ export class SesionServicio {
   }
 
   /**
-   * Limpia toda la sesión local.
+   * Limpia toda la sesion local.
    */
   limpiarSesion(): void {
     localStorage.removeItem(this.llaveUsuario);

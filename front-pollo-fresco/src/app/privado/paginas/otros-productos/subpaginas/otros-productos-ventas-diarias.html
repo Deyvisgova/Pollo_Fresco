@@ -2,10 +2,10 @@
   <header class="seccion__encabezado">
     <div>
       <h3>Registro manual de ventas diarias</h3>
-      <p class="seccion__descripcion">Agrega líneas durante el día. Selecciona producto, cantidad y precio.</p>
+      <p class="seccion__descripcion">Agrega lineas durante el dia. Selecciona producto, cantidad y precio.</p>
     </div>
     <div class="seccion__acciones">
-      <button type="button" class="boton boton--primario" (click)="cerrarDia()">Cerrar día</button>
+      <button type="button" class="boton boton--primario" (click)="cerrarDia()">Cerrar dia</button>
     </div>
   </header>
 
@@ -18,13 +18,14 @@
           <th class="col-fecha">Fecha y hora</th>
           <th class="col-nombre">Nombre usuario</th>
           <th>Productos</th>
+          <th>Presentacion</th>
           <th>Cantidad</th>
           <th>Precio (S/)</th>
           <th>Acciones</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let venta of ventas; let i = index">
+        <tr #filaVenta *ngFor="let venta of ventas; let i = index">
           <td data-label="Fecha y hora">
             <div class="fecha-usuario">
               <input
@@ -45,6 +46,7 @@
               <button
                 type="button"
                 class="selector-producto__boton"
+                #productoTrigger
                 (click)="toggleDropdownProducto(i, $event)"
                 (keydown)="onTriggerProductoKeydown(i, $event)"
                 [attr.aria-expanded]="dropdownAbiertoEnFila(i)"
@@ -55,9 +57,20 @@
                 <span class="selector-producto__texto">
                   {{ venta.productoNombre || 'Selecciona producto' }}
                 </span>
-                <span class="selector-producto__icono">▾</span>
+                <span class="selector-producto__icono" aria-hidden="true"></span>
               </button>
             </div>
+          </td>
+          <td data-label="Presentacion">
+            <select
+              *ngIf="esFilaHuevos(venta); else presentacionNormal"
+              [(ngModel)]="venta.presentacionVenta"
+              (ngModelChange)="actualizarCampoNumerico(i, 'cantidad', venta.cantidad)"
+              [disabled]="cerrado"
+            >
+              <option *ngFor="let presentacion of presentacionesHuevo" [value]="presentacion.id">{{ presentacion.etiqueta }}</option>
+            </select>
+            <ng-template #presentacionNormal><span>-</span></ng-template>
           </td>
           <td data-label="Cantidad">
             <div class="cantidad-celda">
@@ -72,7 +85,8 @@
                 autocomplete="off"
                 [disabled]="cerrado"
               />
-              <small class="stock-advertencia" *ngIf="mostrarAdvertenciaStock(i)">⚠ Stock restante: {{ stockRestanteFila(i) | number : '1.0-2' }}</small>
+              <small class="stock-advertencia" *ngIf="esFilaHuevos(venta)">Descuenta {{ cantidadBaseFila(venta) | number : '1.0-2' }} huevos</small>
+              <small class="stock-advertencia" *ngIf="mostrarAdvertenciaStock(i)">Stock restante: {{ stockRestanteFila(i) | number : '1.0-2' }}</small>
             </div>
           </td>
           <td data-label="Precio (S/)">
@@ -87,6 +101,7 @@
               autocomplete="off"
               [disabled]="cerrado"
             />
+            <small class="stock-advertencia" *ngIf="esFilaHuevos(venta)">Precio total libre</small>
           </td>
           <td data-label="Acciones" class="seccion__acciones-fila">
             <button type="button" class="boton boton--texto boton--peligro" (click)="quitarFila(i)" [disabled]="cerrado">Quitar fila</button>
@@ -127,7 +142,9 @@
           (mouseenter)="indiceProductoResaltado = idx"
           (click)="seleccionarProductoDesdeDropdown(producto)"
         >
-          {{ producto.nombre }}
+          <span>{{ producto.nombre }}</span>
+          <small *ngIf="producto.stockDisponible <= 0">Sin lote abierto</small>
+          <small *ngIf="producto.stockDisponible > 0">Stock: {{ producto.stockDisponible | number : '1.0-2' }}</small>
         </button>
         <p class="selector-producto__sin-resultados" *ngIf="productosDropdownActivos.length === 0">
           No hay productos disponibles con lote registrado
@@ -174,7 +191,7 @@
             <td data-label="Total Congelados">S/ {{ cierre.total_congelados | number : '1.2-2' }}</td>
             <td data-label="Total General">S/ {{ cierre.total_general | number : '1.2-2' }}</td>
             <td data-label="Acciones" class="seccion__acciones-fila">
-              <button type="button" class="boton boton--texto" (click)="reabrirDia(cierre.fecha)" *ngIf="puedeReabrirDia(cierre)">Reabrir día</button>
+              <button type="button" class="boton boton--texto" (click)="reabrirDia(cierre.fecha)" *ngIf="puedeReabrirDia(cierre)">Reabrir dia</button>
               <button type="button" class="boton boton--texto" (click)="abrirDetalle(cierre)">Detalle</button>
             </td>
           </tr>

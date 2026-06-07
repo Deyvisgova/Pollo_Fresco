@@ -279,6 +279,463 @@ app-root {
   z-index: 5000 !important;
 }
 
+.panel__rutas .tabla-contenedor,
+.panel__rutas .tabla__contenedor,
+.panel__rutas .tabla-pedidos__contenedor,
+.panel__rutas .seccion__tabla,
+.panel__rutas .modal__tabla,
+.panel__rutas [class*='tabla-contenedor'],
+.panel__rutas [class*='tabla__contenedor'] {
+  border: 1px solid #d7e1f2;
+  border-radius: 10px;
+  background: #ffffff;
+  overflow: auto;
+  max-width: 100%;
+  max-height: min(64vh, 620px);
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
+}
+
+.panel__rutas table.tabla-sistema {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: #ffffff;
+  border: 1px solid #d7e1f2;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.05);
+  color: #0f172a;
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
+.panel__rutas table.tabla-sistema thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #eef4ff;
+  color: #0d2c6f;
+  border-bottom: 1px solid #d7e1f2;
+  padding: 11px 12px;
+  text-align: left;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.panel__rutas table.tabla-sistema tbody td {
+  border-bottom: 1px solid #dbe4f1;
+  padding: 10px 12px;
+  vertical-align: middle;
+  color: #0f172a;
+}
+
+.panel__rutas table.tabla-sistema tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.panel__rutas table.tabla-sistema tbody tr {
+  background: #ffffff;
+  transition: background-color 0.16s ease;
+}
+
+.panel__rutas table.tabla-sistema tbody tr:nth-child(even) {
+  background: #fbfdff;
+}
+
+.panel__rutas table.tabla-sistema tbody tr:hover {
+  background: #f3f7ff;
+}
+
+.panel__rutas table.tabla-sistema td small,
+.panel__rutas table.tabla-sistema td .nota,
+.panel__rutas table.tabla-sistema td [class*='nota'],
+.panel__rutas table.tabla-sistema td [class*='sub'] {
+  color: #53637d;
+}
+
+.panel__rutas table.tabla-sistema td[data-label='Acciones'],
+.panel__rutas table.tabla-sistema td[data-label='Accion'],
+.panel__rutas table.tabla-sistema td[data-label='Opciones'] {
+  white-space: nowrap;
+}
+
+.panel__rutas table.tabla-sistema .tabla-acciones,
+.panel__rutas table.tabla-sistema .tabla__acciones,
+.panel__rutas table.tabla-sistema .acciones-tabla,
+.panel__rutas table.tabla-sistema .seccion__acciones-fila,
+.panel__rutas table.tabla-sistema td[data-label='Acciones'] {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.panel__rutas table.tabla-sistema td[data-label='Acciones'] button,
+.panel__rutas table.tabla-sistema td[data-label='Acciones'] a,
+.panel__rutas table.tabla-sistema .tabla-acciones button,
+.panel__rutas table.tabla-sistema .tabla__acciones button,
+.panel__rutas table.tabla-sistema .acciones-tabla button,
+.panel__rutas table.tabla-sistema .seccion__acciones-fila button {
+  border: 0;
+  border-radius: 8px;
+  min-height: 34px;
+  padding: 7px 12px;
+  background: #e8eef7;
+  color: #0f2d5c;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.panel__rutas table.tabla-sistema td[data-label='Acciones'] button[class*='eliminar'],
+.panel__rutas table.tabla-sistema td[data-label='Acciones'] .btn-danger,
+.panel__rutas table.tabla-sistema td[data-label='Acciones'] .boton-eliminar,
+.panel__rutas table.tabla-sistema td[data-label='Acciones'] .btn--peligro,
+.panel__rutas table.tabla-sistema td[data-label='Acciones'] .boton--peligro {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.panel__rutas .accion-sistema,
+.panel__rutas .boton,
+.panel__rutas .btn,
+.panel__rutas .formulario__boton {
+  min-height: 38px;
+  border: 0;
+  border-radius: 8px;
+  padding: 9px 14px;
+  background: #e8eef7;
+  color: #0f2d5c;
+  font-weight: 850;
+  line-height: 1.15;
+  text-decoration: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
+  transition:
+    transform 0.14s ease,
+    box-shadow 0.14s ease,
+    background-color 0.14s ease,
+    color 0.14s ease;
+}
+
+.panel__rutas .accion-sistema:hover,
+.panel__rutas .boton:hover,
+.panel__rutas .btn:hover,
+.panel__rutas .formulario__boton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.1);
+}
+
+.panel__rutas .accion-sistema:focus-visible,
+.panel__rutas .boton:focus-visible,
+.panel__rutas .btn:focus-visible,
+.panel__rutas .formulario__boton:focus-visible,
+.panel__rutas input[type='file']:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.22);
+  outline-offset: 2px;
+}
+
+.panel__rutas .accion-sistema:disabled,
+.panel__rutas .boton:disabled,
+.panel__rutas .btn:disabled,
+.panel__rutas .formulario__boton:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+  transform: none;
+  box-shadow: none;
+}
+
+.panel__rutas .accion-primaria,
+.panel__rutas .boton--primario,
+.panel__rutas .btn--primario,
+.panel__rutas .formulario__boton:not(.formulario__boton--secundario) {
+  background: #2554df !important;
+  color: #ffffff !important;
+}
+
+.panel__rutas .accion-primaria:hover,
+.panel__rutas .boton--primario:hover,
+.panel__rutas .btn--primario:hover,
+.panel__rutas .formulario__boton:not(.formulario__boton--secundario):hover {
+  background: #1d4ed8 !important;
+  box-shadow: 0 10px 22px rgba(37, 84, 223, 0.22);
+}
+
+.panel__rutas .accion-editar {
+  background: #f97316 !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 16px rgba(249, 115, 22, 0.18);
+}
+
+.panel__rutas .accion-editar:hover {
+  background: #ea580c !important;
+}
+
+.panel__rutas .accion-eliminar,
+.panel__rutas .boton--peligro,
+.panel__rutas .btn--peligro,
+.panel__rutas .btn-danger,
+.panel__rutas .boton-eliminar {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 16px rgba(220, 38, 38, 0.18);
+}
+
+.panel__rutas .accion-eliminar:hover,
+.panel__rutas .boton--peligro:hover,
+.panel__rutas .btn--peligro:hover,
+.panel__rutas .btn-danger:hover,
+.panel__rutas .boton-eliminar:hover {
+  background: #b91c1c !important;
+}
+
+.panel__rutas .accion-buscar,
+.panel__rutas .accion-secundaria,
+.panel__rutas .boton--secundario,
+.panel__rutas .boton--suave,
+.panel__rutas .btn--secundario,
+.panel__rutas .formulario__boton--secundario {
+  background: #e8eef7 !important;
+  color: #0f2d5c !important;
+}
+
+.panel__rutas .accion-buscar:hover,
+.panel__rutas .accion-secundaria:hover,
+.panel__rutas .boton--secundario:hover,
+.panel__rutas .boton--suave:hover,
+.panel__rutas .btn--secundario:hover,
+.panel__rutas .formulario__boton--secundario:hover {
+  background: #dce6f3 !important;
+}
+
+.panel__rutas .accion-icono {
+  width: 38px !important;
+  min-width: 38px !important;
+  height: 38px !important;
+  padding: 0 !important;
+  font-size: 0 !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.panel__rutas .accion-icono::before {
+  content: "";
+  width: 16px;
+  height: 16px;
+  background: currentColor;
+  display: block;
+  -webkit-mask: var(--accion-icono-mask) center / contain no-repeat;
+  mask: var(--accion-icono-mask) center / contain no-repeat;
+}
+
+.panel__rutas .accion-eliminar.accion-icono {
+  --accion-icono-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 6h18'/%3E%3Cpath d='M8 6V4h8v2'/%3E%3Cpath d='M19 6l-1 14H6L5 6'/%3E%3Cpath d='M10 11v5'/%3E%3Cpath d='M14 11v5'/%3E%3C/svg%3E");
+}
+
+.panel__rutas .accion-editar.accion-icono {
+  --accion-icono-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 20h9'/%3E%3Cpath d='M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z'/%3E%3C/svg%3E");
+}
+
+.panel__rutas input[type='file'] {
+  width: 100%;
+  max-width: 460px;
+  border: 1px dashed #bfd0ea;
+  border-radius: 10px;
+  padding: 10px;
+  background: #f8fbff;
+  color: #32445f;
+}
+
+.panel__rutas input[type='file']::file-selector-button {
+  border: 0;
+  border-radius: 8px;
+  min-height: 34px;
+  margin-right: 10px;
+  padding: 8px 12px;
+  background: #e8eef7;
+  color: #0f2d5c;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.panel__rutas input[type='file']::file-selector-button:hover {
+  background: #dce6f3;
+}
+
+:root[data-theme='dark'] .panel__rutas .tabla-contenedor,
+:root[data-theme='dark'] .panel__rutas .tabla__contenedor,
+:root[data-theme='dark'] .panel__rutas .tabla-pedidos__contenedor,
+:root[data-theme='dark'] .panel__rutas .seccion__tabla,
+:root[data-theme='dark'] .panel__rutas .modal__tabla,
+:root[data-theme='dark'] .panel__rutas [class*='tabla-contenedor'],
+:root[data-theme='dark'] .panel__rutas [class*='tabla__contenedor'],
+:root[data-theme='dark'] .panel__rutas table.tabla-sistema {
+  background: var(--surface-card) !important;
+  border-color: var(--border-soft) !important;
+}
+
+:root[data-theme='dark'] .panel__rutas table.tabla-sistema thead th {
+  background: #2a3a52 !important;
+  color: #dbeafe !important;
+}
+
+:root[data-theme='dark'] .panel__rutas table.tabla-sistema tbody tr,
+:root[data-theme='dark'] .panel__rutas table.tabla-sistema tbody tr:nth-child(even),
+:root[data-theme='dark'] .panel__rutas table.tabla-sistema tbody td {
+  background: var(--surface-card) !important;
+  color: var(--text-primary) !important;
+}
+
+:root[data-theme='dark'] .panel__rutas table.tabla-sistema tbody tr:hover td {
+  background: #253247 !important;
+}
+
+.panel__rutas .cuentas-cartera {
+  gap: 18px;
+}
+
+.panel__rutas .cuentas-cartera__header p {
+  margin: 6px 0 0;
+  color: var(--text-secondary);
+}
+
+.panel__rutas .cuentas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.panel__rutas .cuenta-card {
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff, #f8fbff);
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.07);
+}
+
+.panel__rutas .cuenta-card__top {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.panel__rutas .cuenta-card__avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: #1d4ed8;
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+}
+
+.panel__rutas .cuenta-card h5,
+.panel__rutas .cuenta-card p {
+  margin: 0;
+}
+
+.panel__rutas .cuenta-card p,
+.panel__rutas .cuenta-card small,
+.panel__rutas .cuenta-card__ultimo span {
+  color: var(--text-secondary);
+}
+
+.panel__rutas .cuenta-card__saldo {
+  border-radius: 12px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.panel__rutas .cuenta-card__saldo strong {
+  color: #1d4ed8;
+  font-size: 1.2rem;
+}
+
+.panel__rutas .cuenta-card__metricas {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.panel__rutas .cuenta-card__metricas span,
+.panel__rutas .cuenta-card__ultimo {
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 9px;
+  display: grid;
+  gap: 3px;
+}
+
+.panel__rutas .cuenta-card__acciones {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.panel__rutas .cuenta-modal-resumen {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.panel__rutas .cuenta-modal-resumen span {
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  background: #f8fbff;
+  padding: 10px;
+  display: grid;
+  gap: 4px;
+  color: var(--text-secondary);
+}
+
+.panel__rutas .cuenta-modal-resumen strong {
+  color: var(--text-primary);
+  font-size: 1.05rem;
+}
+
+.panel__rutas .cuenta-modal-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.panel__rutas .cuenta-pedido,
+.panel__rutas .cuenta-pago {
+  border-bottom: 1px dashed var(--border-soft);
+  padding: 9px 0;
+  display: grid;
+  gap: 6px;
+}
+
+.panel__rutas .cuenta-pedido {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.panel__rutas .cuenta-pago {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.panel__rutas .cuenta-pedido span,
+.panel__rutas .cuenta-pago span {
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+}
+
 @media (max-width: 900px) {
   .panel__rutas,
   .panel__rutas * {
@@ -348,6 +805,82 @@ app-root {
     overflow-y: auto;
     border-radius: 16px !important;
     padding: 14px !important;
+  }
+
+  .panel__rutas .modal-contenido--detalle-pedido,
+  .panel__rutas .modal-contenido--pago-cuenta,
+  .panel__rutas .modal-contenido--gestion {
+    width: calc(100vw - 20px) !important;
+    max-width: calc(100vw - 20px) !important;
+  }
+
+  .panel__rutas .modal-contenido .tarjeta__encabezado--acciones,
+  .panel__rutas .modal__contenido .tarjeta__encabezado--acciones,
+  .panel__rutas .modal__contenedor .tarjeta__encabezado--acciones {
+    display: flex !important;
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 10px;
+  }
+
+  .panel__rutas .modal-contenido .tarjeta__encabezado--acciones > div,
+  .panel__rutas .modal__contenido .tarjeta__encabezado--acciones > div,
+  .panel__rutas .modal__contenedor .tarjeta__encabezado--acciones > div {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .panel__rutas .modal-contenido .tarjeta__encabezado--acciones h3,
+  .panel__rutas .modal-contenido .tarjeta__encabezado--acciones h4,
+  .panel__rutas .modal-contenido .tarjeta__encabezado--acciones p {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .panel__rutas .modal-contenido .tarjeta__encabezado--acciones button,
+  .panel__rutas .modal__contenido .tarjeta__encabezado--acciones button,
+  .panel__rutas .modal__contenedor .tarjeta__encabezado--acciones button {
+    align-self: flex-start;
+    width: auto !important;
+  }
+
+  .panel__rutas .detalle-pedido__fila {
+    grid-template-columns: 1fr !important;
+    align-items: start !important;
+    gap: 4px !important;
+  }
+
+  .panel__rutas .detalle-pedido__fila span,
+  .panel__rutas .detalle-pedido__fila strong {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .panel__rutas .detalle-pedido__total {
+    align-items: flex-start !important;
+    flex-direction: column;
+    gap: 4px !important;
+  }
+
+  .panel__rutas .cuentas-grid,
+  .panel__rutas .cuenta-modal-grid,
+  .panel__rutas .cuenta-modal-resumen {
+    grid-template-columns: 1fr;
+  }
+
+  .panel__rutas .cuenta-card {
+    padding: 12px;
+  }
+
+  .panel__rutas .cuenta-card__metricas,
+  .panel__rutas .cuenta-card__acciones {
+    grid-template-columns: 1fr;
+  }
+
+  .panel__rutas .cuenta-pedido,
+  .panel__rutas .cuenta-pago {
+    grid-template-columns: 1fr;
   }
 
   .panel__rutas .tabla-contenedor,
@@ -568,6 +1101,18 @@ app-root {
   .panel__rutas tbody td[data-label='Acciones'] button[aria-label] svg {
     width: 16px;
     height: 16px;
+  }
+
+  .panel__rutas tbody td[data-label='Acciones'] .accion-icono,
+  .panel__rutas tbody td[data-label='Acciones'] button.accion-icono,
+  .panel__rutas .accion-icono {
+    width: 38px !important;
+    min-width: 38px !important;
+    height: 38px !important;
+    padding: 0 !important;
+    font-size: 0 !important;
+    align-items: center !important;
+    justify-content: center !important;
   }
 
   .panel__rutas .tabs-vista,

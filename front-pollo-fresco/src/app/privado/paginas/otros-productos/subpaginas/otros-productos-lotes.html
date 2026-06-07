@@ -3,8 +3,8 @@
     <div>
       <h3>Lotes</h3>
       <p>
-        Registra lotes y su detalle de compra/venta. Aquí puedes editar o
-        eliminar si el lote está abierto.
+        Registra lotes y su detalle de compra/venta. Aqui puedes editar o
+        eliminar si el lote esta abierto.
       </p>
     </div>
     <button class="boton boton--primario" (click)="abrirModal()">
@@ -48,7 +48,8 @@
           <td data-label="Cantidad">
             <div class="stock" [class.stock--bajo]="esStockBajo(lote)">
               <span>{{ lote.cantidad | number : '1.0-2' }}</span>
-              <small *ngIf="esStockBajo(lote)">⚠ Stock bajo</small>
+              <small *ngIf="lote.presentacionIngreso">{{ lote.cantidadPresentacion | number : '1.0-2' }} {{ lote.presentacionIngreso }}</small>
+              <small *ngIf="esStockBajo(lote)">Stock bajo</small>
             </div>
           </td>
           <td data-label="Costo/Kg">S/ {{ lote.costoKilo | number : '1.2-2' }}</td>
@@ -71,7 +72,7 @@
               (click)="editarLote(lote)"
               title="Editar"
             >
-              ✏️
+              Editar
             </button>
             <button
               class="boton boton--accion boton--peligro"
@@ -79,7 +80,7 @@
               (click)="eliminarLote(lote)"
               title="Eliminar"
             >
-              🗑️
+              Eliminar
             </button>
           </td>
         </tr>
@@ -117,7 +118,7 @@
         <input type="date" [(ngModel)]="loteForm.fechaIngreso" />
       </label>
       <label>
-        Código comprobante
+        Codigo comprobante
         <input type="text" [(ngModel)]="loteForm.codigoComprobante" placeholder="Ej: F001-000123" />
       </label>
     </div>
@@ -135,7 +136,7 @@
           <span
             >{{ nombreProveedorSeleccionado || 'Buscar proveedor...' }}</span
           >
-          <span class="selector-proveedor__icono">▾</span>
+          <span class="selector-proveedor__icono">v</span>
         </button>
         <div class="selector-proveedor__menu" *ngIf="dropdownProveedorAbierto">
           <input
@@ -167,7 +168,7 @@
           (click)="toggleDropdownProducto()"
         >
           <span>{{ nombreProductoSeleccionado || 'Buscar producto...' }}</span>
-          <span class="selector-producto__icono">▾</span>
+          <span class="selector-producto__icono">v</span>
         </button>
         <div class="selector-producto__menu" *ngIf="dropdownProductoAbierto">
           <input
@@ -194,15 +195,33 @@
     </div>
 
     <div class="modal__grid">
-      <label class="modal__cantidad">
+      <label class="modal__cantidad" *ngIf="!loteEsHuevos">
         Cantidad
         <input type="number" [(ngModel)]="loteForm.cantidad" placeholder="0" />
       </label>
-      <label>
-        Costo por kilo (S/)
+      <label *ngIf="loteEsHuevos">
+        Presentacion de ingreso
+        <select [(ngModel)]="loteForm.presentacionIngreso" (ngModelChange)="actualizarCantidadBaseHuevos()">
+          <option *ngFor="let presentacion of presentacionesHuevo" [value]="presentacion.id">{{ presentacion.etiqueta }}</option>
+        </select>
+      </label>
+      <label class="modal__cantidad" *ngIf="loteEsHuevos">
+        Cantidad comprada
+        <input type="number" [(ngModel)]="loteForm.cantidadPresentacion" (ngModelChange)="actualizarCantidadBaseHuevos()" placeholder="0" />
+      </label>
+      <label *ngIf="loteEsHuevos">
+        Stock calculado
+        <input type="text" [value]="(loteForm.cantidad || 0) + ' huevos'" disabled />
+      </label>
+      <label *ngIf="!loteEsHuevos">
+        Costo por unidad/kg (S/)
         <input type="number" [(ngModel)]="loteForm.costoKilo" placeholder="0.00" />
       </label>
-      <label>
+      <label *ngIf="loteEsHuevos">
+        Costo total compra (S/)
+        <input type="number" [(ngModel)]="loteForm.costoTotalHuevos" (ngModelChange)="actualizarCantidadBaseHuevos()" placeholder="0.00" />
+      </label>
+      <label *ngIf="!loteEsHuevos">
         Precio de venta (S/)
         <input type="number" [(ngModel)]="loteForm.precioVenta" placeholder="0.00" />
       </label>
@@ -223,7 +242,7 @@
     <header class="modal__encabezado">
       <div>
         <h3>Nuevo producto</h3>
-        <p>Registra un producto nuevo y lo seleccionamos automáticamente.</p>
+        <p>Registra un producto nuevo y lo seleccionamos automaticamente.</p>
       </div>
       <button class="boton boton--texto" (click)="cerrarModalProducto()">
         Cerrar

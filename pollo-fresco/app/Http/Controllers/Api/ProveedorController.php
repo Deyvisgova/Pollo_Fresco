@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Proveedor;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Database\QueryException;
 use Illuminate\Validation\Rule;
 
 class ProveedorController extends Controller
@@ -76,7 +78,23 @@ class ProveedorController extends Controller
     public function destroy(int $proveedor)
     {
         $proveedorModel = Proveedor::findOrFail($proveedor);
-        $proveedorModel->delete();
+
+        if (
+            DB::table('entregas_proveedor')->where('proveedor_id', $proveedorModel->proveedor_id)->exists()
+            || DB::table('compras_lote')->where('proveedor_id', $proveedorModel->proveedor_id)->exists()
+        ) {
+            return response()->json([
+                'message' => 'No se puede eliminar este proveedor porque tiene entregas o lotes registrados. Puedes editar sus datos, pero no borrarlo.'
+            ], 409);
+        }
+
+        try {
+            $proveedorModel->delete();
+        } catch (QueryException $exception) {
+            return response()->json([
+                'message' => 'No se puede eliminar este proveedor porque tiene registros relacionados en el sistema.'
+            ], 409);
+        }
 
         return response()->json(['message' => 'Proveedor eliminado correctamente.']);
     }

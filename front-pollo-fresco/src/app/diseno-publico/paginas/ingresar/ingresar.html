@@ -11,7 +11,7 @@
               <h2 class="fw-bold mt-3">Bienvenido de vuelta</h2>
               <p class="text-muted mb-0">
 
-                Ingresa al sistema de ventas y facturación electrónica.
+                Ingresa al sistema de ventas y facturacion electronica.
 
                 Ingresa con tu cuenta para gestionar tus pedidos.
 
@@ -39,11 +39,11 @@
               </mat-form-field>
 
               <mat-form-field appearance="outline" class="w-100">
-                <mat-label>Contraseña</mat-label>
+                <mat-label>Contrasena</mat-label>
                 <input
                   matInput
                   [type]="hidePassword ? 'password' : 'text'"
-                  placeholder="Tu contraseña"
+                  placeholder="Tu contrasena"
                   autocomplete="current-password"
                   formControlName="password"
                 />
@@ -52,7 +52,7 @@
                   matSuffix
                   type="button"
                   (click)="togglePasswordVisibility()"
-                  [attr.aria-label]="hidePassword ? 'Mostrar contraseña' : 'Ocultar contraseña'"
+                  [attr.aria-label]="hidePassword ? 'Mostrar contrasena' : 'Ocultar contrasena'"
                 >
                   <mat-icon
                     >{{ hidePassword ? 'visibility' : 'visibility_off'
@@ -60,7 +60,7 @@
                   >
                 </button>
                 <mat-error *ngIf="formulario.get('password')?.hasError('required')">
-                  La contraseña es obligatoria.
+                  La contrasena es obligatoria.
                 </mat-error>
               </mat-form-field>
 
@@ -74,7 +74,7 @@
 
               <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <a class="ingresar__link" routerLink="/contacto"
-                  >Olvidé mi contraseña</a
+                  >Olvide mi contrasena</a
                 >
                 <button
                   mat-raised-button

@@ -81,7 +81,7 @@ export class PrivadoProveedoresPagos implements OnInit {
         URL.revokeObjectURL(url);
       },
       error: () => {
-        this.error = 'No se pudo descargar el PDF de pagos.';
+        this.error = 'No se pudo descargar el ?? de pagos.';
       }
     });
   }
@@ -159,7 +159,7 @@ export class PrivadoProveedoresPagos implements OnInit {
     }
 
     const query = params.toString();
-    return query ? `?${query}` : '';
+    return query ? ` - ${query}` : '';
   }
 
   private formatearFechaCorta(fecha: string | null): string {

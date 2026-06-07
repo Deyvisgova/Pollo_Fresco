@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule, HttpHeaders, HttpParams } from '@angular/common/http';
-import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, OnInit, QueryList, ViewChild, ViewChildren } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Subject, debounceTime } from 'rxjs';
 import { SesionServicio } from '../../../../servicios/sesion.servicio';
@@ -9,19 +9,17 @@ interface Producto {
   id: number;
   nombre: string;
   grupo_venta: 'HUEVOS' | 'CONGELADO' | 'OTROS';
+  stockDisponible: number;
 }
 
 interface ProductoApi {
   id: number;
   nombre: string;
   grupo_venta: 'HUEVOS' | 'CONGELADO' | 'OTROS';
+  stock_disponible?: number | string;
 }
 
-interface LoteApi {
-  producto_id: number;
-  cantidad: number;
-  estado: 'ABIERTO' | 'CERRADO';
-}
+type PresentacionHuevo = 'UNIDAD' | 'MEDIO_CASILLERO' | 'CASILLERO' | 'MEDIA_JAVA' | 'JAVA';
 
 interface VentaDiariaItem {
   ventaId: number | null;
@@ -35,6 +33,7 @@ interface VentaDiariaItem {
   dropdownAbierto: boolean;
   cantidad: string;
   precio: string;
+  presentacionVenta: PresentacionHuevo;
 }
 
 type CampoNumerico = 'cantidad' | 'precio';
@@ -72,6 +71,9 @@ interface EstadoVentaApi {
     cerrado_en: string | null;
     pedido_id?: number | null;
     origen?: string | null;
+    presentacion_venta?: PresentacionHuevo | null;
+    cantidad_presentacion?: number | null;
+    factor_conversion?: number | null;
   }>;
   cierres: Array<{
     fecha: string;
@@ -107,6 +109,8 @@ interface DropdownPosicion {
 })
 export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
   @ViewChild('buscadorDropdown') buscadorDropdown?: ElementRef<HTMLInputElement>;
+  @ViewChildren('filaVenta') filasVenta?: QueryList<ElementRef<HTMLElement>>;
+  @ViewChildren('productoTrigger') productoTriggers?: QueryList<ElementRef<HTMLElement>>;
 
   fechaHoy = this.obtenerFechaLocalISO();
   fechaHoraActual = this.obtenerFechaHoraLocalInput();
@@ -135,6 +139,13 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
   private readonly panelMaxHeight = 320;
   private readonly panelMinHeight = 150;
   private triggerDropdownActivo: HTMLElement | null = null;
+  presentacionesHuevo = [
+    { id: 'UNIDAD' as PresentacionHuevo, etiqueta: 'Unidad', factor: 1 },
+    { id: 'MEDIO_CASILLERO' as PresentacionHuevo, etiqueta: 'Medio casillero', factor: 15 },
+    { id: 'CASILLERO' as PresentacionHuevo, etiqueta: 'Casillero', factor: 30 },
+    { id: 'MEDIA_JAVA' as PresentacionHuevo, etiqueta: 'Media java', factor: 180 },
+    { id: 'JAVA' as PresentacionHuevo, etiqueta: 'Java', factor: 360 },
+  ];
 
   private readonly onWindowResize = () => this.reposicionarDropdownActivo();
   private readonly onWindowScroll = () => this.reposicionarDropdownActivo();
@@ -149,7 +160,6 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.usuarioActual = this.obtenerNombreUsuario();
     this.cargarProductos();
-    this.cargarLotesDisponibles();
     this.cargarEstadoFecha();
     this.iniciarRelojFechaHora();
     this.iniciarSincronizacionAutomatica();
@@ -220,13 +230,16 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
       filtroProducto: '',
       dropdownAbierto: false,
       cantidad: '',
-      precio: ''
+      precio: '',
+      presentacionVenta: 'UNIDAD'
     };
   }
 
   agregarFila(): void {
     const fechaHoraFila = this.obtenerFechaHoraLocalInput();
     this.ventas = [...this.ventas, this.crearFilaVacia(fechaHoraFila)];
+    const indice = this.ventas.length - 1;
+    setTimeout(() => this.enfocarFilaNueva(indice));
   }
 
   quitarFila(index: number): void {
@@ -280,7 +293,7 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
       if (item.productoId !== fila.productoId) {
         return acc;
       }
-      return acc + this.parseNumero(item.cantidad);
+      return acc + this.cantidadBaseFila(item);
     }, 0);
 
     return stockDisponible - totalEnFormulario;
@@ -418,7 +431,7 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
     if (campo === 'cantidad') {
       const stockDisponible = fila.productoId ? this.stockDisponibleFormulario(fila.productoId) : null;
       const totalProducto = fila.productoId
-        ? this.ventas.reduce((acc, item) => item.productoId === fila.productoId ? acc + this.parseNumero(item.cantidad) : acc, 0)
+        ? this.ventas.reduce((acc, item) => item.productoId === fila.productoId ? acc + this.cantidadBaseFila(item) : acc, 0)
         : 0;
 
       if (stockDisponible !== null && totalProducto > stockDisponible) {
@@ -441,14 +454,32 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
   }
 
   calcularTotalFila(venta: VentaDiariaItem): number {
+    if (venta.grupoVenta === 'HUEVOS') {
+      return this.parseNumero(venta.precio);
+    }
     const cantidad = this.parseNumero(venta.cantidad);
     const precio = this.parseNumero(venta.precio);
     return cantidad * precio;
   }
 
+  esFilaHuevos(venta: VentaDiariaItem): boolean {
+    return venta.grupoVenta === 'HUEVOS';
+  }
+
+  factorPresentacion(presentacion: PresentacionHuevo): number {
+    return this.presentacionesHuevo.find((item) => item.id === presentacion)?.factor ?? 1;
+  }
+
+  cantidadBaseFila(venta: VentaDiariaItem): number {
+    const cantidad = this.parseNumero(venta.cantidad);
+    return venta.grupoVenta === 'HUEVOS'
+      ? cantidad * this.factorPresentacion(venta.presentacionVenta)
+      : cantidad;
+  }
+
   cerrarDia(): void {
     if (this.cerrado) {
-      window.alert('El día ya está cerrado. Debes reabrir el día para editar.');
+      window.alert('El dia ya esta cerrado. Debes reabrir el dia para editar.');
       return;
     }
 
@@ -462,7 +493,7 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
         this.cargarEstadoFecha();
       },
       error: (error) => {
-        this.mensajeError = error?.error?.message || 'No se pudo cerrar el día.';
+        this.mensajeError = error?.error?.message || 'No se pudo cerrar el dia.';
       }
     });
   }
@@ -476,7 +507,7 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
         this.cargarEstadoFecha();
       },
       error: (error) => {
-        this.mensajeError = error?.error?.message || 'No se pudo reabrir el día.';
+        this.mensajeError = error?.error?.message || 'No se pudo reabrir el dia.';
       }
     });
   }
@@ -609,6 +640,7 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
     fila.productoId = producto.id;
     fila.productoNombre = producto.nombre;
     fila.grupoVenta = producto.grupo_venta;
+    fila.presentacionVenta = producto.grupo_venta === 'HUEVOS' ? 'UNIDAD' : 'UNIDAD';
     fila.filtroProducto = '';
     fila.dropdownAbierto = false;
     this.actualizarAdvertenciaStock(index);
@@ -617,18 +649,17 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
   }
 
   productosFiltrados(index: number): Producto[] {
-    const productosConLote = this.productos.filter((producto) => this.tieneLoteRegistrado(producto.id));
     const fila = this.ventas[index];
     if (!fila) {
-      return productosConLote;
+      return this.productos;
     }
 
     const valor = fila.filtroProducto.trim().toLowerCase();
     if (!valor) {
-      return productosConLote;
+      return this.productos;
     }
 
-    return productosConLote.filter((producto) => producto.nombre.toLowerCase().includes(valor));
+    return this.productos.filter((producto) => producto.nombre.toLowerCase().includes(valor));
   }
 
   @HostListener('document:click', ['$event'])
@@ -727,7 +758,13 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
     const headers = this.obtenerHeaders();
     this.http.get<ProductoApi[]>('/api/otros-productos/productos', { headers }).subscribe({
       next: (productos) => {
-        this.productos = productos;
+        this.productos = productos.map((producto) => ({
+          id: producto.id,
+          nombre: producto.nombre,
+          grupo_venta: producto.grupo_venta,
+          stockDisponible: Number(producto.stock_disponible ?? 0)
+        }));
+        this.actualizarStockDesdeProductos();
       },
       error: () => {
         this.mensajeError = 'No pudimos cargar los productos para ventas diarias.';
@@ -735,22 +772,12 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
     });
   }
 
-  private cargarLotesDisponibles(): void {
-    const headers = this.obtenerHeaders();
-    this.http.get<LoteApi[]>('/api/otros-productos/lotes', { headers }).subscribe({
-      next: (lotes) => {
-        const abiertos = lotes.filter((lote) => lote.estado === 'ABIERTO');
-        this.productoIdsConLote = new Set(abiertos.map((lote) => lote.producto_id));
-        this.stockDisponiblePorProducto = abiertos.reduce((mapa, lote) => {
-          const actual = mapa.get(lote.producto_id) ?? 0;
-          mapa.set(lote.producto_id, actual + Number(lote.cantidad ?? 0));
-          return mapa;
-        }, new Map<number, number>());
-      },
-      error: () => {
-        this.productoIdsConLote = new Set();
-      }
-    });
+  private actualizarStockDesdeProductos(): void {
+    this.productoIdsConLote = new Set(this.productos.filter((producto) => producto.stockDisponible > 0).map((producto) => producto.id));
+    this.stockDisponiblePorProducto = this.productos.reduce((mapa, producto) => {
+      mapa.set(producto.id, producto.stockDisponible);
+      return mapa;
+    }, new Map<number, number>());
   }
 
   private cargarEstadoFecha(): void {
@@ -769,9 +796,10 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
           grupoVenta: item.grupo_venta,
           pedidoId: item.pedido_id ?? null,
           origen: item.origen ?? null,
+          presentacionVenta: item.presentacion_venta ?? 'UNIDAD',
           filtroProducto: item.producto_nombre,
           dropdownAbierto: false,
-          cantidad: String(item.cantidad ?? ''),
+          cantidad: String(item.grupo_venta === 'HUEVOS' ? (item.cantidad_presentacion ?? item.cantidad ?? '') : (item.cantidad ?? '')),
           precio: String(item.precio ?? '')
         }));
 
@@ -817,7 +845,7 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
 
     const filasSinLote = this.ventas.filter((fila) => fila.productoId && !this.tieneLoteRegistrado(fila.productoId));
     if (filasSinLote.length > 0) {
-      window.alert('Hay productos sin lote registrado. No se guardó el registro de ventas diarias.');
+      window.alert('Hay productos sin lote registrado. No se guardo el registro de ventas diarias.');
       return;
     }
 
@@ -825,8 +853,10 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
       .filter((fila) => fila.productoId && this.parseNumero(fila.cantidad) > 0 && this.parseNumero(fila.precio) >= 0)
       .map((fila) => ({
         producto_id: fila.productoId,
-        cantidad: this.parseNumero(fila.cantidad),
+        cantidad: this.cantidadBaseFila(fila),
         precio: this.parseNumero(fila.precio),
+        presentacion_venta: fila.grupoVenta === 'HUEVOS' ? fila.presentacionVenta : null,
+        cantidad_presentacion: fila.grupoVenta === 'HUEVOS' ? this.parseNumero(fila.cantidad) : null,
         fecha_hora: this.formatearFechaHoraApi(fila.fechaHora),
         pedido_id: fila.pedidoId,
         origen: fila.origen
@@ -854,11 +884,21 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
 
   private iniciarSincronizacionAutomatica(): void {
     this.syncIntervalId = setInterval(() => {
-      this.cargarLotesDisponibles();
+      this.cargarProductos();
       if (!this.dropdownAbierto && !this.guardando) {
         this.cargarEstadoFecha();
       }
-    }, 15000);
+    }, 60000);
+  }
+
+  private enfocarFilaNueva(index: number): void {
+    const fila = this.filasVenta?.get(index)?.nativeElement;
+    fila?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+
+    const trigger = this.productoTriggers?.get(index)?.nativeElement;
+    if (trigger && !this.cerrado) {
+      this.abrirDropdownProducto(index, trigger);
+    }
   }
 
   private iniciarRelojFechaHora(): void {

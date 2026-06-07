@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Carbon\Carbon;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -11,8 +12,18 @@ use Illuminate\Support\Facades\Validator;
 
 class OtrosProductosController extends Controller
 {
+    private const PRESENTACIONES_HUEVO = [
+        'UNIDAD' => 1,
+        'MEDIO_CASILLERO' => 15,
+        'CASILLERO' => 30,
+        'MEDIA_JAVA' => 180,
+        'JAVA' => 360,
+    ];
+
     public function lotesIndex(Request $request)
     {
+        $this->asegurarColumnasHuevos();
+
         $lotes = DB::table('compras_lote as cl')
             ->join('compras_lote_detalle as cld', 'cl.compra_lote_id', '=', 'cld.compra_lote_id')
             ->join('productos as p', 'cld.producto_id', '=', 'p.producto_id')
@@ -27,6 +38,9 @@ class OtrosProductosController extends Controller
                 'p.producto_id',
                 'p.nombre as producto_nombre',
                 'cld.cantidad',
+                Schema::hasColumn('compras_lote_detalle', 'presentacion_ingreso') ? 'cld.presentacion_ingreso' : DB::raw('NULL as presentacion_ingreso'),
+                Schema::hasColumn('compras_lote_detalle', 'cantidad_presentacion') ? 'cld.cantidad_presentacion' : DB::raw('NULL as cantidad_presentacion'),
+                Schema::hasColumn('compras_lote_detalle', 'factor_conversion') ? 'cld.factor_conversion' : DB::raw('NULL as factor_conversion'),
                 'cld.costo_kilo',
                 'cld.precio_venta',
                 'pr.nombres as proveedor_nombres',
@@ -44,17 +58,34 @@ class OtrosProductosController extends Controller
 
     public function productosIndex(Request $request)
     {
+        $this->asegurarColumnasHuevos();
+
         $termino = trim((string) $request->query('buscar', ''));
         $incluirInactivos = filter_var($request->query('incluir_inactivos', false), FILTER_VALIDATE_BOOLEAN);
-        $productos = DB::table('productos')
-            ->select('producto_id as id', 'nombre', 'grupo_venta', 'activo')
+        $stockAbierto = DB::table('compras_lote_detalle as cld')
+            ->join('compras_lote as cl', 'cl.compra_lote_id', '=', 'cld.compra_lote_id')
+            ->where('cl.estado', 'ABIERTO')
+            ->groupBy('cld.producto_id')
+            ->select('cld.producto_id', DB::raw('SUM(cld.cantidad) as stock_disponible'));
+
+        $productos = DB::table('productos as p')
+            ->leftJoinSub($stockAbierto, 'stock_abierto', function ($join) {
+                $join->on('stock_abierto.producto_id', '=', 'p.producto_id');
+            })
+            ->select(
+                'p.producto_id as id',
+                'p.nombre',
+                'p.grupo_venta',
+                'p.activo',
+                DB::raw('COALESCE(stock_abierto.stock_disponible, 0) as stock_disponible')
+            )
             ->when(!$incluirInactivos, function ($query) {
-                $query->where('activo', 1);
+                $query->where('p.activo', 1);
             })
             ->when($termino !== '', function ($query) use ($termino) {
-                $query->where('nombre', 'like', '%' . $termino . '%');
+                $query->where('p.nombre', 'like', '%' . $termino . '%');
             })
-            ->orderBy('nombre')
+            ->orderBy('p.nombre')
             ->get();
 
         return response()->json($productos);
@@ -143,11 +174,15 @@ class OtrosProductosController extends Controller
 
     public function lotesStore(Request $request)
     {
+        $this->asegurarColumnasHuevos();
+
         $validator = Validator::make($request->all(), [
             'producto_id' => ['required', 'integer', 'exists:productos,producto_id'],
             'cantidad' => ['required', 'numeric', 'min:0.01'],
             'costo_kilo' => ['required', 'numeric', 'min:0'],
             'precio_venta' => ['required', 'numeric', 'min:0'],
+            'presentacion_ingreso' => ['nullable', 'string', 'max:30'],
+            'cantidad_presentacion' => ['nullable', 'numeric', 'min:0.01'],
             'codigo_comprobante' => ['required', 'string', 'max:50'],
             'fecha_ingreso' => ['required', 'date'],
             'proveedor_id' => ['required', 'integer', 'exists:proveedores,proveedor_id'],
@@ -175,6 +210,17 @@ class OtrosProductosController extends Controller
             return response()->json(['message' => 'Producto no encontrado'], 404);
         }
 
+        $esHuevo = ($producto->grupo_venta ?? '') === 'HUEVOS';
+        $presentacionIngreso = $esHuevo ? strtoupper((string) $request->input('presentacion_ingreso', 'UNIDAD')) : null;
+        $factorConversion = $esHuevo ? $this->factorPresentacionHuevo($presentacionIngreso) : null;
+        if ($esHuevo && $factorConversion === null) {
+            return response()->json(['message' => 'Presentacion de huevo no valida.'], 422);
+        }
+        $cantidadPresentacion = $esHuevo ? (float) $request->input('cantidad_presentacion', $cantidad) : null;
+        if ($esHuevo) {
+            $cantidad = round($cantidadPresentacion * $factorConversion, 2);
+        }
+
         $numeroLote = (int) DB::table('compras_lote_detalle')
             ->where('producto_id', $productoId)
             ->count() + 1;
@@ -190,13 +236,25 @@ class OtrosProductosController extends Controller
                 'creado_en' => now(),
             ]);
 
-            DB::table('compras_lote_detalle')->insert([
+            $detalle = [
                 'compra_lote_id' => $compraLoteId,
                 'producto_id' => $productoId,
                 'cantidad' => $cantidad,
                 'costo_kilo' => $costoKilo,
                 'precio_venta' => $precioVenta,
-            ]);
+            ];
+
+            if (Schema::hasColumn('compras_lote_detalle', 'presentacion_ingreso')) {
+                $detalle['presentacion_ingreso'] = $presentacionIngreso;
+            }
+            if (Schema::hasColumn('compras_lote_detalle', 'cantidad_presentacion')) {
+                $detalle['cantidad_presentacion'] = $cantidadPresentacion;
+            }
+            if (Schema::hasColumn('compras_lote_detalle', 'factor_conversion')) {
+                $detalle['factor_conversion'] = $factorConversion;
+            }
+
+            DB::table('compras_lote_detalle')->insert($detalle);
 
             DB::commit();
         } catch (\Throwable $e) {
@@ -211,6 +269,9 @@ class OtrosProductosController extends Controller
             'producto_id' => $productoId,
             'producto_nombre' => $producto->nombre,
             'cantidad' => $cantidad,
+            'presentacion_ingreso' => $presentacionIngreso,
+            'cantidad_presentacion' => $cantidadPresentacion,
+            'factor_conversion' => $factorConversion,
             'costo_kilo' => $costoKilo,
             'precio_venta' => $precioVenta,
             'codigo_comprobante' => $codigoComprobante,
@@ -222,11 +283,15 @@ class OtrosProductosController extends Controller
 
     public function lotesUpdate(Request $request, int $compraLoteId)
     {
+        $this->asegurarColumnasHuevos();
+
         $validator = Validator::make($request->all(), [
             'producto_id' => ['required', 'integer', 'exists:productos,producto_id'],
             'cantidad' => ['required', 'numeric', 'min:0.01'],
             'costo_kilo' => ['required', 'numeric', 'min:0'],
             'precio_venta' => ['required', 'numeric', 'min:0'],
+            'presentacion_ingreso' => ['nullable', 'string', 'max:30'],
+            'cantidad_presentacion' => ['nullable', 'numeric', 'min:0.01'],
             'codigo_comprobante' => ['required', 'string', 'max:50'],
             'fecha_ingreso' => ['required', 'date'],
             'proveedor_id' => ['required', 'integer', 'exists:proveedores,proveedor_id'],
@@ -258,6 +323,17 @@ class OtrosProductosController extends Controller
             return response()->json(['message' => 'Producto no encontrado'], 404);
         }
 
+        $esHuevo = ($producto->grupo_venta ?? '') === 'HUEVOS';
+        $presentacionIngreso = $esHuevo ? strtoupper((string) $request->input('presentacion_ingreso', 'UNIDAD')) : null;
+        $factorConversion = $esHuevo ? $this->factorPresentacionHuevo($presentacionIngreso) : null;
+        if ($esHuevo && $factorConversion === null) {
+            return response()->json(['message' => 'Presentacion de huevo no valida.'], 422);
+        }
+        $cantidadPresentacion = $esHuevo ? (float) $request->input('cantidad_presentacion', $cantidad) : null;
+        if ($esHuevo) {
+            $cantidad = round($cantidadPresentacion * $factorConversion, 2);
+        }
+
         DB::beginTransaction();
         try {
             DB::table('compras_lote')
@@ -268,22 +344,31 @@ class OtrosProductosController extends Controller
                     'proveedor_id' => $proveedorId,
                 ]);
 
+            $detallePayload = [
+                'producto_id' => $productoId,
+                'cantidad' => $cantidad,
+                'costo_kilo' => $costoKilo,
+                'precio_venta' => $precioVenta,
+            ];
+
+            if (Schema::hasColumn('compras_lote_detalle', 'presentacion_ingreso')) {
+                $detallePayload['presentacion_ingreso'] = $presentacionIngreso;
+            }
+            if (Schema::hasColumn('compras_lote_detalle', 'cantidad_presentacion')) {
+                $detallePayload['cantidad_presentacion'] = $cantidadPresentacion;
+            }
+            if (Schema::hasColumn('compras_lote_detalle', 'factor_conversion')) {
+                $detallePayload['factor_conversion'] = $factorConversion;
+            }
+
             $detalleActualizado = DB::table('compras_lote_detalle')
                 ->where('compra_lote_id', $compraLoteId)
-                ->update([
-                    'producto_id' => $productoId,
-                    'cantidad' => $cantidad,
-                    'costo_kilo' => $costoKilo,
-                    'precio_venta' => $precioVenta,
-                ]);
+                ->update($detallePayload);
 
             if ($detalleActualizado === 0) {
                 DB::table('compras_lote_detalle')->insert([
                     'compra_lote_id' => $compraLoteId,
-                    'producto_id' => $productoId,
-                    'cantidad' => $cantidad,
-                    'costo_kilo' => $costoKilo,
-                    'precio_venta' => $precioVenta,
+                    ...$detallePayload,
                 ]);
             }
 
@@ -304,6 +389,9 @@ class OtrosProductosController extends Controller
             'producto_id' => $productoId,
             'producto_nombre' => $producto->nombre,
             'cantidad' => $cantidad,
+            'presentacion_ingreso' => $presentacionIngreso,
+            'cantidad_presentacion' => $cantidadPresentacion,
+            'factor_conversion' => $factorConversion,
             'costo_kilo' => $costoKilo,
             'precio_venta' => $precioVenta,
             'codigo_comprobante' => $codigoComprobante,
@@ -345,6 +433,8 @@ class OtrosProductosController extends Controller
 
     public function ventasDiariasEstado(Request $request)
     {
+        $this->asegurarColumnasHuevos();
+
         $validator = Validator::make($request->all(), [
             'fecha' => ['required', 'date'],
         ]);
@@ -367,6 +457,9 @@ class OtrosProductosController extends Controller
             'opvd.producto_id',
             'opvd.compra_lote_detalle_id',
             'opvd.cantidad',
+            Schema::hasColumn('otros_productos_ventas_diarias', 'presentacion_venta') ? 'opvd.presentacion_venta' : DB::raw('NULL as presentacion_venta'),
+            Schema::hasColumn('otros_productos_ventas_diarias', 'cantidad_presentacion') ? 'opvd.cantidad_presentacion' : DB::raw('NULL as cantidad_presentacion'),
+            Schema::hasColumn('otros_productos_ventas_diarias', 'factor_conversion') ? 'opvd.factor_conversion' : DB::raw('NULL as factor_conversion'),
             'opvd.precio',
             'opvd.total',
             'opvd.total_huevos',
@@ -412,6 +505,9 @@ class OtrosProductosController extends Controller
                 'opvd.venta_op_diaria_id',
                 'opvd.producto_id',
                 'opvd.cantidad',
+                Schema::hasColumn('otros_productos_ventas_diarias', 'presentacion_venta') ? 'opvd.presentacion_venta' : DB::raw('NULL as presentacion_venta'),
+                Schema::hasColumn('otros_productos_ventas_diarias', 'cantidad_presentacion') ? 'opvd.cantidad_presentacion' : DB::raw('NULL as cantidad_presentacion'),
+                Schema::hasColumn('otros_productos_ventas_diarias', 'factor_conversion') ? 'opvd.factor_conversion' : DB::raw('NULL as factor_conversion'),
                 'opvd.precio',
                 'opvd.total',
                 'opvd.total_huevos',
@@ -459,6 +555,9 @@ class OtrosProductosController extends Controller
                         'producto_nombre' => $row->producto_nombre,
                         'grupo_venta' => $row->grupo_venta,
                         'cantidad' => (float) $row->cantidad,
+                        'presentacion_venta' => $row->presentacion_venta,
+                        'cantidad_presentacion' => $row->cantidad_presentacion !== null ? (float) $row->cantidad_presentacion : null,
+                        'factor_conversion' => $row->factor_conversion !== null ? (float) $row->factor_conversion : null,
                         'precio' => (float) $row->precio,
                         'total' => $subtotal,
                     ];
@@ -485,12 +584,16 @@ class OtrosProductosController extends Controller
 
     public function ventasDiariasGuardar(Request $request)
     {
+        $this->asegurarColumnasHuevos();
+
         $validator = Validator::make($request->all(), [
             'fecha' => ['required', 'date'],
             'filas' => ['array'],
             'filas.*.producto_id' => ['required', 'integer', 'exists:productos,producto_id'],
             'filas.*.cantidad' => ['required', 'numeric', 'min:0.01'],
             'filas.*.precio' => ['required', 'numeric', 'min:0'],
+            'filas.*.presentacion_venta' => ['nullable', 'string', 'max:30'],
+            'filas.*.cantidad_presentacion' => ['nullable', 'numeric', 'min:0.01'],
             'filas.*.fecha_hora' => ['nullable', 'date'],
             'filas.*.pedido_id' => ['nullable', 'integer'],
             'filas.*.origen' => ['nullable', 'string', 'max:20'],
@@ -520,7 +623,21 @@ class OtrosProductosController extends Controller
             return response()->json(['message' => 'El día ya está cerrado. Reabre para editar.'], 409);
         }
 
-        $totales = $this->calcularTotalesPorFilas($filas);
+        $productosVenta = DB::table('productos')
+            ->whereIn('producto_id', $filas->pluck('producto_id')->filter()->values())
+            ->get()
+            ->keyBy('producto_id');
+
+        try {
+            $filasNormalizadas = $filas->map(function ($fila) use ($productosVenta) {
+                $producto = $productosVenta[(int) $fila['producto_id']] ?? null;
+                return $this->normalizarFilaVentaDiaria($fila, $producto);
+            });
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        $totales = $this->calcularTotalesPorFilas($filasNormalizadas);
 
         DB::beginTransaction();
         try {
@@ -530,7 +647,7 @@ class OtrosProductosController extends Controller
                 ->whereNull('cerrado_en')
                 ->delete();
 
-            foreach ($filas as $fila) {
+            foreach ($filasNormalizadas as $fila) {
                 $fechaHoraFila = isset($fila['fecha_hora']) && !empty($fila['fecha_hora'])
                     ? Carbon::parse($fila['fecha_hora'])->format('Y-m-d H:i:s')
                     : Carbon::parse($fecha)->format('Y-m-d H:i:s');
@@ -542,7 +659,7 @@ class OtrosProductosController extends Controller
                     'cantidad' => (float) $fila['cantidad'],
                     'precio' => (float) $fila['precio'],
                     'fecha_hora' => $fechaHoraFila,
-                    'total' => (float) $fila['cantidad'] * (float) $fila['precio'],
+                    'total' => (float) $fila['total'],
                     'total_huevos' => $totales['huevos'],
                     'total_congelados' => $totales['congelados'],
                     'cerrado_en' => null,
@@ -555,6 +672,16 @@ class OtrosProductosController extends Controller
 
                 if ($tieneOrigen) {
                     $datosFila['origen'] = isset($fila['origen']) ? trim((string) $fila['origen']) : null;
+                }
+
+                if (Schema::hasColumn('otros_productos_ventas_diarias', 'presentacion_venta')) {
+                    $datosFila['presentacion_venta'] = $fila['presentacion_venta'] ?? null;
+                }
+                if (Schema::hasColumn('otros_productos_ventas_diarias', 'cantidad_presentacion')) {
+                    $datosFila['cantidad_presentacion'] = $fila['cantidad_presentacion'] ?? null;
+                }
+                if (Schema::hasColumn('otros_productos_ventas_diarias', 'factor_conversion')) {
+                    $datosFila['factor_conversion'] = $fila['factor_conversion'] ?? null;
                 }
 
                 DB::table('otros_productos_ventas_diarias')->insert($datosFila);
@@ -571,6 +698,8 @@ class OtrosProductosController extends Controller
 
     public function ventasDiariasCerrar(Request $request)
     {
+        $this->asegurarColumnasHuevos();
+
         $validator = Validator::make($request->all(), [
             'fecha' => ['required', 'date'],
         ]);
@@ -654,6 +783,8 @@ class OtrosProductosController extends Controller
 
     public function ventasDiariasReabrir(Request $request)
     {
+        $this->asegurarColumnasHuevos();
+
         $validator = Validator::make($request->all(), [
             'fecha' => ['required', 'date'],
         ]);
@@ -731,7 +862,9 @@ class OtrosProductosController extends Controller
 
         foreach ($filas as $fila) {
             $productoId = (int) ($fila['producto_id'] ?? 0);
-            $subtotal = (float) ($fila['cantidad'] ?? 0) * (float) ($fila['precio'] ?? 0);
+            $subtotal = isset($fila['total'])
+                ? (float) $fila['total']
+                : (float) ($fila['cantidad'] ?? 0) * (float) ($fila['precio'] ?? 0);
             $grupo = $productos[$productoId] ?? 'OTROS';
 
             if ($grupo === 'HUEVOS') {
@@ -747,6 +880,85 @@ class OtrosProductosController extends Controller
             'huevos' => $huevos,
             'congelados' => $congelados,
         ];
+    }
+
+    private function normalizarFilaVentaDiaria($fila, ?object $producto): array
+    {
+        $productoId = (int) ($fila['producto_id'] ?? 0);
+        $grupo = $producto?->grupo_venta ?? 'OTROS';
+        $cantidad = (float) ($fila['cantidad'] ?? 0);
+        $precio = (float) ($fila['precio'] ?? 0);
+
+        $normalizada = [
+            ...$fila,
+            'producto_id' => $productoId,
+            'cantidad' => $cantidad,
+            'precio' => $precio,
+            'total' => round($cantidad * $precio, 2),
+            'presentacion_venta' => null,
+            'cantidad_presentacion' => null,
+            'factor_conversion' => null,
+        ];
+
+        if ($grupo !== 'HUEVOS' || empty($fila['presentacion_venta'])) {
+            return $normalizada;
+        }
+
+        $presentacion = strtoupper((string) ($fila['presentacion_venta'] ?? 'UNIDAD'));
+        $factor = $this->factorPresentacionHuevo($presentacion);
+        if ($factor === null) {
+            throw new \InvalidArgumentException('Presentacion de huevo no valida.');
+        }
+
+        $cantidadPresentacion = (float) ($fila['cantidad_presentacion'] ?? $cantidad);
+        $cantidadBase = round($cantidadPresentacion * $factor, 2);
+
+        return [
+            ...$normalizada,
+            'cantidad' => $cantidadBase,
+            'precio' => $precio,
+            'total' => round($precio, 2),
+            'presentacion_venta' => $presentacion,
+            'cantidad_presentacion' => $cantidadPresentacion,
+            'factor_conversion' => $factor,
+        ];
+    }
+
+    private function factorPresentacionHuevo(?string $presentacion): ?float
+    {
+        $clave = strtoupper((string) $presentacion);
+        return isset(self::PRESENTACIONES_HUEVO[$clave]) ? (float) self::PRESENTACIONES_HUEVO[$clave] : null;
+    }
+
+    private function asegurarColumnasHuevos(): void
+    {
+        if (Schema::hasTable('compras_lote_detalle')) {
+            $columnas = [
+                'presentacion_ingreso' => fn (Blueprint $table) => $table->string('presentacion_ingreso', 30)->nullable()->after('cantidad'),
+                'cantidad_presentacion' => fn (Blueprint $table) => $table->decimal('cantidad_presentacion', 12, 2)->nullable()->after('presentacion_ingreso'),
+                'factor_conversion' => fn (Blueprint $table) => $table->decimal('factor_conversion', 12, 2)->nullable()->after('cantidad_presentacion'),
+            ];
+
+            foreach ($columnas as $columna => $callback) {
+                if (!Schema::hasColumn('compras_lote_detalle', $columna)) {
+                    Schema::table('compras_lote_detalle', $callback);
+                }
+            }
+        }
+
+        if (Schema::hasTable('otros_productos_ventas_diarias')) {
+            $columnas = [
+                'presentacion_venta' => fn (Blueprint $table) => $table->string('presentacion_venta', 30)->nullable()->after('cantidad'),
+                'cantidad_presentacion' => fn (Blueprint $table) => $table->decimal('cantidad_presentacion', 12, 2)->nullable()->after('presentacion_venta'),
+                'factor_conversion' => fn (Blueprint $table) => $table->decimal('factor_conversion', 12, 2)->nullable()->after('cantidad_presentacion'),
+            ];
+
+            foreach ($columnas as $columna => $callback) {
+                if (!Schema::hasColumn('otros_productos_ventas_diarias', $columna)) {
+                    Schema::table('otros_productos_ventas_diarias', $callback);
+                }
+            }
+        }
     }
 
 }

@@ -101,7 +101,7 @@ export class PrivadoOtrosProductosProductos implements OnInit {
 
   eliminarProducto(producto: ProductoRegistro): void {
     const confirmacion = confirm(
-      `¿Seguro que deseas eliminar el producto ${producto.nombre}?`
+      `Seguro que deseas eliminar el producto ${producto.nombre}?`
     );
     if (!confirmacion) {
       return;
@@ -132,7 +132,7 @@ export class PrivadoOtrosProductosProductos implements OnInit {
     const nuevoEstado = !producto.activo;
     const accion = nuevoEstado ? 'activar' : 'inactivar';
     const confirmacion = confirm(
-      `¿Seguro que deseas ${accion} el producto ${producto.nombre}?`
+      `Seguro que deseas ${accion} el producto ${producto.nombre}?`
     );
     if (!confirmacion) {
       return;
@@ -207,8 +207,7 @@ export class PrivadoOtrosProductosProductos implements OnInit {
       .subscribe({
         next: (producto) => {
           this.productos = this.productos.map((item) =>
-            item.id === producto.id
-              ? {
+            item.id === producto.id ? {
                   id: producto.id,
                   nombre: producto.nombre,
                   grupoVenta: producto.grupo_venta,
@@ -243,8 +242,7 @@ export class PrivadoOtrosProductosProductos implements OnInit {
       .subscribe({
         next: (respuesta) => {
           this.productos = this.productos.map((item) =>
-            item.id === producto.id
-              ? {
+            item.id === producto.id ? {
                   id: respuesta.id,
                   nombre: respuesta.nombre,
                   grupoVenta: respuesta.grupo_venta,

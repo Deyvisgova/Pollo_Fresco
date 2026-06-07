@@ -57,11 +57,38 @@ interface PedidoDelivery {
   delivery_usuario_id?: number | null;
 }
 
+interface CuentaPagoHistorial {
+  pedido_pago_id: number;
+  pedido_id: number;
+  fecha_hora: string | null;
+  dia_nombre: string | null;
+  monto: number;
+  estado_pago: 'COMPLETO' | 'PENDIENTE' | 'PARCIAL';
+  tipo_pedido: 'MESA' | 'DELIVERY' | null;
+  mesa: string | null;
+  registrado_por: string;
+}
+
+interface CuentaCliente {
+  cliente: PedidoCliente;
+  total_deuda: number;
+  monto_pagado: number;
+  saldo_pendiente: number;
+  cantidad_pedidos_pendientes: number;
+  fecha_deuda_mas_antigua: string | null;
+  ultimo_pago: CuentaPagoHistorial | null;
+  pedidos: PedidoDelivery[];
+  historial_pagos: CuentaPagoHistorial[];
+}
+
 interface DetalleFormulario {
   cantidad: number;
   unidad: 'KG' | 'UND';
   descripcion: string;
   precioUnitario: number;
+  productoId?: number | null;
+  grupoVenta?: 'HUEVOS' | 'CONGELADO' | 'OTROS' | null;
+  presentacionVenta?: PresentacionHuevo;
 }
 
 interface ClienteFormulario {
@@ -80,7 +107,10 @@ interface ClienteFormulario {
 interface ProductoApi {
   id: number;
   nombre: string;
+  grupo_venta: 'HUEVOS' | 'CONGELADO' | 'OTROS';
 }
+
+type PresentacionHuevo = 'UNIDAD' | 'MEDIO_CASILLERO' | 'CASILLERO' | 'MEDIA_JAVA' | 'JAVA';
 
 interface LoteApi {
   producto_id: number;
@@ -98,6 +128,8 @@ interface EstadoVentaDiariaPedidoApi {
     cerrado_en: string | null;
     pedido_id?: number | null;
     origen?: string | null;
+    presentacion_venta?: PresentacionHuevo | null;
+    cantidad_presentacion?: number | null;
   }>;
 }
 
@@ -116,9 +148,13 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
 
   pedidos: PedidoDelivery[] = [];
   pedidosFiltrados: PedidoDelivery[] = [];
+  cuentasPorCobrar: CuentaCliente[] = [];
+  cuentasFiltradas: CuentaCliente[] = [];
   pedidoSeleccionado: PedidoDelivery | null = null;
   pedidoDetalleModal: PedidoDelivery | null = null;
   pedidoPagoPendiente: PedidoDelivery | null = null;
+  cuentaClienteSeleccionada: CuentaCliente | null = null;
+  cuentaPagoPendiente: CuentaCliente | null = null;
   montoPagoCuenta: number | null = null;
 
   terminoCliente = '';
@@ -166,6 +202,13 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
   filtroEstadoRegistros = '';
   filtroEstadoPagoRegistros = '';
   private readonly claveVueltosPagados = 'pedidos_delivery_vueltos_pagados';
+  presentacionesHuevo = [
+    { id: 'UNIDAD' as PresentacionHuevo, etiqueta: 'Unidad', factor: 1 },
+    { id: 'MEDIO_CASILLERO' as PresentacionHuevo, etiqueta: 'Medio casillero', factor: 15 },
+    { id: 'CASILLERO' as PresentacionHuevo, etiqueta: 'Casillero', factor: 30 },
+    { id: 'MEDIA_JAVA' as PresentacionHuevo, etiqueta: 'Media java', factor: 180 },
+    { id: 'JAVA' as PresentacionHuevo, etiqueta: 'Java', factor: 360 },
+  ];
   private vueltosPagados = new Set<number>();
   private reinicioVistaDeliveryTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -208,6 +251,8 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     this.pedidoSeleccionado = null;
     this.pedidoDetalleModal = null;
     this.pedidoPagoPendiente = null;
+    this.cuentaClienteSeleccionada = null;
+    this.cuentaPagoPendiente = null;
 
     if (subpagina === 'registros') {
       this.cargarPedidos('vendedor');
@@ -251,12 +296,13 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
   cargarCuentasPorCobrar(): void {
     const solicitudActual = ++this.solicitudPedidosId;
     this.cargando = true;
-    this.http.get<PedidoDelivery[]>('/api/cuentas-por-cobrar', { headers: this.obtenerHeaders() }).subscribe({
-      next: (pedidos) => {
+    this.http.get<CuentaCliente[]>('/api/cuentas-por-cobrar', { headers: this.obtenerHeaders() }).subscribe({
+      next: (cuentas) => {
         if (solicitudActual !== this.solicitudPedidosId) {
           return;
         }
-        this.pedidos = pedidos;
+        this.cuentasPorCobrar = cuentas;
+        this.pedidos = cuentas.flatMap((cuenta) => cuenta.pedidos ?? []);
         this.aplicarFiltro();
         this.cargando = false;
       },
@@ -274,6 +320,20 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
 
   aplicarFiltro(): void {
     const termino = this.filtro.trim().toLowerCase();
+
+    if (this.subpaginaActiva === 'cuentas') {
+      this.cuentasFiltradas = this.cuentasPorCobrar.filter((cuenta) => {
+        const cliente = cuenta.cliente;
+        const nombreCliente = this.obtenerNombreCliente(cliente).toLowerCase();
+        const documento = `${cliente?.dni ?? ''} ${cliente?.ruc ?? ''}`.toLowerCase();
+        const pedidos = cuenta.pedidos ?? [];
+        const coincidePedido = pedidos.some((pedido) => `${pedido.pedido_id}`.includes(termino) || `${this.obtenerNumeroVisualPedido(pedido)}`.includes(termino));
+        return !termino || nombreCliente.includes(termino) || documento.includes(termino) || coincidePedido;
+      });
+      this.pedidosFiltrados = this.cuentasFiltradas.flatMap((cuenta) => cuenta.pedidos ?? []);
+      return;
+    }
+
     const clienteFiltro = this.filtroClienteRegistros.trim().toLowerCase();
     const fechaDesde = this.filtroFechaDesdeRegistros ? new Date(`${this.filtroFechaDesdeRegistros}T00:00:00`) : null;
     const fechaHasta = this.filtroFechaHastaRegistros ? new Date(`${this.filtroFechaHastaRegistros}T23:59:59`) : null;
@@ -281,7 +341,7 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     this.pedidosFiltrados = this.pedidos.filter((pedido) => {
       // Fuente principal del nombre mostrado en la tabla y tarjetas del pedido.
       const nombreCliente = `${pedido.cliente?.nombres ?? ''} ${pedido.cliente?.apellidos ?? ''}`.trim().toLowerCase();
-      // Fuente secundaria para búsquedas rápidas por documento.
+      // Fuente secundaria para busquedas rapidas por documento.
       const dniCliente = (pedido.cliente?.dni ?? '').toLowerCase();
       // Fecha real registrada al crear el pedido, usada para los filtros de rango.
       const fechaPedido = pedido.fecha_hora_creacion ? new Date(pedido.fecha_hora_creacion) : null;
@@ -354,7 +414,7 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     const documento = this.consultaDocumento.trim();
 
     if (!/^\d+$/.test(documento)) {
-      this.mensajeError = 'El documento solo debe contener dígitos.';
+      this.mensajeError = 'El documento solo debe contener digitos.';
       return;
     }
 
@@ -368,7 +428,7 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       return;
     }
 
-    this.mensajeError = 'El documento debe tener 8 (DNI) u 11 (RUC) dígitos.';
+    this.mensajeError = 'El documento debe tener 8 (DNI) u 11 (RUC) digitos.';
   }
 
   guardarClienteDesdeModal(): void {
@@ -438,9 +498,18 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     const indiceFilaObjetivo = this.resolverFilaObjetivoParaProducto();
     if (indiceFilaObjetivo >= 0) {
       this.detalles[indiceFilaObjetivo].descripcion = producto.nombre;
+      this.detalles[indiceFilaObjetivo].productoId = producto.id;
+      this.detalles[indiceFilaObjetivo].grupoVenta = producto.grupo_venta;
+      this.detalles[indiceFilaObjetivo].unidad = producto.grupo_venta === 'HUEVOS' ? 'UND' : this.detalles[indiceFilaObjetivo].unidad;
+      this.detalles[indiceFilaObjetivo].presentacionVenta = 'UNIDAD';
       this.indiceFilaPreferida = null;
     } else {
       this.agregarLineaDetalle(producto.nombre);
+      const nuevaFila = this.detalles[this.detalles.length - 1];
+      nuevaFila.productoId = producto.id;
+      nuevaFila.grupoVenta = producto.grupo_venta;
+      nuevaFila.unidad = producto.grupo_venta === 'HUEVOS' ? 'UND' : nuevaFila.unidad;
+      nuevaFila.presentacionVenta = 'UNIDAD';
     }
 
     this.productoSeleccionado = '';
@@ -452,7 +521,10 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       cantidad: 1,
       unidad: 'KG',
       descripcion,
-      precioUnitario: 0
+      precioUnitario: 0,
+      productoId: null,
+      grupoVenta: null,
+      presentacionVenta: 'UNIDAD'
     });
 
     if (!descripcion) {
@@ -485,7 +557,7 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       return;
     }
 
-    const cantidad = Number(fila.cantidad ?? 0);
+    const cantidad = this.cantidadBaseDetalle(fila);
     if (!Number.isFinite(cantidad) || cantidad <= 0) {
       return;
     }
@@ -506,7 +578,43 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
   }
 
   totalDetalle(item: DetalleFormulario): number {
+    if (this.esDetalleHuevos(item)) {
+      return Number(item.precioUnitario ?? 0);
+    }
     return Number(((item.cantidad || 0) * (item.precioUnitario || 0)).toFixed(2));
+  }
+
+  esDetalleHuevos(item: DetalleFormulario): boolean {
+    if (item.grupoVenta) {
+      return item.grupoVenta === 'HUEVOS';
+    }
+    const producto = this.productosDisponibles.find((prod) => prod.nombre.trim().toLowerCase() === item.descripcion.trim().toLowerCase());
+    return producto?.grupo_venta === 'HUEVOS';
+  }
+
+  factorPresentacion(presentacion: PresentacionHuevo | null | undefined): number {
+    return this.presentacionesHuevo.find((item) => item.id === presentacion)?.factor ?? 1;
+  }
+
+  etiquetaPresentacion(presentacion: PresentacionHuevo | null | undefined): string {
+    return this.presentacionesHuevo.find((item) => item.id === presentacion)?.etiqueta ?? 'Unidad';
+  }
+
+  cantidadBaseDetalle(item: DetalleFormulario): number {
+    const cantidad = Number(item.cantidad ?? 0);
+    return this.esDetalleHuevos(item) ? Number((cantidad * this.factorPresentacion(item.presentacionVenta)).toFixed(2)) : cantidad;
+  }
+
+  precioUnitarioDetalle(item: DetalleFormulario): number {
+    if (!this.esDetalleHuevos(item)) {
+      return Number(item.precioUnitario ?? 0);
+    }
+    const base = this.cantidadBaseDetalle(item);
+    return base > 0 ? Number((Number(item.precioUnitario ?? 0) / base).toFixed(6)) : 0;
+  }
+
+  descripcionDetallePedido(item: DetalleFormulario): string {
+    return this.esDetalleHuevos(item) ? `${item.descripcion.trim()} (${this.etiquetaPresentacion(item.presentacionVenta)})` : item.descripcion.trim();
   }
 
   totalPedido(): number {
@@ -522,7 +630,7 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     const detallesValidos = this.detalles.filter((item) => item.descripcion.trim() && item.cantidad > 0 && item.precioUnitario >= 0);
 
     if (!detallesValidos.length) {
-      this.mensajeError = 'Agrega al menos una línea válida en el detalle.';
+      this.mensajeError = 'Agrega al menos una linea valida en el detalle.';
       return;
     }
 
@@ -535,10 +643,10 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       mesa: this.tipoPedidoFormulario === 'MESA' ? this.mesaFormulario.trim() || null : null,
       fecha_hora_creacion: this.fechaHoraCreacion,
       detalles: detallesValidos.map((item) => ({
-        cantidad: item.cantidad,
-        unidad: item.unidad,
-        descripcion: item.descripcion,
-        precio_unitario: item.precioUnitario
+        cantidad: this.cantidadBaseDetalle(item),
+        unidad: this.esDetalleHuevos(item) ? 'UND' : item.unidad,
+        descripcion: this.descripcionDetallePedido(item),
+        precio_unitario: this.precioUnitarioDetalle(item)
       }))
     };
 
@@ -706,17 +814,35 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
 
   abrirRegistroPagoCuenta(pedido: PedidoDelivery): void {
     this.pedidoPagoPendiente = pedido;
+    this.cuentaPagoPendiente = null;
     this.montoPagoCuenta = this.obtenerSaldoPendiente(pedido);
+    this.mensajeError = '';
+  }
+
+  abrirCuentaCliente(cuenta: CuentaCliente): void {
+    this.cuentaClienteSeleccionada = cuenta;
+    this.mensajeError = '';
+  }
+
+  cerrarCuentaCliente(): void {
+    this.cuentaClienteSeleccionada = null;
+  }
+
+  abrirRegistroPagoCliente(cuenta: CuentaCliente): void {
+    this.cuentaPagoPendiente = cuenta;
+    this.pedidoPagoPendiente = null;
+    this.montoPagoCuenta = cuenta.saldo_pendiente;
     this.mensajeError = '';
   }
 
   cerrarRegistroPagoCuenta(): void {
     this.pedidoPagoPendiente = null;
+    this.cuentaPagoPendiente = null;
     this.montoPagoCuenta = null;
   }
 
   registrarPagoCuenta(): void {
-    if (!this.pedidoPagoPendiente) {
+    if (!this.pedidoPagoPendiente && !this.cuentaPagoPendiente) {
       return;
     }
 
@@ -729,15 +855,18 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     this.registrandoPago = true;
     this.mensajeError = '';
 
+    const url = this.cuentaPagoPendiente
+      ? `/api/cuentas-por-cobrar/clientes/${this.cuentaPagoPendiente.cliente.cliente_id}/pagos`
+      : `/api/pedidos-delivery/${this.pedidoPagoPendiente?.pedido_id}/pagos`;
+
     this.http
-      .post<PedidoDelivery>(
-        `/api/pedidos-delivery/${this.pedidoPagoPendiente.pedido_id}/pagos`,
-        { monto },
-        { headers: this.obtenerHeaders() }
-      )
+      .post<PedidoDelivery | CuentaCliente>(url, { monto }, { headers: this.obtenerHeaders() })
       .subscribe({
-        next: () => {
+        next: (respuesta) => {
           this.registrandoPago = false;
+          if (this.cuentaPagoPendiente && this.cuentaClienteSeleccionada) {
+            this.cuentaClienteSeleccionada = respuesta as CuentaCliente;
+          }
           this.cerrarRegistroPagoCuenta();
           this.recargarVistaActual();
         },
@@ -866,7 +995,7 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     if (!numero) {
       return;
     }
-    window.open(`https://wa.me/51${numero}?text=${encodeURIComponent(`Hola, tu pedido #${this.obtenerNumeroVisualPedido(pedido)} está en ruta.`)}`, '_blank');
+    window.open(`https://wa.me/51${numero}?text=${encodeURIComponent(`Hola, tu pedido #${this.obtenerNumeroVisualPedido(pedido)} esta en ruta.`)}`, '_blank');
   }
 
   llamarCliente(pedido: PedidoDelivery): void {
@@ -892,7 +1021,7 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       return;
     }
 
-    this.mensajeError = 'Este pedido no tiene ubicación registrada aún.';
+    this.mensajeError = 'Este pedido no tiene ubicacion registrada aun.';
   }
 
   verFotoFrontis(pedido: PedidoDelivery): void {
@@ -978,20 +1107,20 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     const ultimoPago = this.obtenerUltimoPago(pedido);
 
     if (ultimoPago && Number(ultimoPago.vuelto ?? 0) > 0 && this.estaVueltoPagado(pedido)) {
-      return 'COMPLETO · Vuelto pagado';
+      return 'COMPLETO  Vuelto pagado';
     }
 
-    return detalle ? `${estado} · ${detalle}` : estado;
+    return detalle ? `${estado}  ${detalle}` : estado;
   }
 
   obtenerFechaHoraCorta(fecha: string | null | undefined): string {
     if (!fecha) {
-      return '—';
+      return '';
     }
 
     const date = new Date(fecha);
     if (Number.isNaN(date.getTime())) {
-      return '—';
+      return '';
     }
 
     return new Intl.DateTimeFormat('es-PE', {
@@ -1006,7 +1135,7 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
 
   obtenerNumeroVisualPedido(pedido: PedidoDelivery | null): number | string {
     if (!pedido) {
-      return '—';
+      return '';
     }
 
     const pedidosDelDia = this.pedidos
@@ -1071,6 +1200,46 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
 
   obtenerTipoPedido(pedido: PedidoDelivery): string {
     return pedido.tipo_pedido === 'MESA' ? `Mesa${pedido.mesa ? ` ${pedido.mesa}` : ''}` : 'Delivery';
+  }
+
+  obtenerNombreCliente(cliente: PedidoCliente | null | undefined): string {
+    if (!cliente) {
+      return 'Cliente sin datos';
+    }
+
+    const nombre = `${cliente.nombres ?? ''} ${cliente.apellidos ?? ''}`.trim();
+    return nombre || cliente.nombre_empresa || 'Cliente sin nombre';
+  }
+
+  obtenerInicialesCliente(cliente: PedidoCliente | null | undefined): string {
+    const nombre = this.obtenerNombreCliente(cliente);
+    return nombre
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((parte) => parte.charAt(0).toUpperCase())
+      .join('') || 'CL';
+  }
+
+  obtenerFechaLarga(fecha: string | null | undefined): string {
+    if (!fecha) {
+      return 'Sin fecha';
+    }
+
+    const date = new Date(fecha);
+    if (Number.isNaN(date.getTime())) {
+      return 'Sin fecha';
+    }
+
+    return new Intl.DateTimeFormat('es-PE', {
+      weekday: 'long',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    }).format(date);
   }
 
   obtenerMontoPagado(pedido: PedidoDelivery): number {
@@ -1201,7 +1370,7 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
 
     void swal.fire({
       icon: 'warning',
-      title: 'Cantidad inválida',
+      title: 'Cantidad invalida',
       text: mensaje,
       confirmButtonText: 'Entendido'
     });
@@ -1210,14 +1379,14 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
 
 
   /**
-   * Envía en paralelo las filas del pedido al módulo de ventas diarias manuales.
+   * Envia en paralelo las filas del pedido al modulo de ventas diarias manuales.
    */
   private enviarFilasAVentasDiarias(detallesValidos: DetalleFormulario[], pedidoId: number): void {
     const filas = detallesValidos
       .map((detalle) => {
-        const producto = this.productosDisponibles.find(
-          (item) => item.nombre.trim().toLowerCase() === detalle.descripcion.trim().toLowerCase()
-        );
+        const producto = detalle.productoId
+          ? this.productosDisponibles.find((item) => item.id === detalle.productoId)
+          : this.productosDisponibles.find((item) => item.nombre.trim().toLowerCase() === detalle.descripcion.trim().toLowerCase());
 
         if (!producto) {
           return null;
@@ -1227,12 +1396,27 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
           producto_id: producto.id,
           pedido_id: pedidoId,
           origen: 'PEDIDO_DELIVERY',
-          cantidad: Number(detalle.cantidad),
-          precio: Number(detalle.precioUnitario),
+          cantidad: this.cantidadBaseDetalle(detalle),
+          precio: this.esDetalleHuevos(detalle) ? Number(detalle.precioUnitario) : Number(detalle.precioUnitario),
+          presentacion_venta: this.esDetalleHuevos(detalle) ? detalle.presentacionVenta ?? 'UNIDAD' : null,
+          cantidad_presentacion: this.esDetalleHuevos(detalle) ? Number(detalle.cantidad) : null,
           fecha_hora: this.formatearFechaHoraApi(this.fechaHoraCreacion)
         };
       })
-      .filter((fila): fila is { producto_id: number; pedido_id: number; origen: string; cantidad: number; precio: number; fecha_hora: string } => fila !== null);
+      .filter(
+        (
+          fila
+        ): fila is {
+          producto_id: number;
+          pedido_id: number;
+          origen: string;
+          cantidad: number;
+          precio: number;
+          presentacion_venta: PresentacionHuevo | null;
+          cantidad_presentacion: number | null;
+          fecha_hora: string;
+        } => fila !== null
+      );
 
     if (!filas.length) {
       return;
@@ -1257,7 +1441,9 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
               precio: Number(fila.precio ?? 0),
               fecha_hora: fila.fecha_hora,
               pedido_id: fila.pedido_id ?? null,
-              origen: fila.origen ?? null
+              origen: fila.origen ?? null,
+              presentacion_venta: fila.presentacion_venta ?? null,
+              cantidad_presentacion: fila.cantidad_presentacion ?? null
             }));
 
           const filasCombinadas = [...filasSinPedidoActual, ...filas];
@@ -1266,7 +1452,7 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
             .put('/api/otros-productos/ventas-diarias', { fecha, filas: filasCombinadas }, { headers })
             .subscribe({
               error: () => {
-                this.mensajeError = 'Pedido guardado, pero no se pudo enviar automáticamente a Ventas diarias.';
+                this.mensajeError = 'Pedido guardado, pero no se pudo enviar automaticamente a Ventas diarias.';
               }
             });
         },
@@ -1324,7 +1510,10 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       cantidad: 1,
       unidad: 'KG',
       descripcion: '',
-      precioUnitario: 0
+      precioUnitario: 0,
+      productoId: null,
+      grupoVenta: null,
+      presentacionVenta: 'UNIDAD'
     };
   }
 

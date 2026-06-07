@@ -1,7 +1,7 @@
 <section class="seccion">
   <div class="seccion__encabezado">
-    <h2>Facturación electrónica</h2>
-    <p>Emite comprobantes peruanos de forma rápida y sin pasos innecesarios.</p>
+    <h2>Facturacion electronica</h2>
+    <p>Emite comprobantes peruanos de forma rapida y sin pasos innecesarios.</p>
   </div>
 
   <div class="seccion__contenido">
@@ -9,7 +9,7 @@
       <header class="tarjeta__encabezado">
         <div>
           <span class="eyebrow">Pollo Fresco S.A.C.</span>
-          <h3>Comprobante electrónico</h3>
+          <h3>Comprobante electronico</h3>
           <p>Formulario esencial para registrar la venta y emitir.</p>
         </div>
       </header>
@@ -29,7 +29,7 @@
               </select>
             </div>
             <div class="campo">
-              <label>Número</label>
+              <label>Numero</label>
               <input
                 [(ngModel)]="consultaDocumento"
                 type="text"
@@ -43,7 +43,7 @@
                 (click)="consultarDocumento()"
               >
                 <span *ngIf="consultaCargando">...</span>
-                <span *ngIf="!consultaCargando" aria-hidden="true">🔍</span>
+                <span *ngIf="!consultaCargando" aria-hidden="true">Buscar</span>
                 <span class="sr-only">Buscar</span>
               </button>
               <small *ngIf="mensajeError" class="mensaje-error"
@@ -62,7 +62,7 @@
               />
             </div>
             <div class="campo">
-              <label>Razón social</label>
+              <label>Razon social</label>
               <input
                 [(ngModel)]="cliente.nombre"
                 type="text"
@@ -70,11 +70,11 @@
               />
             </div>
             <div class="campo campo--doble">
-              <label>Dirección</label>
+              <label>Direccion</label>
               <input
                 [(ngModel)]="cliente.direccion"
                 type="text"
-                placeholder="Dirección completa"
+                placeholder="Direccion completa"
               />
             </div>
           </div>
@@ -83,7 +83,7 @@
         <div class="tarjeta__seccion tarjeta__seccion--sin-borde">
           <div class="tarjeta__titulo">
             <h4>Comprobante</h4>
-            <span class="nota">Datos principales de emisión.</span>
+            <span class="nota">Datos principales de emision.</span>
           </div>
 
           <div class="formulario-grid formulario-grid--comprobante">
@@ -96,7 +96,7 @@
                 <option value="factura">Factura</option>
                 <option value="boleta">Boleta</option>
                 <option value="nota-venta">Nota de venta</option>
-                <option value="nota-credito">Nota de crédito</option>
+                <option value="nota-credito">Nota de credito</option>
               </select>
             </div>
             <div class="campo">
@@ -104,7 +104,7 @@
               <input [(ngModel)]="serie" type="text" placeholder="F001" />
             </div>
             <div class="campo">
-              <label>Número</label>
+              <label>Numero</label>
               <input [(ngModel)]="numero" type="text" placeholder="00012345" />
             </div>
             <div class="campo">
@@ -115,15 +115,15 @@
               <label>Moneda</label>
               <select [(ngModel)]="moneda">
                 <option value="PEN">Soles</option>
-                <option value="USD">Dólares</option>
+                <option value="USD">Dolares</option>
               </select>
             </div>
             <div class="campo">
               <label>Pago</label>
               <select [(ngModel)]="formaPago">
                 <option>Contado</option>
-                <option>Crédito 7 días</option>
-                <option>Crédito 15 días</option>
+                <option>Credito 7 dias</option>
+                <option>Credito 15 dias</option>
               </select>
             </div>
           </div>
@@ -133,7 +133,7 @@
       <div class="tarjeta__seccion" *ngIf="tipoComprobante === 'nota-credito'">
         <div class="tarjeta__titulo">
           <h4>Referencia</h4>
-          <span class="nota">Solo si emites nota de crédito.</span>
+          <span class="nota">Solo si emites nota de credito.</span>
         </div>
         <div class="formulario-grid">
           <div class="campo">
@@ -145,7 +145,7 @@
             />
           </div>
           <div class="campo">
-            <label>Número</label>
+            <label>Numero</label>
             <input
               [(ngModel)]="referenciaNumero"
               type="text"
@@ -157,7 +157,7 @@
             <input
               [(ngModel)]="referenciaMotivo"
               type="text"
-              placeholder="Devolución o descuento aplicado"
+              placeholder="Devolucion o descuento aplicado"
             />
           </div>
         </div>
@@ -210,8 +210,8 @@
         <div class="tabla-detalle__encabezado">
           <span>Cant.</span>
           <span>Unidad</span>
-          <span>Descripción</span>
-          <span>P. Unit</span>
+          <span>Descripcion</span>
+          <span>Precio</span>
           <span>Total</span>
           <span></span>
         </div>
@@ -220,32 +220,39 @@
           *ngFor="let item of detalles; let i = index"
         >
           <input [(ngModel)]="item.cantidad" type="number" min="0" />
-          <select [(ngModel)]="item.unidad">
+          <select [(ngModel)]="item.unidad" *ngIf="!esDetalleHuevos(item); else presentacionHuevoVenta">
             <option value="KG">KG</option>
             <option value="UND">UND</option>
           </select>
+          <ng-template #presentacionHuevoVenta>
+            <select [(ngModel)]="item.presentacionVenta">
+              <option *ngFor="let presentacion of presentacionesHuevo" [value]="presentacion.id">{{ presentacion.etiqueta }}</option>
+            </select>
+          </ng-template>
           <input
             [(ngModel)]="item.descripcion"
             type="text"
             placeholder="Escribe nombre del el producto"
           />
-          <input [(ngModel)]="item.precioUnitario" type="number" min="0" />
+          <input [(ngModel)]="item.precioUnitario" type="number" min="0" [placeholder]="esDetalleHuevos(item) ? 'Precio total' : 'P. unitario'" />
           <span class="tabla-detalle__total"
             >S/ {{ totalDetalle(item) | number: '1.2-2' }}</span
           >
           <button
             type="button"
             class="boton-icono"
+            aria-label="Eliminar detalle"
+            title="Eliminar"
             (click)="eliminarDetalle(i)"
           >
-            ✕
+            x
           </button>
         </div>
       </div>
 
       <div class="detalle-resumen">
         <div class="metodos-pago">
-          <h5>Método de pago:</h5>
+          <h5>Metodo de pago:</h5>
           <div class="metodos-pago__opciones">
             <button
               type="button"
@@ -343,27 +350,27 @@
 <div class="modal" *ngIf="mostrarModalVoucher && ultimaVentaEmitida">
   <div class="modal__contenido modal__contenido--voucher">
     <h4>Comprobante emitido</h4>
-    <p class="nota">Selecciona el formato y la acción que deseas realizar.</p>
+    <p class="nota">Selecciona el formato y la accion que deseas realizar.</p>
     <div class="campo">
       <label>Formato de comprobante</label>
       <select [(ngModel)]="formatoVoucher">
         <option value="a4">A4</option>
-        <option value="ticket-80">Tiquetera láser 8 cm</option>
-        <option value="ticket-57">Tiquetera láser 5.7 cm</option>
+        <option value="ticket-80">Tiquetera laser 8 cm</option>
+        <option value="ticket-57">Tiquetera laser 5.7 cm</option>
       </select>
     </div>
     <div class="acciones-voucher__botones">
       <button class="boton-icono-accion" type="button" (click)="imprimirVoucher()" title="Imprimir">
-        🖨️
+        Imp.
       </button>
       <button class="boton-icono-accion" type="button" (click)="descargarVoucher()" title="Descargar PDF">
-        ⬇️
+        PDF
       </button>
       <button class="boton-icono-accion" type="button" (click)="enviarVoucher()" title="Enviar">
-        📤
+        Env.
       </button>
       <button class="boton-icono-accion" type="button" (click)="descargarXmlVoucher()" title="Descargar XML">
-        🧾
+        XML
       </button>
     </div>
     <div class="modal__acciones">

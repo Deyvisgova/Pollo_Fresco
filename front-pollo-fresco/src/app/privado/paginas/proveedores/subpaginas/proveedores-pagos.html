@@ -5,7 +5,7 @@
 
   <div class="filtros-pagos">
     <label class="campo-busqueda">
-      <span>Búsqueda</span>
+      <span>Busqueda</span>
       <input [(ngModel)]="busqueda" (ngModelChange)="cargarPagos()" type="text" placeholder="Buscar por ID o estado" />
     </label>
 
@@ -22,7 +22,7 @@
       <input [(ngModel)]="filtroFecha" (ngModelChange)="cargarPagos()" type="date" />
     </label>
 
-    <button class="boton-pdf" type="button" title="Descargar PDF filtrado" (click)="descargarPdfFiltrado()">📄 PDF</button>
+    <button class="boton-pdf" type="button" title="Descargar PDF filtrado" (click)="descargarPdfFiltrado()">PDF</button>
   </div>
 
   <p class="mensaje" *ngIf="cargando">Cargando historial...</p>

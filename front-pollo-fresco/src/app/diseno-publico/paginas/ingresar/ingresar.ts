@@ -85,7 +85,7 @@ export class Ingresar {
           void this.router.navigate(['/privado']);
         },
         error: () => {
-          this.mensajeError = 'No pudimos iniciar sesión. Verifica tus datos.';
+          this.mensajeError = 'No pudimos iniciar sesion. Verifica tus datos.';
         }
       });
   }

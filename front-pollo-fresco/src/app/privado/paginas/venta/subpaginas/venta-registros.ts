@@ -85,7 +85,7 @@ export class PrivadoVentaRegistros implements OnInit {
         }
       },
       error: () => {
-        this.error = 'No se pudo generar el PDF para imprimir.';
+        this.error = 'No se pudo generar el ?? para imprimir.';
       }
     });
   }
@@ -100,7 +100,7 @@ export class PrivadoVentaRegistros implements OnInit {
         enlace.click();
       },
       error: () => {
-        this.error = 'No se pudo descargar el PDF.';
+        this.error = 'No se pudo descargar el ??.';
       }
     });
   }

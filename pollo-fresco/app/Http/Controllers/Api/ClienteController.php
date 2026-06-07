@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Cliente;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Database\QueryException;
 use Illuminate\Validation\Rule;
 
 class ClienteController extends Controller
@@ -72,7 +74,19 @@ class ClienteController extends Controller
      */
     public function destroy(Cliente $cliente)
     {
-        $cliente->delete();
+        if (DB::table('pedidos')->where('cliente_id', $cliente->cliente_id)->exists()) {
+            return response()->json([
+                'message' => 'No se puede eliminar este cliente porque tiene pedidos registrados. Puedes editar sus datos, pero no borrarlo.'
+            ], 409);
+        }
+
+        try {
+            $cliente->delete();
+        } catch (QueryException $exception) {
+            return response()->json([
+                'message' => 'No se puede eliminar este cliente porque tiene registros relacionados en el sistema.'
+            ], 409);
+        }
 
         return response()->json(['message' => 'Cliente eliminado correctamente.']);
     }

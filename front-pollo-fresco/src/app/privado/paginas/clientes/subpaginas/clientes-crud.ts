@@ -108,7 +108,7 @@ export class PrivadoClientesCrud implements OnInit {
     }
 
     if (!/^\d+$/.test(documento)) {
-      this.mensajeError = 'El documento solo debe contener dígitos.';
+      this.mensajeError = 'El documento solo debe contener digitos.';
       return;
     }
 
@@ -122,7 +122,7 @@ export class PrivadoClientesCrud implements OnInit {
       return;
     }
 
-    this.mensajeError = 'El documento debe tener 8 dígitos (DNI) o 11 dígitos (RUC).';
+    this.mensajeError = 'El documento debe tener 8 digitos (DNI) o 11 digitos (RUC).';
   }
 
   guardarCliente(): void {
@@ -224,7 +224,7 @@ export class PrivadoClientesCrud implements OnInit {
         autocompletar(datos);
       },
       error: () => {
-        this.mensajeError = 'No pudimos conectar con la SUNAT/RENIEC. Revisa el número e intenta nuevamente.';
+        this.mensajeError = 'No pudimos conectar con la SUNAT/RENIEC. Revisa el numero e intenta nuevamente.';
         this.consultaCargando = false;
       },
       complete: () => {

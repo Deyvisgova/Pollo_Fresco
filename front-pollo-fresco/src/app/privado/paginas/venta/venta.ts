@@ -18,12 +18,18 @@ interface DetalleFactura {
   unidad: string;
   cantidad: number | null;
   precioUnitario: number | null;
+  productoId?: number | null;
+  grupoVenta?: 'HUEVOS' | 'CONGELADO' | 'OTROS' | null;
+  presentacionVenta?: PresentacionHuevo;
 }
 
 interface ProductoApi {
   id: number;
   nombre: string;
+  grupo_venta: 'HUEVOS' | 'CONGELADO' | 'OTROS';
 }
+
+type PresentacionHuevo = 'UNIDAD' | 'MEDIO_CASILLERO' | 'CASILLERO' | 'MEDIA_JAVA' | 'JAVA';
 
 interface LoteVentaDiariaApi {
   producto_id: number;
@@ -50,6 +56,8 @@ interface FilaVentaDiariaPayload {
   fecha_hora: string;
   pedido_id?: number | null;
   origen?: string | null;
+  presentacion_venta?: PresentacionHuevo | null;
+  cantidad_presentacion?: number | null;
 }
 
 interface MetodoPago {
@@ -69,11 +77,15 @@ interface DetalleVentaValido {
   unidad: string;
   cantidad: number;
   precio_unitario: number;
+  producto_id?: number | null;
+  grupo_venta?: 'HUEVOS' | 'CONGELADO' | 'OTROS' | null;
+  presentacion_venta?: PresentacionHuevo | null;
+  cantidad_presentacion?: number | null;
 }
 
 @Component({
   selector: 'app-privado-venta',
-  // Componente informativo para la sección de venta.
+  // Componente informativo para la seccion de venta.
   standalone: true,
   imports: [CommonModule, FormsModule, HttpClientModule],
   templateUrl: './venta.html',
@@ -111,6 +123,7 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
   detalles: DetalleFactura[] = [];
 
   productosDisponibles: string[] = [];
+  productosApi: ProductoApi[] = [];
 
   productoSeleccionado = '';
   productosFiltrados: string[] = [];
@@ -119,12 +132,12 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
   metodoPagoSeleccionado = 'efectivo';
   montoRecibido: number | null = null;
   metodosPago: MetodoPago[] = [
-    { id: 'efectivo', etiqueta: 'Efectivo', icono: '💵' },
-    { id: 'tarjeta', etiqueta: 'Tarjeta', icono: '💳' },
-    { id: 'transferencia', etiqueta: 'Transf.', icono: '🏦' },
-    { id: 'plin', etiqueta: 'Plin', icono: '🟢' },
-    { id: 'yape', etiqueta: 'Yape', icono: '🟣' },
-    { id: 'otro', etiqueta: 'Otro', icono: '⋯' }
+    { id: 'efectivo', etiqueta: 'Efectivo', icono: '' },
+    { id: 'tarjeta', etiqueta: 'Tarjeta', icono: '' },
+    { id: 'transferencia', etiqueta: 'Transf.', icono: '' },
+    { id: 'plin', etiqueta: 'Plin', icono: '' },
+    { id: 'yape', etiqueta: 'Yape', icono: '' },
+    { id: 'otro', etiqueta: 'Otro', icono: '' }
   ];
   guardandoVenta = false;
   mensajeVenta = '';
@@ -133,6 +146,13 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
   ultimaVentaEmitida: VentaGuardada | null = null;
   formatoVoucher: 'a4' | 'ticket-80' | 'ticket-57' = 'a4';
   mostrarModalVoucher = false;
+  presentacionesHuevo = [
+    { id: 'UNIDAD' as PresentacionHuevo, etiqueta: 'Unidad', factor: 1 },
+    { id: 'MEDIO_CASILLERO' as PresentacionHuevo, etiqueta: 'Medio casillero', factor: 15 },
+    { id: 'CASILLERO' as PresentacionHuevo, etiqueta: 'Casillero', factor: 30 },
+    { id: 'MEDIA_JAVA' as PresentacionHuevo, etiqueta: 'Media java', factor: 180 },
+    { id: 'JAVA' as PresentacionHuevo, etiqueta: 'Java', factor: 360 },
+  ];
 
   constructor(
     private readonly http: HttpClient,
@@ -169,9 +189,7 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
 
   get subtotal(): number {
     return this.detalles.reduce((acc, item) => {
-      const cantidad = item.cantidad ?? 0;
-      const precio = item.precioUnitario ?? 0;
-      return acc + cantidad * precio;
+      return acc + this.totalDetalle(item);
     }, 0);
   }
 
@@ -187,9 +205,46 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
   }
 
   totalDetalle(item: DetalleFactura): number {
+    if (this.esDetalleHuevos(item)) {
+      return Number(item.precioUnitario ?? 0);
+    }
     const cantidad = item.cantidad ?? 0;
     const precio = item.precioUnitario ?? 0;
     return cantidad * precio;
+  }
+
+  esDetalleHuevos(item: DetalleFactura): boolean {
+    if (item.grupoVenta) {
+      return item.grupoVenta === 'HUEVOS';
+    }
+    const producto = this.productosApi.find((prod) => prod.nombre.trim().toLowerCase() === item.descripcion.trim().toLowerCase());
+    return producto?.grupo_venta === 'HUEVOS';
+  }
+
+  factorPresentacion(presentacion: PresentacionHuevo | null | undefined): number {
+    return this.presentacionesHuevo.find((item) => item.id === presentacion)?.factor ?? 1;
+  }
+
+  etiquetaPresentacion(presentacion: PresentacionHuevo | null | undefined): string {
+    return this.presentacionesHuevo.find((item) => item.id === presentacion)?.etiqueta ?? 'Unidad';
+  }
+
+  cantidadBaseDetalle(item: DetalleFactura): number {
+    const cantidad = Number(item.cantidad ?? 0);
+    return this.esDetalleHuevos(item) ? Number((cantidad * this.factorPresentacion(item.presentacionVenta)).toFixed(2)) : cantidad;
+  }
+
+  precioUnitarioDetalle(item: DetalleFactura): number {
+    if (!this.esDetalleHuevos(item)) {
+      return Number(item.precioUnitario ?? 0);
+    }
+    const base = this.cantidadBaseDetalle(item);
+    return base > 0 ? Number((Number(item.precioUnitario ?? 0) / base).toFixed(6)) : 0;
+  }
+
+  descripcionDetalleVenta(item: DetalleFactura): string {
+    const descripcion = item.descripcion.trim();
+    return this.esDetalleHuevos(item) ? `${descripcion} (${this.etiquetaPresentacion(item.presentacionVenta)})` : descripcion;
   }
 
   agregarDetalle(descripcion: string = ''): void {
@@ -200,7 +255,10 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
         descripcion: descripcionLimpia,
         unidad: 'KG',
         cantidad: null,
-        precioUnitario: null
+        precioUnitario: null,
+        productoId: null,
+        grupoVenta: null,
+        presentacionVenta: 'UNIDAD'
       }
     ];
   }
@@ -218,7 +276,15 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
       (producto) => producto.toLowerCase() === seleccionado
     );
     if (existe) {
+      const producto = this.productosApi.find((item) => item.nombre.toLowerCase() === seleccionado);
       this.agregarDetalle(this.productoSeleccionado);
+      const ultimo = this.detalles[this.detalles.length - 1];
+      if (producto && ultimo) {
+        ultimo.productoId = producto.id;
+        ultimo.grupoVenta = producto.grupo_venta;
+        ultimo.unidad = producto.grupo_venta === 'HUEVOS' ? 'UND' : 'KG';
+        ultimo.presentacionVenta = 'UNIDAD';
+      }
       this.productoSeleccionado = '';
     }
   }
@@ -255,7 +321,7 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
 
     const headers = this.obtenerHeaders();
     this.http
-      .post<ProductoApi>('/api/otros-productos/productos', { nombre }, { headers })
+      .post<ProductoApi>('/api/otros-productos/productos', { nombre, grupo_venta: 'OTROS' }, { headers })
       .subscribe({
         next: (producto) => {
           const nombreProducto = producto?.nombre ?? nombre;
@@ -277,6 +343,7 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
 
     this.http.get<ProductoApi[]>('/api/otros-productos/productos', { params, headers }).subscribe({
       next: (productos) => {
+        this.productosApi = productos;
         this.productosDisponibles = productos.map((producto) => producto.nombre);
         this.filtrarProductos();
       },
@@ -313,14 +380,18 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
     const detallesValidos: DetalleVentaValido[] = this.detalles
       .filter((item) => !!item.descripcion.trim() && (item.cantidad ?? 0) > 0)
       .map((item) => ({
-        descripcion: item.descripcion.trim(),
-        unidad: item.unidad,
-        cantidad: Number(item.cantidad ?? 0),
-        precio_unitario: Number(item.precioUnitario ?? 0)
+        descripcion: this.descripcionDetalleVenta(item),
+        unidad: this.esDetalleHuevos(item) ? 'UND' : item.unidad,
+        cantidad: this.cantidadBaseDetalle(item),
+        precio_unitario: this.precioUnitarioDetalle(item),
+        producto_id: item.productoId ?? this.productosApi.find((prod) => prod.nombre.trim().toLowerCase() === item.descripcion.trim().toLowerCase())?.id ?? null,
+        grupo_venta: item.grupoVenta ?? this.productosApi.find((prod) => prod.nombre.trim().toLowerCase() === item.descripcion.trim().toLowerCase())?.grupo_venta ?? null,
+        presentacion_venta: this.esDetalleHuevos(item) ? item.presentacionVenta ?? 'UNIDAD' : null,
+        cantidad_presentacion: this.esDetalleHuevos(item) ? Number(item.cantidad ?? 0) : null
       }));
 
     if (!detallesValidos.length) {
-      this.errorVenta = 'Verifica el detalle de la venta. Debe tener descripción y cantidad.';
+      this.errorVenta = 'Verifica el detalle de la venta. Debe tener descripcion y cantidad.';
       return;
     }
 
@@ -359,7 +430,7 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
       },
       error: (err) => {
         this.guardandoVenta = false;
-        this.errorVenta = err?.error?.message ?? 'No se pudo guardar la venta. Inténtalo nuevamente.';
+        this.errorVenta = err?.error?.message ?? 'No se pudo guardar la venta. Intentalo nuevamente.';
       }
     });
   }
@@ -396,7 +467,7 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
           return;
         }
 
-        this.errorVenta = 'Tu navegador no soporta el envío directo. Usa Descargar PDF.';
+        this.errorVenta = 'Tu navegador no soporta el envio directo. Usa Descargar ??.';
       },
       error: () => {
         this.errorVenta = 'No se pudo generar el voucher para enviar.';
@@ -440,7 +511,9 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
       next: (productos) => {
         const productosPorNombre = new Map(productos.map((producto) => [producto.nombre.trim().toLowerCase(), producto]));
         const nuevasFilas = detalles.reduce((acc, item) => {
-          const producto = productosPorNombre.get(item.descripcion.trim().toLowerCase());
+          const producto = item.producto_id
+            ? productos.find((prod) => prod.id === item.producto_id)
+            : productosPorNombre.get(item.descripcion.trim().toLowerCase());
           if (!producto) {
             return acc;
           }
@@ -448,14 +521,18 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
           acc.push({
             producto_id: producto.id,
             cantidad: item.cantidad,
-            precio: item.precio_unitario,
-            fecha_hora: this.generarFechaHoraVentaDiaria(fecha)
+            precio: item.grupo_venta === 'HUEVOS'
+              ? Number((item.cantidad * item.precio_unitario).toFixed(2))
+              : item.precio_unitario,
+            fecha_hora: this.generarFechaHoraVentaDiaria(fecha),
+            presentacion_venta: item.presentacion_venta ?? null,
+            cantidad_presentacion: item.cantidad_presentacion ?? null
           });
           return acc;
         }, [] as FilaVentaDiariaPayload[]);
 
         if (!nuevasFilas.length) {
-          this.advertenciaVenta = 'Comprobante emitido. No se sincronizó ventas diarias porque ningún detalle coincide con un producto registrado.';
+          this.advertenciaVenta = 'Comprobante emitido. No se sincronizo ventas diarias porque ningun detalle coincide con un producto registrado.';
           return;
         }
 
@@ -496,7 +573,7 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
                   });
 
                   if (productosSinStock.length > 0) {
-                    this.advertenciaVenta = 'Comprobante emitido. No se sincronizó ventas diarias porque algunos productos no tienen stock disponible.';
+                    this.advertenciaVenta = 'Comprobante emitido. No se sincronizo ventas diarias porque algunos productos no tienen stock disponible.';
                     return;
                   }
 
@@ -567,7 +644,7 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
         enlace.click();
       },
       error: () => {
-        this.errorVenta = 'No se pudo generar el voucher en PDF.';
+        this.errorVenta = 'No se pudo generar el voucher en ??.';
       }
     });
   }
@@ -701,13 +778,13 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
     this.mensajeError = '';
 
     if (!this.consultaDocumento.trim()) {
-      this.mensajeError = 'Ingresa el número de documento.';
+      this.mensajeError = 'Ingresa el numero de documento.';
       return;
     }
 
     const longitudEsperada = this.tipoDocumentoCliente === 'dni' ? 8 : 11;
     if (this.consultaDocumento.length !== longitudEsperada) {
-      this.mensajeError = `El ${this.tipoDocumentoCliente.toUpperCase()} debe tener ${longitudEsperada} dígitos.`;
+      this.mensajeError = `El ${this.tipoDocumentoCliente.toUpperCase()} debe tener ${longitudEsperada} digitos.`;
       return;
     }
 
@@ -725,7 +802,7 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
         }
       },
       error: () => {
-        this.mensajeError = 'No pudimos conectar con la SUNAT/RENIEC. Revisa el número e intenta nuevamente.';
+        this.mensajeError = 'No pudimos conectar con la SUNAT/RENIEC. Revisa el numero e intenta nuevamente.';
         this.consultaCargando = false;
       },
       complete: () => {

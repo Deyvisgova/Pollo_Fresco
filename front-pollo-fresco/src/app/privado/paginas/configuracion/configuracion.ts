@@ -7,7 +7,7 @@ import {
 
 @Component({
   selector: 'app-privado-configuracion',
-  // Componente para editar la configuración visual del módulo privado.
+  // Componente para editar la configuracion visual del modulo privado.
   standalone: true,
   imports: [FormsModule],
   templateUrl: './configuracion.html',
@@ -31,7 +31,7 @@ export class PrivadoConfiguracion {
   guardarConfiguracion(): void {
     this.configuracionEmpresaServicio.guardarConfiguracion(this.configuracion);
     this.mensajeError = '';
-    this.mensajeGuardado = 'Configuración guardada correctamente.';
+    this.mensajeGuardado = 'Configuracion guardada correctamente.';
   }
 
   seleccionarLogo(evento: Event): void {

@@ -17,19 +17,19 @@ export class Carrusel implements OnInit, OnDestroy {
     {
       title: 'Pollo entero',
       summary: 'Peso ideal, listo para preparar al instante y con frescura diaria.',
-      detail: 'Ideal para asados y guisos, con selección diaria en Pollo Fresco.',
+      detail: 'Ideal para asados y guisos, con seleccion diaria en Pollo Fresco.',
       image: 'assets/images/carusel/carousel-2.svg'
     },
     {
       title: 'Cortes premium',
       summary: 'Pechuga, muslo y pierna con cortes limpios para restaurantes.',
-      detail: 'Empacado higiénico y listo para porcionar en tu negocio.',
+      detail: 'Empacado higienico y listo para porcionar en tu negocio.',
       image: 'assets/images/carusel/carousel-1.svg'
     },
     {
-      title: 'Atención mayorista',
+      title: 'Atencion mayorista',
       summary: 'Abastece tu negocio con entregas coordinadas y puntuales.',
-      detail: 'Rutas programadas para pollerías, hoteles y restaurantes.',
+      detail: 'Rutas programadas para pollerias, hoteles y restaurantes.',
       image: 'assets/images/carusel/carousel-3.svg'
     }
   ];

@@ -1,7 +1,7 @@
 <section class="tarjeta">
   <header class="tarjeta__encabezado">
     <h3>Registro de entregas</h3>
-    <p>Busca un proveedor y regístralo en una tarjeta independiente con sus propias líneas.</p>
+    <p>Busca un proveedor y registralo en una tarjeta independiente con sus propias lineas.</p>
   </header>
 
   <form class="formulario" (ngSubmit)="$event.preventDefault()">
@@ -46,9 +46,9 @@
 
     <div class="tarjeta-proveedor__iconos">
       <button class="icono-btn" type="button" (click)="alternarTarjeta(tarjeta.proveedor.proveedor_id)">
-        {{ tarjeta.expandida ? '🙈' : '👁️' }}
+        {{ tarjeta.expandida ? '' : '' }}
       </button>
-      <button class="icono-btn icono-btn--cerrar" type="button" (click)="cerrarTarjeta(tarjeta.proveedor.proveedor_id)">✕</button>
+      <button class="icono-btn icono-btn--cerrar" type="button" (click)="cerrarTarjeta(tarjeta.proveedor.proveedor_id)"></button>
     </div>
   </header>
 
@@ -135,7 +135,7 @@
     <p class="mensaje mensaje--error" *ngIf="entregasParaPagarIds.length === 0">No hay entregas pendientes para pagar con el filtro actual.</p>
     <div class="acciones">
       <button class="boton boton--secundario boton--compacto" type="button" (click)="agregarLinea(tarjeta.proveedor.proveedor_id)">
-        Agregar línea
+        Agregar linea
       </button>
       <button
         class="boton boton--primario boton--compacto"
@@ -155,7 +155,7 @@
 <section class="tarjeta">
   <header class="tarjeta__encabezado">
     <h3>Historial de entregas</h3>
-    <p>Filtra, edita o elimina filas para encontrar y gestionar la información rápidamente.</p>
+    <p>Filtra, edita o elimina filas para encontrar y gestionar la informacion rapidamente.</p>
   </header>
 
   <div class="filtros-historial">

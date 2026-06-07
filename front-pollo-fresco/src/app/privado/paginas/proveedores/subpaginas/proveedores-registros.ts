@@ -228,7 +228,7 @@ export class PrivadoProveedoresRegistros implements OnInit {
     this.error = '';
 
     if (this.usuarioId === 0) {
-      this.error = 'No se encontró usuario autenticado.';
+      this.error = 'No se encontro usuario autenticado.';
       return;
     }
 
@@ -240,7 +240,7 @@ export class PrivadoProveedoresRegistros implements OnInit {
     const lineasValidas = tarjeta.lineas.filter((linea) => (linea.pesoTotalKg ?? 0) > 0);
 
     if (lineasValidas.length === 0) {
-      tarjeta.error = 'Ingresa al menos una línea con peso mayor a 0.';
+      tarjeta.error = 'Ingresa al menos una linea con peso mayor a 0.';
       return;
     }
 
@@ -477,7 +477,7 @@ export class PrivadoProveedoresRegistros implements OnInit {
     }
 
     swal.fire({
-      title: 'Atención',
+      title: 'Atencion',
       text: 'Solo se permite pagar de un solo proveedor.',
       icon: 'warning',
       confirmButtonText: 'OK'
@@ -536,7 +536,7 @@ export class PrivadoProveedoresRegistros implements OnInit {
 
   guardarEdicion(entregaId: number): void {
     if (!this.formularioEdicion.fecha_hora) {
-      this.error = 'La fecha y hora de edición es obligatoria.';
+      this.error = 'La fecha y hora de edicion es obligatoria.';
       return;
     }
 
