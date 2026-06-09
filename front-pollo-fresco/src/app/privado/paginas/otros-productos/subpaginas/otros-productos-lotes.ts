@@ -14,6 +14,7 @@ interface LoteRegistro {
   cantidadPresentacion: number | null;
   factorConversion: number | null;
   costoKilo: number;
+  costoTotalCompra: number | null;
   precioVenta: number;
   codigoComprobante: string;
   totalCosto: number;
@@ -48,6 +49,7 @@ interface LoteApi {
   cantidad_presentacion: number | null;
   factor_conversion: number | null;
   costo_kilo: number;
+  costo_total_compra: number | null;
   precio_venta: number;
   codigo_comprobante: string;
   creado_en: string;
@@ -304,14 +306,30 @@ export class PrivadoOtrosProductosLotes implements OnInit {
     return this.presentacionesHuevo.find((item) => item.id === presentacion)?.factor ?? 1;
   }
 
+  get costoUnitarioCalculadoHuevos(): number | null {
+    if (!this.loteEsHuevos) {
+      return null;
+    }
+
+    const cantidadBase = Number(this.loteForm.cantidad ?? 0);
+    const costoTotal = Number(this.loteForm.costoTotalHuevos ?? 0);
+
+    if (cantidadBase <= 0 || costoTotal <= 0) {
+      return null;
+    }
+
+    return Number((costoTotal / cantidadBase).toFixed(6));
+  }
+
   actualizarCantidadBaseHuevos(): void {
     if (!this.loteEsHuevos) {
       return;
     }
     const cantidadPresentacion = Number(this.loteForm.cantidadPresentacion ?? 0);
-    this.loteForm.cantidad = Number((cantidadPresentacion * this.factorPresentacion(this.loteForm.presentacionIngreso)).toFixed(2));
-    const costoTotal = Number(this.loteForm.costoTotalHuevos ?? 0);
-    this.loteForm.costoKilo = this.loteForm.cantidad > 0 ? Number((costoTotal / this.loteForm.cantidad).toFixed(6)) : null;
+    this.loteForm.cantidad = Number(
+      (cantidadPresentacion * this.factorPresentacion(this.loteForm.presentacionIngreso)).toFixed(2)
+    );
+    this.loteForm.costoKilo = this.costoUnitarioCalculadoHuevos;
     this.loteForm.precioVenta = 0;
   }
 
@@ -330,6 +348,7 @@ export class PrivadoOtrosProductosLotes implements OnInit {
       producto_id: this.loteForm.productoId,
       cantidad: this.loteForm.cantidad,
       costo_kilo: this.loteForm.costoKilo,
+      costo_total_compra: this.loteEsHuevos ? this.loteForm.costoTotalHuevos : null,
       precio_venta: this.loteForm.precioVenta ?? 0,
       presentacion_ingreso: this.loteEsHuevos ? this.loteForm.presentacionIngreso : null,
       cantidad_presentacion: this.loteEsHuevos ? this.loteForm.cantidadPresentacion : null,
@@ -355,9 +374,10 @@ export class PrivadoOtrosProductosLotes implements OnInit {
           cantidadPresentacion: respuesta.cantidad_presentacion,
           factorConversion: respuesta.factor_conversion,
           costoKilo: respuesta.costo_kilo,
+          costoTotalCompra: respuesta.costo_total_compra,
           precioVenta: respuesta.precio_venta,
           codigoComprobante: respuesta.codigo_comprobante,
-          totalCosto: respuesta.cantidad * respuesta.costo_kilo,
+          totalCosto: respuesta.costo_total_compra ?? respuesta.cantidad * respuesta.costo_kilo,
           totalVenta: respuesta.cantidad * respuesta.precio_venta,
           fechaIngreso: respuesta.fecha_ingreso,
           creadoEn: respuesta.creado_en,
@@ -484,9 +504,10 @@ export class PrivadoOtrosProductosLotes implements OnInit {
           cantidadPresentacion: lote.cantidad_presentacion,
           factorConversion: lote.factor_conversion,
           costoKilo: lote.costo_kilo,
+          costoTotalCompra: lote.costo_total_compra,
           precioVenta: lote.precio_venta,
           codigoComprobante: lote.codigo_comprobante,
-          totalCosto: lote.cantidad * lote.costo_kilo,
+          totalCosto: lote.costo_total_compra ?? lote.cantidad * lote.costo_kilo,
           totalVenta: lote.cantidad * lote.precio_venta,
           fechaIngreso: lote.fecha_ingreso,
           creadoEn: lote.creado_en,

@@ -42,6 +42,7 @@ class OtrosProductosController extends Controller
                 Schema::hasColumn('compras_lote_detalle', 'cantidad_presentacion') ? 'cld.cantidad_presentacion' : DB::raw('NULL as cantidad_presentacion'),
                 Schema::hasColumn('compras_lote_detalle', 'factor_conversion') ? 'cld.factor_conversion' : DB::raw('NULL as factor_conversion'),
                 'cld.costo_kilo',
+                Schema::hasColumn('compras_lote_detalle', 'costo_total_compra') ? 'cld.costo_total_compra' : DB::raw('NULL as costo_total_compra'),
                 'cld.precio_venta',
                 'pr.nombres as proveedor_nombres',
                 'pr.apellidos as proveedor_apellidos',
@@ -180,6 +181,7 @@ class OtrosProductosController extends Controller
             'producto_id' => ['required', 'integer', 'exists:productos,producto_id'],
             'cantidad' => ['required', 'numeric', 'min:0.01'],
             'costo_kilo' => ['required', 'numeric', 'min:0'],
+            'costo_total_compra' => ['nullable', 'numeric', 'min:0'],
             'precio_venta' => ['required', 'numeric', 'min:0'],
             'presentacion_ingreso' => ['nullable', 'string', 'max:30'],
             'cantidad_presentacion' => ['nullable', 'numeric', 'min:0.01'],
@@ -200,6 +202,7 @@ class OtrosProductosController extends Controller
         $productoId = (int) $request->input('producto_id');
         $cantidad = (float) $request->input('cantidad');
         $costoKilo = (float) $request->input('costo_kilo');
+        $costoTotalCompra = $request->filled('costo_total_compra') ? (float) $request->input('costo_total_compra') : null;
         $precioVenta = (float) $request->input('precio_venta');
         $codigoComprobante = trim((string) $request->input('codigo_comprobante'));
         $fecha = $request->input('fecha_ingreso');
@@ -219,6 +222,9 @@ class OtrosProductosController extends Controller
         $cantidadPresentacion = $esHuevo ? (float) $request->input('cantidad_presentacion', $cantidad) : null;
         if ($esHuevo) {
             $cantidad = round($cantidadPresentacion * $factorConversion, 2);
+        }
+        if ($costoTotalCompra === null) {
+            $costoTotalCompra = round($cantidad * $costoKilo, 2);
         }
 
         $numeroLote = (int) DB::table('compras_lote_detalle')
@@ -253,6 +259,9 @@ class OtrosProductosController extends Controller
             if (Schema::hasColumn('compras_lote_detalle', 'factor_conversion')) {
                 $detalle['factor_conversion'] = $factorConversion;
             }
+            if (Schema::hasColumn('compras_lote_detalle', 'costo_total_compra')) {
+                $detalle['costo_total_compra'] = $costoTotalCompra;
+            }
 
             DB::table('compras_lote_detalle')->insert($detalle);
 
@@ -273,6 +282,7 @@ class OtrosProductosController extends Controller
             'cantidad_presentacion' => $cantidadPresentacion,
             'factor_conversion' => $factorConversion,
             'costo_kilo' => $costoKilo,
+            'costo_total_compra' => $costoTotalCompra,
             'precio_venta' => $precioVenta,
             'codigo_comprobante' => $codigoComprobante,
             'creado_en' => now()->toDateTimeString(),
@@ -289,6 +299,7 @@ class OtrosProductosController extends Controller
             'producto_id' => ['required', 'integer', 'exists:productos,producto_id'],
             'cantidad' => ['required', 'numeric', 'min:0.01'],
             'costo_kilo' => ['required', 'numeric', 'min:0'],
+            'costo_total_compra' => ['nullable', 'numeric', 'min:0'],
             'precio_venta' => ['required', 'numeric', 'min:0'],
             'presentacion_ingreso' => ['nullable', 'string', 'max:30'],
             'cantidad_presentacion' => ['nullable', 'numeric', 'min:0.01'],
@@ -313,6 +324,7 @@ class OtrosProductosController extends Controller
         $productoId = (int) $request->input('producto_id');
         $cantidad = (float) $request->input('cantidad');
         $costoKilo = (float) $request->input('costo_kilo');
+        $costoTotalCompra = $request->filled('costo_total_compra') ? (float) $request->input('costo_total_compra') : null;
         $precioVenta = (float) $request->input('precio_venta');
         $codigoComprobante = trim((string) $request->input('codigo_comprobante'));
         $fecha = $request->input('fecha_ingreso');
@@ -332,6 +344,9 @@ class OtrosProductosController extends Controller
         $cantidadPresentacion = $esHuevo ? (float) $request->input('cantidad_presentacion', $cantidad) : null;
         if ($esHuevo) {
             $cantidad = round($cantidadPresentacion * $factorConversion, 2);
+        }
+        if ($costoTotalCompra === null) {
+            $costoTotalCompra = round($cantidad * $costoKilo, 2);
         }
 
         DB::beginTransaction();
@@ -359,6 +374,9 @@ class OtrosProductosController extends Controller
             }
             if (Schema::hasColumn('compras_lote_detalle', 'factor_conversion')) {
                 $detallePayload['factor_conversion'] = $factorConversion;
+            }
+            if (Schema::hasColumn('compras_lote_detalle', 'costo_total_compra')) {
+                $detallePayload['costo_total_compra'] = $costoTotalCompra;
             }
 
             $detalleActualizado = DB::table('compras_lote_detalle')
@@ -393,6 +411,7 @@ class OtrosProductosController extends Controller
             'cantidad_presentacion' => $cantidadPresentacion,
             'factor_conversion' => $factorConversion,
             'costo_kilo' => $costoKilo,
+            'costo_total_compra' => $costoTotalCompra,
             'precio_venta' => $precioVenta,
             'codigo_comprobante' => $codigoComprobante,
             'creado_en' => $lote->creado_en,
@@ -741,6 +760,13 @@ class OtrosProductosController extends Controller
         DB::beginTransaction();
         try {
             foreach ($filas as $fila) {
+                $consumos = $this->consumirStockPorLotes(
+                    (int) $fila->producto_id,
+                    (float) $fila->cantidad,
+                    (int) $fila->venta_op_diaria_id
+                );
+                $primerLoteId = $consumos[0]['compra_lote_detalle_id'] ?? null;
+/*
                 $detalleLote = DB::table('compras_lote_detalle as cld')
                     ->join('compras_lote as cl', 'cl.compra_lote_id', '=', 'cld.compra_lote_id')
                     ->where('cld.producto_id', $fila->producto_id)
@@ -760,11 +786,12 @@ class OtrosProductosController extends Controller
                     ->update([
                         'cantidad' => (float) $detalleLote->cantidad - (float) $fila->cantidad,
                     ]);
+*/
 
                 DB::table('otros_productos_ventas_diarias')
                     ->where('venta_op_diaria_id', $fila->venta_op_diaria_id)
                     ->update([
-                        'compra_lote_detalle_id' => $detalleLote->compra_lote_detalle_id,
+                        'compra_lote_detalle_id' => $primerLoteId,
                         'cerrado_en' => $ahora,
                     ]);
             }
@@ -812,22 +839,7 @@ class OtrosProductosController extends Controller
 
         DB::beginTransaction();
         try {
-            foreach ($filas as $fila) {
-                if ($fila->compra_lote_detalle_id) {
-                    $detalle = DB::table('compras_lote_detalle')
-                        ->where('compra_lote_detalle_id', $fila->compra_lote_detalle_id)
-                        ->lockForUpdate()
-                        ->first();
-
-                    if ($detalle) {
-                        DB::table('compras_lote_detalle')
-                            ->where('compra_lote_detalle_id', $fila->compra_lote_detalle_id)
-                            ->update([
-                                'cantidad' => (float) $detalle->cantidad + (float) $fila->cantidad,
-                            ]);
-                    }
-                }
-            }
+            $this->restaurarStockPorConsumos($filas);
 
             DB::table('otros_productos_ventas_diarias')
                 ->where('usuario_id', $usuario->usuario_id)
@@ -844,6 +856,138 @@ class OtrosProductosController extends Controller
         }
 
         return response()->json(['message' => 'Día reabierto correctamente']);
+    }
+
+    private function consumirStockPorLotes(int $productoId, float $cantidadNecesaria, int $ventaId): array
+    {
+        $restante = round($cantidadNecesaria, 4);
+        $consumos = [];
+
+        DB::table('otros_productos_venta_lotes_consumos')
+            ->where('venta_op_diaria_id', $ventaId)
+            ->delete();
+
+        $lotes = DB::table('compras_lote_detalle as cld')
+            ->join('compras_lote as cl', 'cl.compra_lote_id', '=', 'cld.compra_lote_id')
+            ->join('productos as p', 'p.producto_id', '=', 'cld.producto_id')
+            ->where('cld.producto_id', $productoId)
+            ->where('cld.cantidad', '>', 0)
+            ->where('cl.estado', 'ABIERTO')
+            ->orderBy('cl.fecha_ingreso')
+            ->orderBy('cld.compra_lote_detalle_id')
+            ->lockForUpdate()
+            ->get([
+                'cld.compra_lote_detalle_id',
+                'cld.cantidad',
+                'cld.costo_kilo',
+                Schema::hasColumn('compras_lote_detalle', 'costo_total_compra') ? 'cld.costo_total_compra' : DB::raw('NULL as costo_total_compra'),
+                Schema::hasColumn('compras_lote_detalle', 'cantidad_presentacion') ? 'cld.cantidad_presentacion' : DB::raw('NULL as cantidad_presentacion'),
+                Schema::hasColumn('compras_lote_detalle', 'factor_conversion') ? 'cld.factor_conversion' : DB::raw('NULL as factor_conversion'),
+                'p.grupo_venta',
+            ]);
+
+        foreach ($lotes as $lote) {
+            if ($restante <= 0) {
+                break;
+            }
+
+            $stockDisponible = (float) $lote->cantidad;
+            $cantidadConsumida = min($restante, $stockDisponible);
+            $costoUnitario = $this->costoUnitarioLote($lote);
+            $costoTotal = round($cantidadConsumida * $costoUnitario, 2);
+
+            DB::table('compras_lote_detalle')
+                ->where('compra_lote_detalle_id', $lote->compra_lote_detalle_id)
+                ->update([
+                    'cantidad' => round($stockDisponible - $cantidadConsumida, 4),
+                ]);
+
+            DB::table('otros_productos_venta_lotes_consumos')->insert([
+                'venta_op_diaria_id' => $ventaId,
+                'compra_lote_detalle_id' => $lote->compra_lote_detalle_id,
+                'cantidad' => $cantidadConsumida,
+                'costo_unitario' => $costoUnitario,
+                'costo_total' => $costoTotal,
+                'creado_en' => now(),
+            ]);
+
+            $consumos[] = [
+                'compra_lote_detalle_id' => $lote->compra_lote_detalle_id,
+                'cantidad' => $cantidadConsumida,
+                'costo_total' => $costoTotal,
+            ];
+
+            $restante = round($restante - $cantidadConsumida, 4);
+        }
+
+        if ($restante > 0.0001) {
+            throw new \RuntimeException('Stock insuficiente para cerrar el dÃ­a.');
+        }
+
+        return $consumos;
+    }
+
+    private function restaurarStockPorConsumos($filas): void
+    {
+        $ventaIds = collect($filas)->pluck('venta_op_diaria_id')->filter()->values();
+        $consumos = DB::table('otros_productos_venta_lotes_consumos')
+            ->whereIn('venta_op_diaria_id', $ventaIds)
+            ->lockForUpdate()
+            ->get();
+
+        if ($consumos->isNotEmpty()) {
+            foreach ($consumos as $consumo) {
+                $detalle = DB::table('compras_lote_detalle')
+                    ->where('compra_lote_detalle_id', $consumo->compra_lote_detalle_id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($detalle) {
+                    DB::table('compras_lote_detalle')
+                        ->where('compra_lote_detalle_id', $consumo->compra_lote_detalle_id)
+                        ->update([
+                            'cantidad' => round((float) $detalle->cantidad + (float) $consumo->cantidad, 4),
+                        ]);
+                }
+            }
+
+            DB::table('otros_productos_venta_lotes_consumos')
+                ->whereIn('venta_op_diaria_id', $ventaIds)
+                ->delete();
+
+            return;
+        }
+
+        foreach ($filas as $fila) {
+            if ($fila->compra_lote_detalle_id) {
+                $detalle = DB::table('compras_lote_detalle')
+                    ->where('compra_lote_detalle_id', $fila->compra_lote_detalle_id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($detalle) {
+                    DB::table('compras_lote_detalle')
+                        ->where('compra_lote_detalle_id', $fila->compra_lote_detalle_id)
+                        ->update([
+                            'cantidad' => round((float) $detalle->cantidad + (float) $fila->cantidad, 4),
+                        ]);
+                }
+            }
+        }
+    }
+
+    private function costoUnitarioLote(object $lote): float
+    {
+        if (($lote->grupo_venta ?? '') === 'HUEVOS') {
+            $cantidadOriginal = (float) ($lote->cantidad_presentacion ?? 0) * (float) ($lote->factor_conversion ?? 0);
+            $costoTotal = (float) ($lote->costo_total_compra ?? 0);
+
+            if ($cantidadOriginal > 0 && $costoTotal > 0) {
+                return round($costoTotal / $cantidadOriginal, 6);
+            }
+        }
+
+        return round((float) ($lote->costo_kilo ?? 0), 6);
     }
 
     private function calcularTotalesPorFilas($filas): array
@@ -932,11 +1076,26 @@ class OtrosProductosController extends Controller
 
     private function asegurarColumnasHuevos(): void
     {
+        if (!Schema::hasTable('otros_productos_venta_lotes_consumos')) {
+            Schema::create('otros_productos_venta_lotes_consumos', function (Blueprint $table) {
+                $table->id('consumo_id');
+                $table->unsignedBigInteger('venta_op_diaria_id');
+                $table->unsignedBigInteger('compra_lote_detalle_id');
+                $table->decimal('cantidad', 12, 4);
+                $table->decimal('costo_unitario', 12, 6);
+                $table->decimal('costo_total', 12, 2);
+                $table->timestamp('creado_en')->nullable();
+                $table->index('venta_op_diaria_id', 'op_consumos_venta_idx');
+                $table->index('compra_lote_detalle_id', 'op_consumos_lote_idx');
+            });
+        }
+
         if (Schema::hasTable('compras_lote_detalle')) {
             $columnas = [
                 'presentacion_ingreso' => fn (Blueprint $table) => $table->string('presentacion_ingreso', 30)->nullable()->after('cantidad'),
                 'cantidad_presentacion' => fn (Blueprint $table) => $table->decimal('cantidad_presentacion', 12, 2)->nullable()->after('presentacion_ingreso'),
                 'factor_conversion' => fn (Blueprint $table) => $table->decimal('factor_conversion', 12, 2)->nullable()->after('cantidad_presentacion'),
+                'costo_total_compra' => fn (Blueprint $table) => $table->decimal('costo_total_compra', 12, 2)->nullable()->after('costo_kilo'),
             ];
 
             foreach ($columnas as $columna => $callback) {

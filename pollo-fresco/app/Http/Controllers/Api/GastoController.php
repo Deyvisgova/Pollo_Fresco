@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
@@ -341,14 +342,47 @@ class GastoController extends Controller
 
     private function calcularCongeladosHuevos(string $desde, string $hasta): array
     {
-        $row = DB::table('otros_productos_ventas_diarias as opvd')
+        $usaCostoTotalCompra = Schema::hasColumn('compras_lote_detalle', 'costo_total_compra');
+        $usaConsumosPorLote = Schema::hasTable('otros_productos_venta_lotes_consumos');
+        $formulaCosto = $usaCostoTotalCompra
+            ? "
+                CASE
+                    WHEN p.grupo_venta = 'HUEVOS'
+                        AND cld.cantidad_presentacion IS NOT NULL
+                        AND cld.factor_conversion IS NOT NULL
+                        AND (cld.cantidad_presentacion * cld.factor_conversion) > 0
+                    THEN opvd.cantidad * (
+                        COALESCE(cld.costo_total_compra, cld.costo_kilo * (cld.cantidad_presentacion * cld.factor_conversion))
+                        / (cld.cantidad_presentacion * cld.factor_conversion)
+                    )
+                    ELSE opvd.cantidad * COALESCE(cld.costo_kilo, 0)
+                END
+            "
+            : 'opvd.cantidad * COALESCE(cld.costo_kilo, 0)';
+
+        $query = DB::table('otros_productos_ventas_diarias as opvd')
             ->join('productos as p', 'p.producto_id', '=', 'opvd.producto_id')
             ->leftJoin('compras_lote_detalle as cld', 'cld.compra_lote_detalle_id', '=', 'opvd.compra_lote_detalle_id')
             ->whereBetween(DB::raw('DATE(opvd.fecha_hora)'), [$desde, $hasta])
             ->whereIn('p.grupo_venta', ['HUEVOS', 'CONGELADO'])
-            ->selectRaw('COALESCE(SUM(opvd.total), 0) as ventas')
-            ->selectRaw('COALESCE(SUM(opvd.cantidad * COALESCE(cld.costo_kilo, 0)), 0) as costos')
-            ->first();
+            ->selectRaw('COALESCE(SUM(opvd.total), 0) as ventas');
+
+        if ($usaConsumosPorLote) {
+            $costosPorVenta = DB::table('otros_productos_venta_lotes_consumos')
+                ->select('venta_op_diaria_id')
+                ->selectRaw('SUM(costo_total) as costo_total')
+                ->groupBy('venta_op_diaria_id');
+
+            $query
+                ->leftJoinSub($costosPorVenta, 'consumos', function ($join) {
+                    $join->on('consumos.venta_op_diaria_id', '=', 'opvd.venta_op_diaria_id');
+                })
+                ->selectRaw("COALESCE(SUM(COALESCE(consumos.costo_total, $formulaCosto)), 0) as costos");
+        } else {
+            $query->selectRaw("COALESCE(SUM($formulaCosto), 0) as costos");
+        }
+
+        $row = $query->first();
 
         $ventas = (float) ($row->ventas ?? 0);
         $costos = (float) ($row->costos ?? 0);

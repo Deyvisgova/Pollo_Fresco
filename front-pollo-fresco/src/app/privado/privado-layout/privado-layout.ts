@@ -194,7 +194,12 @@ export class PrivadoLayout implements AfterViewInit, OnDestroy {
     }
 
     this.actualizacionTablasTimer = setTimeout(() => {
-      const tablas = Array.from(document.querySelectorAll('table'));
+      const contenedor = document.querySelector('.panel__rutas');
+      if (!contenedor) {
+        return;
+      }
+
+      const tablas = Array.from(contenedor.querySelectorAll('table'));
 
       tablas.forEach((tabla) => {
         if (tabla.closest('.tabla-sin-estilo')) {
@@ -241,24 +246,19 @@ export class PrivadoLayout implements AfterViewInit, OnDestroy {
   }
 
   private actualizarBotonesSistema(): void {
+    const contenedor = document.querySelector('.panel__rutas');
+    if (!contenedor) {
+      return;
+    }
+
     const controles = Array.from(
-      document.querySelectorAll('.panel__rutas button, .panel__rutas a')
+      contenedor.querySelectorAll('button, a')
     );
 
     controles.forEach((control) => {
       if (!(control instanceof HTMLElement) || control.closest('.tabla-sin-estilo')) {
         return;
       }
-
-      control.classList.remove(
-        'accion-sistema',
-        'accion-editar',
-        'accion-eliminar',
-        'accion-primaria',
-        'accion-secundaria',
-        'accion-buscar',
-        'accion-icono'
-      );
 
       const texto = this.normalizarTextoAccion(
         [
@@ -296,16 +296,39 @@ export class PrivadoLayout implements AfterViewInit, OnDestroy {
         return;
       }
 
-      control.classList.add('accion-sistema');
-
+      const clasesEsperadas = new Set<string>(['accion-sistema']);
       if (tipo) {
-        control.classList.add(tipo);
+        clasesEsperadas.add(tipo);
+      }
+      if (esIcono && (tipo === 'accion-eliminar' || tipo === 'accion-editar')) {
+        clasesEsperadas.add('accion-icono');
       }
 
-      if (esIcono && (tipo === 'accion-eliminar' || tipo === 'accion-editar')) {
-        control.classList.add('accion-icono');
-      }
+      this.sincronizarClasesAccion(control, clasesEsperadas);
     });
+  }
+
+  private sincronizarClasesAccion(control: HTMLElement, clasesEsperadas: Set<string>): void {
+    const clasesAccion = [
+      'accion-sistema',
+      'accion-editar',
+      'accion-eliminar',
+      'accion-primaria',
+      'accion-secundaria',
+      'accion-buscar',
+      'accion-icono'
+    ];
+
+    const estaSincronizado = clasesAccion.every((clase) =>
+      control.classList.contains(clase) === clasesEsperadas.has(clase)
+    );
+
+    if (estaSincronizado) {
+      return;
+    }
+
+    control.classList.remove(...clasesAccion);
+    control.classList.add(...Array.from(clasesEsperadas));
   }
 
   private normalizarTextoAccion(valor: string): string {

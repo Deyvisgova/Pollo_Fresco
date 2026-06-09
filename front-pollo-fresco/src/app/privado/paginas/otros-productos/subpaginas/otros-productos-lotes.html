@@ -52,7 +52,9 @@
               <small *ngIf="esStockBajo(lote)">Stock bajo</small>
             </div>
           </td>
-          <td data-label="Costo/Kg">S/ {{ lote.costoKilo | number : '1.2-2' }}</td>
+          <td data-label="Costo/Kg">
+            S/ {{ lote.costoKilo | number : lote.presentacionIngreso ? '1.2-6' : '1.2-2' }}
+          </td>
           <td data-label="Precio venta">S/ {{ lote.precioVenta | number : '1.2-2' }}</td>
           <td data-label="Total costo">S/ {{ lote.totalCosto | number : '1.2-2' }}</td>
           <td data-label="Total venta">S/ {{ lote.totalVenta | number : '1.2-2' }}</td>
@@ -220,6 +222,9 @@
       <label *ngIf="loteEsHuevos">
         Costo total compra (S/)
         <input type="number" [(ngModel)]="loteForm.costoTotalHuevos" (ngModelChange)="actualizarCantidadBaseHuevos()" placeholder="0.00" />
+        <small *ngIf="costoUnitarioCalculadoHuevos !== null">
+          Costo unitario exacto: S/ {{ costoUnitarioCalculadoHuevos | number : '1.2-6' }}
+        </small>
       </label>
       <label *ngIf="!loteEsHuevos">
         Precio de venta (S/)

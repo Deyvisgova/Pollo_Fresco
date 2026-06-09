@@ -27,7 +27,7 @@
         <button
           class="sugerencia"
           type="button"
-          *ngFor="let proveedor of proveedores"
+          *ngFor="let proveedor of proveedores; trackBy: trackByProveedor"
           (click)="seleccionarProveedor(proveedor)"
         >
           {{ proveedor.nombres }} {{ proveedor.apellidos }} ({{ proveedor.ruc || proveedor.dni }})
@@ -39,7 +39,7 @@
   <p class="mensaje mensaje--error" *ngIf="error">{{ error }}</p>
 </section>
 
-<section class="tarjeta tarjeta-proveedor" *ngFor="let tarjeta of tarjetasProveedor">
+<section class="tarjeta tarjeta-proveedor" *ngFor="let tarjeta of tarjetasProveedor; trackBy: trackByTarjetaProveedor">
   <header class="tarjeta__encabezado tarjeta-proveedor__encabezado">
     <h3>{{ tarjeta.proveedor.nombre_empresa || 'Sin empresa' }}</h3>
     <p class="tarjeta-proveedor__nombre">Proveedor: {{ tarjeta.proveedor.nombres }} {{ tarjeta.proveedor.apellidos }}</p>
@@ -64,7 +64,7 @@
         </select>
       </label>
 
-      <div class="linea" *ngFor="let linea of tarjeta.lineas; let i = index">
+      <div class="linea" *ngFor="let linea of tarjeta.lineas; let i = index; trackBy: trackByLinea">
         <label class="campo">
           <span>Tipo</span>
           <select [(ngModel)]="linea.tipoAve" (ngModelChange)="persistirTarjetas()" name="tipoAve{{ tarjeta.proveedor.proveedor_id }}{{ i }}">
@@ -168,7 +168,7 @@
       <span>Proveedor</span>
       <select [(ngModel)]="filtros.proveedorId" (ngModelChange)="aplicarFiltros()" name="filtroProveedorId">
         <option value="">Todos</option>
-        <option *ngFor="let proveedor of proveedoresEnHistorial()" [value]="proveedor.proveedor_id">
+        <option *ngFor="let proveedor of proveedoresHistorial; trackBy: trackByProveedor" [value]="proveedor.proveedor_id">
           {{ proveedor.nombres }} {{ proveedor.apellidos }}
         </option>
       </select>
@@ -227,7 +227,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let registro of registrosFiltrados">
+        <tr *ngFor="let registro of registrosFiltrados; trackBy: trackByRegistro">
           <td data-label="Proveedor">
             {{ registro.proveedor?.nombres }} {{ registro.proveedor?.apellidos }}
             <div class="nota">{{ registro.proveedor?.ruc || registro.proveedor?.dni }}</div>

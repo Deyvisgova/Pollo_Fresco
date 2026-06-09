@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule, HttpHeaders } from '@angular/common/http';
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { SesionServicio } from '../../../../servicios/sesion.servicio';
@@ -74,14 +74,18 @@ interface PagoProveedor {
   templateUrl: './proveedores-registros.html',
   styleUrl: './proveedores-registros.css'
 })
-export class PrivadoProveedoresRegistros implements OnInit {
+export class PrivadoProveedoresRegistros implements OnInit, OnDestroy {
   readonly tiposAveDisponibles = ['POLLO', 'GALLINA'];
   private readonly storageTarjetasKey = 'proveedores_registros_tarjetas';
+  private temporizadorBusquedaProveedor: ReturnType<typeof setTimeout> | null = null;
+  private temporizadorPersistenciaTarjetas: ReturnType<typeof setTimeout> | null = null;
+  private secuenciaBusquedaProveedor = 0;
 
   registros: RegistroEntrega[] = [];
   registrosFiltrados: RegistroEntrega[] = [];
   registrosPendientesFiltrados: RegistroEntrega[] = [];
   proveedores: ProveedorApi[] = [];
+  proveedoresHistorial: ProveedorApi[] = [];
   busquedaProveedor = '';
   tarjetasProveedor: TarjetaProveedor[] = [];
 
@@ -140,24 +144,46 @@ export class PrivadoProveedoresRegistros implements OnInit {
     this.cargarRegistros();
   }
 
+  ngOnDestroy(): void {
+    if (this.temporizadorBusquedaProveedor) {
+      clearTimeout(this.temporizadorBusquedaProveedor);
+    }
+
+    if (this.temporizadorPersistenciaTarjetas) {
+      clearTimeout(this.temporizadorPersistenciaTarjetas);
+      this.guardarTarjetasEnStorage();
+    }
+  }
+
   buscarProveedor(): void {
     const termino = this.busquedaProveedor.trim();
+    this.secuenciaBusquedaProveedor += 1;
+
+    if (this.temporizadorBusquedaProveedor) {
+      clearTimeout(this.temporizadorBusquedaProveedor);
+    }
+
     if (!termino) {
       this.proveedores = [];
       return;
     }
 
-    const headers = this.obtenerHeaders();
-    this.http
-      .get<ProveedorApi[]>(`/api/proveedores?search=${encodeURIComponent(termino)}`, { headers })
-      .subscribe({
-        next: (proveedores) => {
-          this.proveedores = proveedores;
-        },
-        error: () => {
-          this.error = 'No se pudo buscar proveedores.';
-        }
-      });
+    const secuenciaActual = this.secuenciaBusquedaProveedor;
+    this.temporizadorBusquedaProveedor = setTimeout(() => {
+      const headers = this.obtenerHeaders();
+      this.http
+        .get<ProveedorApi[]>(`/api/proveedores?search=${encodeURIComponent(termino)}`, { headers })
+        .subscribe({
+          next: (proveedores) => {
+            if (secuenciaActual === this.secuenciaBusquedaProveedor) {
+              this.proveedores = proveedores;
+            }
+          },
+          error: () => {
+            this.error = 'No se pudo buscar proveedores.';
+          }
+        });
+    }, 280);
   }
 
   seleccionarProveedor(proveedor: ProveedorApi): void {
@@ -495,7 +521,23 @@ export class PrivadoProveedoresRegistros implements OnInit {
     return proveedores.size;
   }
 
-  proveedoresEnHistorial(): ProveedorApi[] {
+  trackByProveedor(_indice: number, proveedor: ProveedorApi): number {
+    return proveedor.proveedor_id;
+  }
+
+  trackByTarjetaProveedor(_indice: number, tarjeta: TarjetaProveedor): number {
+    return tarjeta.proveedor.proveedor_id;
+  }
+
+  trackByRegistro(_indice: number, registro: RegistroEntrega): number {
+    return registro.entrega_id;
+  }
+
+  trackByLinea(indice: number): number {
+    return indice;
+  }
+
+  private actualizarProveedoresHistorial(): void {
     const mapa = new Map<number, ProveedorApi>();
 
     this.registros.forEach((registro) => {
@@ -515,7 +557,7 @@ export class PrivadoProveedoresRegistros implements OnInit {
       }
     });
 
-    return Array.from(mapa.values()).sort((a, b) => a.nombres.localeCompare(b.nombres));
+    this.proveedoresHistorial = Array.from(mapa.values()).sort((a, b) => a.nombres.localeCompare(b.nombres));
   }
 
   iniciarEdicion(registro: RegistroEntrega): void {
@@ -592,6 +634,7 @@ export class PrivadoProveedoresRegistros implements OnInit {
           ...registro,
           estado_pago: this.normalizarEstadoPago(registro.estado_pago),
         }));
+        this.actualizarProveedoresHistorial();
         this.aplicarFiltros();
       },
       error: () => {
@@ -659,6 +702,17 @@ export class PrivadoProveedoresRegistros implements OnInit {
   }
 
   persistirTarjetas(): void {
+    if (this.temporizadorPersistenciaTarjetas) {
+      clearTimeout(this.temporizadorPersistenciaTarjetas);
+    }
+
+    this.temporizadorPersistenciaTarjetas = setTimeout(() => {
+      this.guardarTarjetasEnStorage();
+      this.temporizadorPersistenciaTarjetas = null;
+    }, 250);
+  }
+
+  private guardarTarjetasEnStorage(): void {
     localStorage.setItem(this.storageTarjetasKey, JSON.stringify(this.tarjetasProveedor));
   }
 
