@@ -4,6 +4,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
+import { PaginaPublicaServicio } from '../../../servicios/pagina-publica.servicio';
 
 @Component({
   selector: 'app-carrusel',
@@ -13,26 +14,8 @@ import { MatIconModule } from '@angular/material/icon';
   styleUrl: './carrusel.css'
 })
 export class Carrusel implements OnInit, OnDestroy {
-  readonly slides = [
-    {
-      title: 'Pollo entero',
-      summary: 'Peso ideal, listo para preparar al instante y con frescura diaria.',
-      detail: 'Ideal para asados y guisos, con seleccion diaria en Pollo Fresco.',
-      image: 'assets/images/carusel/carousel-2.svg'
-    },
-    {
-      title: 'Cortes premium',
-      summary: 'Pechuga, muslo y pierna con cortes limpios para restaurantes.',
-      detail: 'Empacado higienico y listo para porcionar en tu negocio.',
-      image: 'assets/images/carusel/carousel-1.svg'
-    },
-    {
-      title: 'Atencion mayorista',
-      summary: 'Abastece tu negocio con entregas coordinadas y puntuales.',
-      detail: 'Rutas programadas para pollerias, hoteles y restaurantes.',
-      image: 'assets/images/carusel/carousel-3.svg'
-    }
-  ];
+  constructor(private pagina: PaginaPublicaServicio) {}
+  get slides() { return this.pagina.contenido().slides.map(s => ({ title: s.titulo, summary: s.resumen, detail: s.detalle, image: s.imagen_url })); }
 
   activeIndex = 0;
   private readonly autoSlideIntervalMs = 5000;

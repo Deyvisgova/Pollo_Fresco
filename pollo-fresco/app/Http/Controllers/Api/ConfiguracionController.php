@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class ConfiguracionController extends Controller
@@ -38,26 +37,6 @@ class ConfiguracionController extends Controller
         }
 
         $archivoLogo->move($rutaLogoPublica, $nombreArchivo);
-
-        // Mantiene una copia en assets del front (si existe) para flujos de desarrollo.
-        $rutaLogoFront = base_path('../front-pollo-fresco/src/assets/images/logo');
-        if (File::isDirectory(dirname($rutaLogoFront)) || File::isDirectory(base_path('../front-pollo-fresco/src/assets/images'))) {
-            try {
-                if (! File::exists($rutaLogoFront)) {
-                    File::makeDirectory($rutaLogoFront, 0755, true);
-                }
-
-                File::copy(
-                    $rutaLogoPublica . DIRECTORY_SEPARATOR . $nombreArchivo,
-                    $rutaLogoFront . DIRECTORY_SEPARATOR . $nombreArchivo
-                );
-            } catch (\Throwable $exception) {
-                Log::warning('No se pudo copiar el logo a assets del front.', [
-                    'archivo' => $nombreArchivo,
-                    'error' => $exception->getMessage(),
-                ]);
-            }
-        }
 
         return response()->json([
             'message' => 'Logo subido correctamente.',
@@ -92,11 +71,6 @@ class ConfiguracionController extends Controller
         $rutaLogoPublica = public_path('assets/images/logo/' . $nombreArchivo);
         if (File::exists($rutaLogoPublica)) {
             File::delete($rutaLogoPublica);
-        }
-
-        $rutaLogoFront = base_path('../front-pollo-fresco/src/assets/images/logo/' . $nombreArchivo);
-        if (File::exists($rutaLogoFront)) {
-            File::delete($rutaLogoFront);
         }
 
         return response()->json([

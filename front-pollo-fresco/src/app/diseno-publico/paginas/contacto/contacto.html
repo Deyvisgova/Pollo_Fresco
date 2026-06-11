@@ -1,26 +1,24 @@
-<section id="contacto" class="contacto pb-5">
+<section *ngIf="contenido().mostrar_contacto" id="contacto" class="contacto pb-5">
   <div class="container">
     <div class="pagina-banner pagina-banner--full-bleed">
-      <img src="assets/images/banners-paginas/contacto.svg" alt="Banner de Contacto">
+      <img [src]="contenido().banner_contacto_url" alt="Banner de Contacto">
     </div>
     <div class="row g-4">
       <div class="col-12 col-lg-5">
-        <h2 class="fw-bold">Contactanos en el mercado Ayaymama</h2>
-        <p class="text-muted">
-          Coordinemos tu pedido diario o mayorista. Respondemos rapido por WhatsApp.
-        </p>
+        <h2 class="fw-bold">{{ contenido().titulo_contacto }}</h2>
+        <p class="text-muted">{{ contenido().descripcion_contacto }}</p>
         <div class="d-flex flex-column gap-3 contacto__datos">
           <div class="d-flex align-items-center gap-2">
             <mat-icon>place</mat-icon>
-            <span>Pasaje Central 128, puesto 12 - Ayaymama</span>
+            <span>{{ contenido().direccion }}</span>
           </div>
           <div class="d-flex align-items-center gap-2">
             <mat-icon>call</mat-icon>
-            <span>+51 965 432 100</span>
+            <span>{{ contenido().telefono }}</span>
           </div>
           <div class="d-flex align-items-center gap-2">
             <mat-icon>mail</mat-icon>
-            <span>ventas&#64;pollofresco.pe</span>
+            <span>{{ contenido().correo }}</span>
           </div>
         </div>
       </div>
@@ -48,7 +46,7 @@
             </div>
             <div class="col-12 d-flex flex-wrap gap-2">
               <button mat-raised-button color="primary" type="submit">Enviar solicitud</button>
-              <button mat-stroked-button color="accent" type="button">Abrir WhatsApp</button>
+              <button mat-stroked-button color="accent" type="button" (click)="abrirWhatsApp()">Abrir WhatsApp</button>
             </div>
           </form>
         </div>

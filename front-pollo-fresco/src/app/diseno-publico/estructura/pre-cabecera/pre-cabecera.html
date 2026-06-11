@@ -1,18 +1,16 @@
-<section class="pre-cabecera py-2">
-  <div class="container d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
-    <div class="d-flex flex-column flex-md-row gap-3">
-      <span class="d-flex align-items-center gap-2">
+<section class="pre-cabecera">
+  <div class="container pre-cabecera__contenido">
+      <span class="pre-cabecera__dato">
         <mat-icon fontIcon="place"></mat-icon>
-        Mercado Ayaymama  Pollo Fresco
+        {{ contenido().direccion }}
       </span>
-      <span class="d-flex align-items-center gap-2">
+      <span class="pre-cabecera__dato">
         <mat-icon fontIcon="schedule"></mat-icon>
-        Lunes a Domingo  6:00 - 19:00
+        {{ contenido().horario }}
       </span>
-    </div>
-    <div class="d-flex align-items-center gap-2">
+    <a class="pre-cabecera__dato pre-cabecera__telefono" [href]="'tel:' + contenido().telefono">
       <mat-icon fontIcon="call"></mat-icon>
-      <span>Pedidos: +51 965 432 100</span>
-    </div>
+      <span>Pedidos: {{ contenido().telefono }}</span>
+    </a>
   </div>
 </section>

@@ -654,6 +654,10 @@
   --icon-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z'/%3E%3Cpath d='M19 13.5a7.8 7.8 0 0 0 0-3l2-1.5-2-3.5-2.4 1a8 8 0 0 0-2.6-1.5L13.7 2h-3.4L10 5a8 8 0 0 0-2.6 1.5l-2.4-1L3 9l2 1.5a7.8 7.8 0 0 0 0 3L3 15l2 3.5 2.4-1A8 8 0 0 0 10 19l.3 3h3.4l.3-3a8 8 0 0 0 2.6-1.5l2.4 1L21 15l-2-1.5Z'/%3E%3C/svg%3E");
 }
 
+.panel__link-icono[data-icon='pagina-publica'] {
+  --icon-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18'/%3E%3C/svg%3E");
+}
+
 .panel__link-icono[data-icon='reportes'] {
   --icon-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 19V5'/%3E%3Cpath d='M4 19h16'/%3E%3Cpath d='M8 15v-5M12 15V7M16 15v-3'/%3E%3C/svg%3E");
 }

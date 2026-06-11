@@ -1,8 +1,9 @@
 .clientes__card {
-  border-radius: 14px;
+  border-radius: 8px;
   padding: 1.5rem;
   text-align: center;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e0e8f2;
+  box-shadow: 0 12px 28px rgba(25, 45, 76, 0.09);
 }
 
 .clientes__icono {

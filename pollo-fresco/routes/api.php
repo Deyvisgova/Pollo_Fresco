@@ -11,8 +11,10 @@ use App\Http\Controllers\Api\EntregaProveedorController;
 use App\Http\Controllers\Api\GastoController;
 use App\Http\Controllers\Api\OtrosProductosController;
 use App\Http\Controllers\Api\PagoProveedorController;
+use App\Http\Controllers\Api\PaginaPublicaController;
 use App\Http\Controllers\Api\PedidoDeliveryController;
 use App\Http\Controllers\Api\ProveedorController;
+use App\Http\Controllers\Api\ReporteController;
 use App\Http\Controllers\Api\VentaController;
 
 
@@ -61,6 +63,9 @@ Route::prefix('auth')->group(function () {
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
+Route::get('pagina-publica', [PaginaPublicaController::class, 'mostrar']);
+Route::get('pagina-publica/imagenes/{archivo}', [PaginaPublicaController::class, 'mostrarImagen'])
+    ->where('archivo', '[A-Za-z0-9._-]+');
 
 
 /*
@@ -100,6 +105,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('gastos/{gastoId}', [GastoController::class, 'eliminarGasto']);
     Route::put('gastos/venta-pollo-gallina', [GastoController::class, 'guardarVentaPolloGallina']);
     Route::post('gastos/cierre-mensual', [GastoController::class, 'cerrarMes']);
+    Route::get('reportes/resumen', [ReporteController::class, 'resumen']);
+    Route::get('reportes/pdf', [ReporteController::class, 'pdf']);
+    Route::get('reportes/inicio', [ReporteController::class, 'inicio']);
 
     Route::get('otros-productos/productos', [OtrosProductosController::class, 'productosIndex']);
     Route::post('otros-productos/productos', [OtrosProductosController::class, 'productosStore']);
@@ -116,6 +124,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('configuracion/logo', [ConfiguracionController::class, 'subirLogo']);
     Route::delete('configuracion/logo', [ConfiguracionController::class, 'eliminarLogo']);
+    Route::put('pagina-publica', [PaginaPublicaController::class, 'guardar']);
+    Route::post('pagina-publica/imagen', [PaginaPublicaController::class, 'subirImagen']);
 
     Route::get('ventas', [VentaController::class, 'index']);
     Route::post('ventas', [VentaController::class, 'store']);
