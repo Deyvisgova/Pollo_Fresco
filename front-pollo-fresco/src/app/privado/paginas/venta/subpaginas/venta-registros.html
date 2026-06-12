@@ -5,6 +5,34 @@
   </div>
 
   <article class="tarjeta">
+    <section class="operacion-sunat">
+      <div>
+        <h3>Resumen diario de boletas</h3>
+        <p>Envia las boletas pendientes de una fecha y consulta el ticket hasta recibir el CDR.</p>
+      </div>
+      <div class="operacion-sunat__acciones">
+        <input type="date" [(ngModel)]="fechaResumen" />
+        <button type="button" class="boton boton--sunat" (click)="enviarResumen()" [disabled]="operandoSunat">Enviar boletas</button>
+      </div>
+      <div class="resumenes" *ngIf="resumenes.length">
+        <div class="resumen-item" *ngFor="let resumen of resumenes">
+          <span>{{ resumen.fecha_documentos | date: 'dd/MM/yyyy' }}</span>
+          <strong>{{ resumen.cantidad_boletas }} boletas</strong>
+          <span class="estado-sunat" [attr.data-estado]="resumen.estado">{{ resumen.estado }}</span>
+          <button *ngIf="resumen.ticket && resumen.estado === 'EN_PROCESO'" type="button" class="boton" (click)="consultarResumen(resumen)" [disabled]="operandoSunat">Consultar ticket</button>
+        </div>
+      </div>
+      <div class="resumenes" *ngIf="bajas.length">
+        <h4>Comunicaciones de baja</h4>
+        <div class="resumen-item" *ngFor="let baja of bajas">
+          <strong>{{ baja.serie }}-{{ baja.numero }}</strong>
+          <span>{{ baja.cliente_nombre || 'Publico general' }}</span>
+          <span class="estado-sunat" [attr.data-estado]="baja.estado">{{ baja.estado }}</span>
+          <button *ngIf="baja.ticket && baja.estado === 'EN_PROCESO'" type="button" class="boton" (click)="consultarBaja(baja)" [disabled]="operandoSunat">Consultar baja</button>
+        </div>
+      </div>
+    </section>
+
     <div class="filtros">
       <input type="text" [(ngModel)]="buscando" placeholder="Buscar por cliente, serie, numero o documento" />
       <input type="date" [(ngModel)]="fechaDesde" />
@@ -30,6 +58,7 @@
             <th>Fecha</th>
             <th>Cliente</th>
             <th>Total</th>
+            <th>Estado SUNAT</th>
             <th>Acciones</th>
           </tr>
         </thead>
@@ -40,20 +69,94 @@
             <td data-label="Fecha">{{ venta.fecha_emision | date: 'dd/MM/yyyy' }}</td>
             <td data-label="Cliente">{{ venta.cliente_nombre || 'Publico general' }}</td>
             <td data-label="Total">{{ venta.moneda }} {{ venta.total | number: '1.2-2' }}</td>
+            <td data-label="Estado SUNAT">
+              <span class="estado-sunat" [attr.data-estado]="venta.estado_sunat">{{ venta.estado_sunat || 'NO_ENVIADO' }}</span>
+            </td>
             <td data-label="Acciones">
               <div class="acciones-fila">
                 <button type="button" class="icono" (click)="imprimir(venta)" title="Imprimir">Imp.</button>
                 <button type="button" class="icono" (click)="descargar(venta)" title="Descargar PDF">PDF</button>
                 <button type="button" class="icono" (click)="compartir(venta)" title="Compartir">Env.</button>
                 <button type="button" class="icono" (click)="descargarXml(venta)" title="Descargar XML">XML</button>
+                <button *ngIf="tieneCdr(venta)" type="button" class="icono" (click)="descargarCdr(venta)" title="Descargar CDR">CDR</button>
+                <button *ngIf="puedeEnviarSunat(venta)" type="button" class="icono icono--sunat" (click)="enviarSunat(venta)" title="Enviar o reintentar SUNAT">SUNAT</button>
+                <button *ngIf="puedeCrearNota(venta)" type="button" class="icono icono--nota" (click)="abrirNota(venta)" title="Crear nota de credito">NC</button>
+                <button *ngIf="puedeCrearNotaDebito(venta)" type="button" class="icono icono--debito" (click)="abrirNotaDebito(venta)" title="Crear nota de debito">ND</button>
+                <button *ngIf="puedeDarBaja(venta)" type="button" class="icono icono--baja" (click)="abrirBaja(venta)" title="Comunicar baja a SUNAT">Baja</button>
               </div>
             </td>
           </tr>
           <tr *ngIf="!ventasRegistradas.length">
-            <td colspan="6">No hay ventas registradas todavia.</td>
+            <td colspan="7">No hay ventas registradas todavia.</td>
           </tr>
         </tbody>
       </table>
     </div>
   </article>
 </section>
+
+<div class="modal-nota" *ngIf="ventaNota">
+  <div class="modal-nota__contenido">
+    <h3>Nota de credito</h3>
+    <p>Factura afectada: <strong>{{ ventaNota.serie }}-{{ ventaNota.numero }}</strong></p>
+    <label>Motivo SUNAT
+      <select [(ngModel)]="motivoNotaCodigo" (ngModelChange)="actualizarDescripcionNota()">
+        <option value="01">Anulacion de la operacion</option>
+        <option value="06">Devolucion total</option>
+      </select>
+    </label>
+    <label>Descripcion
+      <input [(ngModel)]="motivoNotaDescripcion" maxlength="250" />
+    </label>
+    <div class="modal-nota__acciones">
+      <button type="button" class="boton boton--suave" (click)="cerrarNota()">Cancelar</button>
+      <button type="button" class="boton boton--sunat" (click)="crearNotaCredito()" [disabled]="operandoSunat">Crear nota</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-nota" *ngIf="ventaNotaDebito">
+  <div class="modal-nota__contenido">
+    <h3>Nota de debito</h3>
+    <p>Factura afectada: <strong>{{ ventaNotaDebito.serie }}-{{ ventaNotaDebito.numero }}</strong></p>
+    <p class="ayuda-nota">La nota de debito aumenta el importe que debe pagar el cliente.</p>
+    <label>Motivo SUNAT
+      <select [(ngModel)]="motivoDebitoCodigo" (ngModelChange)="actualizarDescripcionDebito()">
+        <option value="01">Intereses por mora</option>
+        <option value="02">Aumento en el valor</option>
+        <option value="03">Penalidades u otros conceptos</option>
+      </select>
+    </label>
+    <label>Sustento
+      <input [(ngModel)]="motivoDebitoDescripcion" maxlength="250" />
+    </label>
+    <label>Concepto cobrado
+      <input [(ngModel)]="conceptoDebito" maxlength="120" />
+    </label>
+    <label>Importe adicional (S/)
+      <input type="number" [(ngModel)]="montoDebito" min="0.01" step="0.01" inputmode="decimal" />
+    </label>
+    <div class="modal-nota__acciones">
+      <button type="button" class="boton boton--suave" (click)="cerrarNotaDebito()">Cancelar</button>
+      <button type="button" class="boton boton--debito" (click)="crearNotaDebito()"
+        [disabled]="operandoSunat || !montoDebito || montoDebito <= 0 || !conceptoDebito.trim()">
+        Crear nota de debito
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-nota" *ngIf="ventaBaja">
+  <div class="modal-nota__contenido">
+    <h3>Comunicar baja a SUNAT</h3>
+    <p>Factura: <strong>{{ ventaBaja.serie }}-{{ ventaBaja.numero }}</strong></p>
+    <p class="advertencia-baja">Esta operacion anula fiscalmente la factura aceptada. No debe usarse para una devolucion comercial.</p>
+    <label>Motivo de baja
+      <textarea [(ngModel)]="motivoBaja" maxlength="250" rows="3"></textarea>
+    </label>
+    <div class="modal-nota__acciones">
+      <button type="button" class="boton boton--suave" (click)="cerrarBaja()">Cancelar</button>
+      <button type="button" class="boton boton--peligro" (click)="enviarBaja()" [disabled]="operandoSunat || !motivoBaja.trim()">Comunicar baja</button>
+    </div>
+  </div>
+</div>

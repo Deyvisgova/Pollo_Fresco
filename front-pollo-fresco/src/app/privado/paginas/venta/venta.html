@@ -96,16 +96,15 @@
                 <option value="factura">Factura</option>
                 <option value="boleta">Boleta</option>
                 <option value="nota-venta">Nota de venta</option>
-                <option value="nota-credito">Nota de credito</option>
               </select>
             </div>
             <div class="campo">
               <label>Serie</label>
-              <input [(ngModel)]="serie" type="text" placeholder="F001" />
+              <input [(ngModel)]="serie" type="text" placeholder="Automática" readonly />
             </div>
             <div class="campo">
               <label>Numero</label>
-              <input [(ngModel)]="numero" type="text" placeholder="00012345" />
+              <input [(ngModel)]="numero" type="text" placeholder="Automático" readonly />
             </div>
             <div class="campo">
               <label>Fecha</label>
@@ -130,38 +129,6 @@
         </div>
       </div>
 
-      <div class="tarjeta__seccion" *ngIf="tipoComprobante === 'nota-credito'">
-        <div class="tarjeta__titulo">
-          <h4>Referencia</h4>
-          <span class="nota">Solo si emites nota de credito.</span>
-        </div>
-        <div class="formulario-grid">
-          <div class="campo">
-            <label>Serie</label>
-            <input
-              [(ngModel)]="referenciaSerie"
-              type="text"
-              placeholder="F001"
-            />
-          </div>
-          <div class="campo">
-            <label>Numero</label>
-            <input
-              [(ngModel)]="referenciaNumero"
-              type="text"
-              placeholder="00001234"
-            />
-          </div>
-          <div class="campo campo--doble">
-            <label>Motivo</label>
-            <input
-              [(ngModel)]="referenciaMotivo"
-              type="text"
-              placeholder="Devolucion o descuento aplicado"
-            />
-          </div>
-        </div>
-      </div>
     </article>
 
     <article class="tarjeta tarjeta--tabla">
@@ -371,6 +338,15 @@
       </button>
       <button class="boton-icono-accion" type="button" (click)="descargarXmlVoucher()" title="Descargar XML">
         XML
+      </button>
+      <button
+        class="boton-icono-accion"
+        type="button"
+        (click)="enviarSunat()"
+        [disabled]="guardandoVenta || ultimaVentaEmitida.serie.startsWith('NV')"
+        title="Enviar factura a SUNAT"
+      >
+        SUNAT
       </button>
     </div>
     <div class="modal__acciones">

@@ -50,12 +50,17 @@
 }
 
 .tabla-ventas {
-  overflow-x: auto;
+  max-height: min(64vh, 620px);
+  overflow: auto;
+  position: relative;
+  border: 1px solid #d7e1f2;
+  border-radius: 10px;
 }
 
 .tabla-ventas table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
 }
 
 .tabla-ventas th,
@@ -63,6 +68,14 @@
   border-bottom: 1px solid #e2e8f0;
   padding: 10px;
   text-align: left;
+}
+
+.tabla-ventas th {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: #eef4ff;
+  box-shadow: 0 1px 0 #d7e1f2, 0 8px 14px rgba(15, 23, 42, 0.08);
 }
 
 .acciones-fila {
@@ -82,5 +95,163 @@
 @media (max-width: 900px) {
   .filtros {
     grid-template-columns: 1fr 1fr;
+  }
+}
+.estado-sunat {
+  display: inline-flex;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.estado-sunat[data-estado="ACEPTADO"],
+.estado-sunat[data-estado="ACEPTADO_CON_OBSERVACIONES"] {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.estado-sunat[data-estado="RECHAZADO"],
+.estado-sunat[data-estado="ERROR_ENVIO"] {
+  color: #991b1b;
+  background: #fee2e2;
+}
+
+.icono--sunat {
+  color: #fff;
+  background: #0f766e;
+}
+
+.operacion-sunat {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  margin-bottom: 16px;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  background: #f8fbff;
+}
+
+.operacion-sunat h3,
+.operacion-sunat p {
+  margin: 0;
+}
+
+.operacion-sunat p {
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.operacion-sunat__acciones,
+.resumen-item,
+.modal-nota__acciones {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.operacion-sunat input,
+.modal-nota input,
+.modal-nota select,
+.modal-nota textarea {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 9px 10px;
+}
+
+.icono--baja,
+.boton--peligro {
+  color: #fff;
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
+
+.icono--baja {
+  width: auto;
+  padding: 0 8px;
+}
+
+.advertencia-baja {
+  padding: 10px;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #991b1b;
+  background: #fef2f2;
+}
+
+.resumenes {
+  display: grid;
+  gap: 6px;
+}
+
+.resumen-item {
+  padding: 8px;
+  border-top: 1px solid #dbeafe;
+}
+
+.boton--sunat {
+  color: #fff;
+  background: #0f766e;
+  border-color: #0f766e;
+}
+
+.icono--nota {
+  color: #fff;
+  background: #c2410c;
+  border-color: #c2410c;
+}
+
+.icono--debito,
+.boton--debito {
+  color: #fff;
+  background: #7c3aed;
+  border-color: #7c3aed;
+}
+
+.ayuda-nota {
+  padding: 10px;
+  border: 1px solid #ddd6fe;
+  border-radius: 8px;
+  color: #5b21b6;
+  background: #f5f3ff;
+}
+
+.modal-nota {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.modal-nota__contenido {
+  width: min(100%, 460px);
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.modal-nota__contenido h3,
+.modal-nota__contenido p {
+  margin: 0;
+}
+
+.modal-nota__contenido label {
+  display: grid;
+  gap: 6px;
+}
+
+@media (max-width: 600px) {
+  .operacion-sunat__acciones > *,
+  .modal-nota__acciones > * {
+    width: 100%;
   }
 }

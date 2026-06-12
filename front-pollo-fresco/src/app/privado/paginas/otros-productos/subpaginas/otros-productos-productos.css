@@ -44,29 +44,129 @@
 
 .seccion__tabla {
   width: 100%;
+  max-height: none;
   overflow-x: auto;
+  overflow-y: hidden;
+  position: relative;
+  border: 1px solid #d7e1f2;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
 }
 
-table {
+.tabla-productos {
   width: 100%;
-  border-collapse: collapse;
+  min-width: 860px;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 14px;
+  table-layout: fixed;
+  display: block;
 }
 
-thead {
-  background: #e2e8f0;
+.tabla-productos colgroup {
+  display: none;
+}
+
+.tabla-productos thead {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+  position: relative;
+  z-index: 5;
+}
+
+.tabla-productos tbody {
+  display: block;
+  width: 100%;
+  max-height: min(62vh, 560px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+}
+
+@media (min-width: 761px) {
+  :host .seccion__tabla {
+    max-height: none !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+  }
+}
+
+.tabla-productos tr {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+.tabla-productos th:nth-child(1),
+.tabla-productos td:nth-child(1) {
+  width: 72px;
+}
+
+.tabla-productos th:nth-child(2),
+.tabla-productos td:nth-child(2) {
+  width: 30%;
+}
+
+.tabla-productos th:nth-child(3),
+.tabla-productos td:nth-child(3) {
+  width: 24%;
+}
+
+.tabla-productos th:nth-child(4),
+.tabla-productos td:nth-child(4) {
+  width: 150px;
+}
+
+.tabla-productos th:nth-child(5),
+.tabla-productos td:nth-child(5) {
+  width: 250px;
+}
+
+.tabla-productos thead th {
+  position: static !important;
+  background: #eef4ff;
+  color: #0d2c6f;
+  font-weight: 800;
+  box-shadow: 0 1px 0 #d7e1f2;
 }
 
 th,
 td {
-  padding: 10px 12px;
+  padding: 11px 14px;
   text-align: left;
   border-bottom: 1px solid #e2e8f0;
+  vertical-align: middle;
+}
+
+tbody tr {
+  background: #ffffff;
+  transition: background-color 0.15s ease;
+}
+
+tbody tr:nth-child(even) {
+  background: #f8fbff;
+}
+
+tbody tr:hover {
+  background: #eef5ff;
+}
+
+tbody tr:last-child td {
+  border-bottom: 0;
 }
 
 .tabla__acciones {
+  white-space: nowrap;
+}
+
+.tabla__acciones-contenido {
   display: flex;
+  align-items: center;
+  justify-content: flex-start;
   gap: 8px;
+  width: max-content;
 }
 
 .etiqueta {
@@ -108,14 +208,28 @@ td {
 }
 
 .boton--accion {
-  background: #f1f5f9;
-  padding: 6px 10px;
-  border-radius: 10px;
-  color: #0f172a;
+  background: #f97316;
+  padding: 7px 12px;
+  border-radius: 8px;
+  color: #ffffff;
+  min-height: 34px;
+  min-width: 66px;
+  box-shadow: 0 4px 10px rgba(249, 115, 22, 0.18);
 }
 
 .boton--peligro {
-  color: #dc2626;
+  background: #dc2626;
+  color: #ffffff;
+  min-width: 78px;
+  box-shadow: 0 4px 10px rgba(220, 38, 38, 0.18);
+}
+
+.boton--accion:hover {
+  background: #ea580c;
+}
+
+.boton--peligro:hover {
+  background: #b91c1c;
 }
 
 .boton:disabled {
@@ -124,7 +238,8 @@ td {
 }
 
 .toggle {
-  width: 44px;
+  width: 46px;
+  min-width: 46px;
   height: 24px;
   border-radius: 999px;
   border: 1px solid #cbd5f5;
@@ -152,8 +267,61 @@ td {
   border-color: #16a34a;
 }
 
+.toggle:not(.toggle--activo) {
+  background: #fee2e2;
+  border-color: #fecaca;
+}
+
 .toggle--activo .toggle__circulo {
-  transform: translateX(20px);
+  transform: translateX(22px);
+}
+
+@media (max-width: 760px) {
+  .seccion__tarjeta {
+    padding: 12px;
+    border-radius: 12px;
+  }
+
+  .seccion__acciones {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .seccion__acciones input,
+  .seccion__acciones .boton {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .tabla__acciones-contenido {
+    grid-column: 1 / -1;
+    width: 100%;
+    display: grid;
+    grid-template-columns: 46px 1fr 1fr;
+    gap: 8px;
+  }
+
+  .seccion__tabla {
+    overflow: visible;
+  }
+
+  .tabla-productos,
+  .tabla-productos thead,
+  .tabla-productos tbody,
+  .tabla-productos tr {
+    display: block;
+    width: 100%;
+  }
+
+  .tabla-productos tbody {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .tabla__acciones-contenido .boton {
+    width: 100%;
+    min-width: 0;
+  }
 }
 
 .modal {

@@ -121,6 +121,31 @@
     <div class="alerta" *ngIf="mensajeError">{{ mensajeError }}</div>
 
     <form (ngSubmit)="guardarUsuario()" #usuarioForm="ngForm">
+      <section class="consulta-reniec">
+        <div>
+          <strong>Buscar datos por DNI</strong>
+          <p>Consulta RENIEC para autocompletar nombres y apellidos del usuario.</p>
+        </div>
+        <div class="consulta-reniec__control">
+          <input
+            name="consultaDni"
+            type="text"
+            inputmode="numeric"
+            maxlength="8"
+            placeholder="DNI de 8 digitos"
+            [(ngModel)]="consultaDni"
+          />
+          <button
+            class="boton boton--primario"
+            type="button"
+            (click)="consultarDniReniec()"
+            [disabled]="consultaCargando"
+          >
+            {{ consultaCargando ? 'Consultando...' : 'Consultar' }}
+          </button>
+        </div>
+      </section>
+
       <div class="formulario__grid">
         <div class="campo">
           <label for="rol">Rol</label>
@@ -220,8 +245,19 @@
               class="boton boton--icono"
               type="button"
               (click)="mostrarPassword = !mostrarPassword"
+              [attr.aria-label]="mostrarPassword ? 'Ocultar contrasena' : 'Mostrar contrasena'"
+              [title]="mostrarPassword ? 'Ocultar contrasena' : 'Mostrar contrasena'"
             >
-              {{ mostrarPassword ? '' : '' }}
+              <svg *ngIf="!mostrarPassword" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <svg *ngIf="mostrarPassword" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 3l18 18"></path>
+                <path d="M10.6 10.6A3 3 0 0 0 12 15a3 3 0 0 0 2.1-.9"></path>
+                <path d="M9.9 5.3A10.5 10.5 0 0 1 12 5c6.5 0 10 7 10 7a17.5 17.5 0 0 1-3.1 3.8"></path>
+                <path d="M6.6 6.6C3.6 8.5 2 12 2 12s3.5 7 10 7a10.9 10.9 0 0 0 4.1-.8"></path>
+              </svg>
             </button>
           </div>
           <small>
@@ -254,8 +290,19 @@
               class="boton boton--icono"
               type="button"
               (click)="mostrarConfirmacion = !mostrarConfirmacion"
+              [attr.aria-label]="mostrarConfirmacion ? 'Ocultar contrasena' : 'Mostrar contrasena'"
+              [title]="mostrarConfirmacion ? 'Ocultar contrasena' : 'Mostrar contrasena'"
             >
-              {{ mostrarConfirmacion ? '' : '' }}
+              <svg *ngIf="!mostrarConfirmacion" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <svg *ngIf="mostrarConfirmacion" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 3l18 18"></path>
+                <path d="M10.6 10.6A3 3 0 0 0 12 15a3 3 0 0 0 2.1-.9"></path>
+                <path d="M9.9 5.3A10.5 10.5 0 0 1 12 5c6.5 0 10 7 10 7a17.5 17.5 0 0 1-3.1 3.8"></path>
+                <path d="M6.6 6.6C3.6 8.5 2 12 2 12s3.5 7 10 7a10.9 10.9 0 0 0 4.1-.8"></path>
+              </svg>
             </button>
           </div>
           <small class="mensaje-error" *ngIf="!passwordsCoinciden">

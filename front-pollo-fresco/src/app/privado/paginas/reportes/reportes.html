@@ -61,7 +61,7 @@
   </section>
 
   <section class="panel" *ngIf="vistaActiva === 'cobrar'">
-    <div class="panel__titulo"><div><h3>Cuentas por cobrar</h3><p>Deudas acumuladas por cliente, aplicando sus pagos parciales.</p></div></div>
+    <div class="panel__titulo"><div><h3>Cuentas por cobrar</h3><p>Deudas acumuladas por cliente, aplicando sus pagos a cuenta.</p></div></div>
     <div class="tabla-scroll"><table class="tabla-sistema"><thead><tr><th>Cliente</th><th>Contacto</th><th>Pedidos</th><th>Total</th><th>Pagado</th><th>Saldo</th><th>Deuda desde</th></tr></thead>
       <tbody><tr *ngFor="let fila of cuentasCobrar"><td data-label="Cliente"><strong>{{ fila.cliente }}</strong></td><td data-label="Contacto">{{ fila.celular || '-' }}</td><td data-label="Pedidos">{{ fila.pedidos }}</td><td data-label="Total">S/ {{ fila.total | number: '1.2-2' }}</td><td data-label="Pagado">S/ {{ fila.pagado | number: '1.2-2' }}</td><td data-label="Saldo"><strong class="texto-rojo">S/ {{ fila.saldo | number: '1.2-2' }}</strong></td><td data-label="Deuda desde">{{ fila.deuda_desde | date: 'dd/MM/yyyy' }}</td></tr></tbody>
     </table></div>

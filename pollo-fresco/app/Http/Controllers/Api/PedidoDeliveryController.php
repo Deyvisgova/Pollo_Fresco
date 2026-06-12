@@ -158,7 +158,7 @@ class PedidoDeliveryController extends Controller
         ]);
 
         if (($payload['estado_pago'] ?? '') === 'PARCIAL' && !isset($payload['pago_parcial'])) {
-            return response()->json(['message' => 'Para pago parcial debes indicar el monto pagado.'], 422);
+            return response()->json(['message' => 'Para registrar un pago a cuenta debes indicar el monto pagado.'], 422);
         }
 
         if ($pedido->delivery_usuario_id !== null && $pedido->delivery_usuario_id !== $request->user()->id) {
@@ -251,11 +251,16 @@ class PedidoDeliveryController extends Controller
             return response()->json(['message' => 'No se puede registrar pago en un pedido cancelado.'], 422);
         }
 
-        if ($this->usuarioEsDelivery($request->user()) && $pedido->delivery_usuario_id !== $request->user()->id) {
+        if (!$this->pedidoDisponibleParaDelivery($pedido, $request->user())) {
             return response()->json(['message' => 'Debes tomar este pedido antes de registrar pagos.'], 403);
         }
 
         DB::transaction(function () use ($pedido, $payload, $request) {
+            if ($this->usuarioEsDelivery($request->user()) && $pedido->delivery_usuario_id === null) {
+                $pedido->delivery_usuario_id = $request->user()->id;
+                $pedido->save();
+            }
+
             $pagadoAntes = $this->montoPagadoPedido($pedido);
             $saldoAntes = max(0, round((float) $pedido->total - $pagadoAntes, 2));
 
@@ -294,6 +299,40 @@ class PedidoDeliveryController extends Controller
         $pedidosPendientes = Pedido::query()
             ->with(['cliente', 'detalles', 'pagos', 'delivery:usuario_id,nombres,apellidos', 'vendedor:usuario_id,nombres,apellidos'])
             ->where('estado_id', '<>', 3)
+            ->orderBy('fecha_hora_creacion')
+            ->orderBy('pedido_id')
+            ->get()
+            ->map(fn (Pedido $pedido) => $this->anexarResumenPago($pedido))
+            ->filter(fn (Pedido $pedido) => (float) $pedido->saldo_pendiente > 0)
+            ->values();
+
+        $cuentas = $pedidosPendientes
+            ->groupBy('cliente_id')
+            ->map(fn ($pedidosCliente, $clienteId) => $this->construirCuentaCliente((int) $clienteId, $pedidosCliente))
+            ->sortByDesc('saldo_pendiente')
+            ->values();
+
+        return response()->json($cuentas);
+    }
+
+    /**
+     * Lista deudas antiguas de delivery para que el repartidor cobre pagos atrasados.
+     */
+    public function cobrosAtrasadosDelivery(Request $request)
+    {
+        $this->asegurarColumnasPedidos();
+
+        if (!$this->usuarioEsDelivery($request->user())) {
+            return response()->json(['message' => 'Solo el rol delivery puede consultar cobros atrasados.'], 403);
+        }
+
+        $hoy = now('America/Lima')->toDateString();
+
+        $pedidosPendientes = Pedido::query()
+            ->with(['cliente', 'detalles', 'pagos', 'delivery:usuario_id,nombres,apellidos', 'vendedor:usuario_id,nombres,apellidos'])
+            ->where('tipo_pedido', 'DELIVERY')
+            ->where('estado_id', '<>', 3)
+            ->whereDate('fecha_hora_creacion', '<', $hoy)
             ->orderBy('fecha_hora_creacion')
             ->orderBy('pedido_id')
             ->get()
@@ -401,7 +440,7 @@ class PedidoDeliveryController extends Controller
     {
         $this->asegurarColumnasClientes();
 
-        if ($this->usuarioEsDelivery($request->user()) && $pedido->delivery_usuario_id !== $request->user()->id) {
+        if (!$this->pedidoDisponibleParaDelivery($pedido, $request->user())) {
             return response()->json(['message' => 'Debes tomar este pedido antes de editar la ubicacion.'], 403);
         }
 
@@ -434,6 +473,10 @@ class PedidoDeliveryController extends Controller
         }
 
         DB::transaction(function () use ($pedido, $payload, $request) {
+            if ($this->usuarioEsDelivery($request->user()) && $pedido->delivery_usuario_id === null) {
+                $pedido->delivery_usuario_id = $request->user()->id;
+            }
+
             $pedido->fill([
                 'latitud' => $payload['latitud'] ?? null,
                 'longitud' => $payload['longitud'] ?? null,
@@ -598,5 +641,18 @@ class PedidoDeliveryController extends Controller
     private function usuarioEsDelivery(?object $usuario): bool
     {
         return ($usuario?->role ?? null) === 'delivery' || (int) ($usuario?->rol_id ?? 0) === 3;
+    }
+
+    private function pedidoDisponibleParaDelivery(Pedido $pedido, ?object $usuario): bool
+    {
+        if (!$this->usuarioEsDelivery($usuario)) {
+            return true;
+        }
+
+        if (($pedido->tipo_pedido ?? 'DELIVERY') !== 'DELIVERY') {
+            return false;
+        }
+
+        return $pedido->delivery_usuario_id === null || (int) $pedido->delivery_usuario_id === (int) $usuario->id;
     }
 }

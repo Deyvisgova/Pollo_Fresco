@@ -13,6 +13,28 @@ interface VentaGuardada {
   cliente_nombre: string;
   total: number;
   moneda: string;
+  estado_sunat: string;
+}
+
+interface ResumenSunat {
+  resumen_id: number;
+  fecha_documentos: string;
+  nombre_archivo: string;
+  ticket: string | null;
+  estado: string;
+  cantidad_boletas: number;
+  respuesta_descripcion: string | null;
+}
+
+interface ComunicacionBaja {
+  comunicacion_baja_id: number;
+  comprobante_venta_id: number;
+  serie: string;
+  numero: string;
+  cliente_nombre: string | null;
+  motivo: string;
+  ticket: string | null;
+  estado: string;
 }
 
 @Component({
@@ -30,6 +52,20 @@ export class PrivadoVentaRegistros implements OnInit {
   fechaDesde = '';
   fechaHasta = '';
   formatoVoucher: 'a4' | 'ticket-80' | 'ticket-57' = 'a4';
+  fechaResumen = new Date().toISOString().slice(0, 10);
+  resumenes: ResumenSunat[] = [];
+  operandoSunat = false;
+  ventaNota: VentaGuardada | null = null;
+  motivoNotaCodigo = '01';
+  motivoNotaDescripcion = 'ANULACION DE LA OPERACION';
+  ventaNotaDebito: VentaGuardada | null = null;
+  motivoDebitoCodigo = '01';
+  motivoDebitoDescripcion = 'INTERESES POR MORA';
+  conceptoDebito = 'INTERESES POR MORA';
+  montoDebito: number | null = null;
+  bajas: ComunicacionBaja[] = [];
+  ventaBaja: VentaGuardada | null = null;
+  motivoBaja = 'ERROR EN LA EMISION DEL COMPROBANTE';
 
   constructor(
     private readonly http: HttpClient,
@@ -38,6 +74,8 @@ export class PrivadoVentaRegistros implements OnInit {
 
   ngOnInit(): void {
     this.cargarVentas();
+    this.cargarResumenes();
+    this.cargarBajas();
   }
 
   cargarVentas(): void {
@@ -85,7 +123,7 @@ export class PrivadoVentaRegistros implements OnInit {
         }
       },
       error: () => {
-        this.error = 'No se pudo generar el ?? para imprimir.';
+        this.error = 'No se pudo generar el PDF para imprimir.';
       }
     });
   }
@@ -100,7 +138,7 @@ export class PrivadoVentaRegistros implements OnInit {
         enlace.click();
       },
       error: () => {
-        this.error = 'No se pudo descargar el ??.';
+        this.error = 'No se pudo descargar el PDF.';
       }
     });
   }
@@ -147,6 +185,237 @@ export class PrivadoVentaRegistros implements OnInit {
           this.error = 'No se pudo descargar el XML.';
         }
       });
+  }
+
+  descargarCdr(venta: VentaGuardada): void {
+    this.http.get(`/api/ventas/${venta.comprobante_venta_id}/cdr`, {
+      headers: this.obtenerHeaders(),
+      responseType: 'blob'
+    }).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const enlace = document.createElement('a');
+        enlace.href = url;
+        enlace.download = `R-${venta.serie}-${venta.numero}.zip`;
+        enlace.click();
+      },
+      error: () => {
+        this.error = 'Este comprobante todavia no tiene un CDR disponible.';
+      }
+    });
+  }
+
+  tieneCdr(venta: VentaGuardada): boolean {
+    return ['ACEPTADO', 'ACEPTADO_CON_OBSERVACIONES', 'RECHAZADO', 'ANULADO'].includes(venta.estado_sunat);
+  }
+
+  enviarSunat(venta: VentaGuardada): void {
+    this.error = '';
+    this.http.post<{ estado_sunat: string; descripcion: string }>(
+      `/api/ventas/${venta.comprobante_venta_id}/enviar-sunat`,
+      {},
+      { headers: this.obtenerHeaders() }
+    ).subscribe({
+      next: (respuesta) => {
+        venta.estado_sunat = respuesta.estado_sunat;
+      },
+      error: (error) => {
+        this.error = error?.error?.message ?? 'No se pudo enviar el comprobante a SUNAT.';
+      }
+    });
+  }
+
+  puedeEnviarSunat(venta: VentaGuardada): boolean {
+    return ['factura', 'nota-credito', 'nota-debito'].includes(venta.tipo_comprobante)
+      && !['ACEPTADO', 'ACEPTADO_CON_OBSERVACIONES'].includes(venta.estado_sunat);
+  }
+
+  puedeCrearNota(venta: VentaGuardada): boolean {
+    return venta.tipo_comprobante === 'factura'
+      && ['ACEPTADO', 'ACEPTADO_CON_OBSERVACIONES'].includes(venta.estado_sunat);
+  }
+
+  puedeCrearNotaDebito(venta: VentaGuardada): boolean {
+    return venta.tipo_comprobante === 'factura'
+      && ['ACEPTADO', 'ACEPTADO_CON_OBSERVACIONES'].includes(venta.estado_sunat);
+  }
+
+  puedeDarBaja(venta: VentaGuardada): boolean {
+    return venta.tipo_comprobante === 'factura'
+      && ['ACEPTADO', 'ACEPTADO_CON_OBSERVACIONES'].includes(venta.estado_sunat)
+      && !this.bajas.some(baja => baja.comprobante_venta_id === venta.comprobante_venta_id
+        && !['RECHAZADO', 'ERROR_ENVIO'].includes(baja.estado));
+  }
+
+  abrirNota(venta: VentaGuardada): void {
+    this.ventaNota = venta;
+    this.motivoNotaCodigo = '01';
+    this.actualizarDescripcionNota();
+  }
+
+  cerrarNota(): void {
+    this.ventaNota = null;
+  }
+
+  actualizarDescripcionNota(): void {
+    this.motivoNotaDescripcion = this.motivoNotaCodigo === '06'
+      ? 'DEVOLUCION TOTAL'
+      : 'ANULACION DE LA OPERACION';
+  }
+
+  crearNotaCredito(): void {
+    if (!this.ventaNota) return;
+    this.operandoSunat = true;
+    this.http.post<VentaGuardada>(`/api/ventas/${this.ventaNota.comprobante_venta_id}/nota-credito`, {
+      motivo_codigo: this.motivoNotaCodigo,
+      motivo_descripcion: this.motivoNotaDescripcion
+    }, { headers: this.obtenerHeaders() }).subscribe({
+      next: () => {
+        this.operandoSunat = false;
+        this.cerrarNota();
+        this.cargarVentas();
+      },
+      error: (error) => {
+        this.operandoSunat = false;
+        this.error = error?.error?.message ?? 'No se pudo crear la nota de credito.';
+      }
+    });
+  }
+
+  abrirNotaDebito(venta: VentaGuardada): void {
+    this.ventaNotaDebito = venta;
+    this.motivoDebitoCodigo = '01';
+    this.actualizarDescripcionDebito();
+    this.montoDebito = null;
+  }
+
+  cerrarNotaDebito(): void {
+    this.ventaNotaDebito = null;
+  }
+
+  actualizarDescripcionDebito(): void {
+    const descripciones: Record<string, string> = {
+      '01': 'INTERESES POR MORA',
+      '02': 'AUMENTO EN EL VALOR',
+      '03': 'PENALIDADES U OTROS CONCEPTOS'
+    };
+    this.motivoDebitoDescripcion = descripciones[this.motivoDebitoCodigo];
+    this.conceptoDebito = this.motivoDebitoDescripcion;
+  }
+
+  crearNotaDebito(): void {
+    if (!this.ventaNotaDebito || !this.montoDebito || this.montoDebito <= 0) return;
+    this.operandoSunat = true;
+    this.error = '';
+    this.http.post<VentaGuardada>(`/api/ventas/${this.ventaNotaDebito.comprobante_venta_id}/nota-debito`, {
+      motivo_codigo: this.motivoDebitoCodigo,
+      motivo_descripcion: this.motivoDebitoDescripcion,
+      concepto: this.conceptoDebito,
+      monto: this.montoDebito
+    }, { headers: this.obtenerHeaders() }).subscribe({
+      next: () => {
+        this.operandoSunat = false;
+        this.cerrarNotaDebito();
+        this.cargarVentas();
+      },
+      error: (error) => {
+        this.operandoSunat = false;
+        this.error = error?.error?.message ?? 'No se pudo crear la nota de debito.';
+      }
+    });
+  }
+
+  cargarResumenes(): void {
+    this.http.get<ResumenSunat[]>('/api/sunat/resumenes', { headers: this.obtenerHeaders() }).subscribe({
+      next: (resumenes) => this.resumenes = resumenes,
+      error: () => this.resumenes = []
+    });
+  }
+
+  enviarResumen(): void {
+    this.operandoSunat = true;
+    this.error = '';
+    this.http.post('/api/sunat/resumenes', { fecha: this.fechaResumen }, { headers: this.obtenerHeaders() }).subscribe({
+      next: () => {
+        this.operandoSunat = false;
+        this.cargarResumenes();
+        this.cargarVentas();
+      },
+      error: (error) => {
+        this.operandoSunat = false;
+        this.error = error?.error?.message ?? 'No se pudo enviar el resumen diario.';
+      }
+    });
+  }
+
+  consultarResumen(resumen: ResumenSunat): void {
+    this.operandoSunat = true;
+    this.http.post(`/api/sunat/resumenes/${resumen.resumen_id}/consultar`, {}, {
+      headers: this.obtenerHeaders()
+    }).subscribe({
+      next: () => {
+        this.operandoSunat = false;
+        this.cargarResumenes();
+        this.cargarVentas();
+      },
+      error: (error) => {
+        this.operandoSunat = false;
+        this.error = error?.error?.message ?? 'No se pudo consultar el ticket.';
+      }
+    });
+  }
+
+  cargarBajas(): void {
+    this.http.get<ComunicacionBaja[]>('/api/sunat/bajas', { headers: this.obtenerHeaders() }).subscribe({
+      next: (bajas) => this.bajas = bajas,
+      error: () => this.bajas = []
+    });
+  }
+
+  abrirBaja(venta: VentaGuardada): void {
+    this.ventaBaja = venta;
+    this.motivoBaja = 'ERROR EN LA EMISION DEL COMPROBANTE';
+  }
+
+  cerrarBaja(): void {
+    this.ventaBaja = null;
+  }
+
+  enviarBaja(): void {
+    if (!this.ventaBaja || !this.motivoBaja.trim()) return;
+    this.operandoSunat = true;
+    this.error = '';
+    this.http.post(`/api/sunat/bajas/ventas/${this.ventaBaja.comprobante_venta_id}`, {
+      motivo: this.motivoBaja.trim()
+    }, { headers: this.obtenerHeaders() }).subscribe({
+      next: () => {
+        this.operandoSunat = false;
+        this.cerrarBaja();
+        this.cargarBajas();
+        this.cargarVentas();
+      },
+      error: (error) => {
+        this.operandoSunat = false;
+        this.error = error?.error?.message ?? 'No se pudo comunicar la baja.';
+      }
+    });
+  }
+
+  consultarBaja(baja: ComunicacionBaja): void {
+    this.operandoSunat = true;
+    this.http.post(`/api/sunat/bajas/${baja.comunicacion_baja_id}/consultar`, {}, {
+      headers: this.obtenerHeaders()
+    }).subscribe({
+      next: () => {
+        this.operandoSunat = false;
+        this.cargarBajas();
+        this.cargarVentas();
+      },
+      error: (error) => {
+        this.operandoSunat = false;
+        this.error = error?.error?.message ?? 'No se pudo consultar la comunicacion de baja.';
+      }
+    });
   }
 
   private obtenerPdfBlob(ventaId: number) {

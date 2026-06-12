@@ -4,7 +4,7 @@ import { Component, DoCheck, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { SesionServicio } from '../../../servicios/sesion.servicio';
 
-type TipoComprobante = 'factura' | 'boleta' | 'nota-venta' | 'nota-credito';
+type TipoComprobante = 'factura' | 'boleta' | 'nota-venta';
 type TipoDocumentoCliente = 'ruc' | 'dni';
 
 interface ClienteFactura {
@@ -70,6 +70,7 @@ interface VentaGuardada {
   comprobante_venta_id: number;
   serie: string;
   numero: string;
+  estado_sunat?: string;
 }
 
 interface DetalleVentaValido {
@@ -92,8 +93,6 @@ interface DetalleVentaValido {
   styleUrl: './venta.css'
 })
 export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
-  private token = 'f3ba6fa1f3a2b2d1a6390dc06d831ebad2f218a9d3ba43e7f1f42b425dd03e26';
-
   private readonly claveBorradorVenta = 'pollo-fresco:venta:borrador:v1';
   private ultimoBorradorSerializado = '';
 
@@ -160,9 +159,9 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.actualizarSerieNumero();
     this.cargarProductos();
     this.restaurarBorradorVenta();
+    this.actualizarSerieNumero();
     this.ultimoBorradorSerializado = JSON.stringify(this.obtenerBorradorVenta());
   }
 
@@ -175,16 +174,20 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
   }
 
   actualizarSerieNumero(): void {
-    const configuracion = {
-      factura: { serie: 'F001', numero: '00012345' },
-      boleta: { serie: 'B001', numero: '00004567' },
-      'nota-venta': { serie: 'NV01', numero: '00000210' },
-      'nota-credito': { serie: 'NC01', numero: '00000032' }
-    } as const;
-
-    const datos = configuracion[this.tipoComprobante];
-    this.serie = datos.serie;
-    this.numero = datos.numero;
+    const params = new HttpParams().set('tipo', this.tipoComprobante);
+    this.http.get<{ serie: string; numero: string }>('/api/ventas/siguiente-correlativo', {
+      headers: this.obtenerHeaders(),
+      params
+    }).subscribe({
+      next: (datos) => {
+        this.serie = datos.serie;
+        this.numero = datos.numero;
+      },
+      error: () => {
+        this.serie = '';
+        this.numero = '';
+      }
+    });
   }
 
   get subtotal(): number {
@@ -397,8 +400,6 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
 
     const payload = {
       tipo_comprobante: this.tipoComprobante,
-      serie: this.serie,
-      numero: this.numero,
       fecha_emision: this.fechaEmision,
       moneda: this.moneda,
       forma_pago: this.formaPago,
@@ -421,7 +422,9 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
     this.http.post<VentaGuardada>('/api/ventas', payload, { headers: this.obtenerHeaders() }).subscribe({
       next: (venta) => {
         this.guardandoVenta = false;
-        this.mensajeVenta = 'Venta registrada correctamente.';
+        this.mensajeVenta = venta.serie.startsWith('NV')
+          ? 'Nota de venta interna registrada correctamente.'
+          : 'Comprobante registrado y pendiente de envío a SUNAT.';
         this.advertenciaVenta = '';
         this.ultimaVentaEmitida = venta;
         this.mostrarModalVoucher = true;
@@ -445,6 +448,28 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
 
   descargarXmlVoucher(): void {
     this.abrirXmlComprobante();
+  }
+
+  enviarSunat(): void {
+    if (!this.ultimaVentaEmitida) {
+      return;
+    }
+    this.guardandoVenta = true;
+    this.http.post<{ estado_sunat: string; descripcion: string }>(
+      `/api/ventas/${this.ultimaVentaEmitida.comprobante_venta_id}/enviar-sunat`,
+      {},
+      { headers: this.obtenerHeaders() }
+    ).subscribe({
+      next: (respuesta) => {
+        this.guardandoVenta = false;
+        this.ultimaVentaEmitida = { ...this.ultimaVentaEmitida!, estado_sunat: respuesta.estado_sunat };
+        this.mensajeVenta = `SUNAT: ${respuesta.estado_sunat}. ${respuesta.descripcion ?? ''}`.trim();
+      },
+      error: (error) => {
+        this.guardandoVenta = false;
+        this.errorVenta = error?.error?.message ?? 'No se pudo enviar el comprobante a SUNAT.';
+      }
+    });
   }
 
   enviarVoucher(): void {
@@ -789,10 +814,10 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
     }
 
     const endpoint = this.tipoDocumentoCliente === 'dni' ? 'dni' : 'ruc';
-    const url = `https://apiperu.dev/api/${endpoint}/${this.consultaDocumento}?api_token=${this.token}`;
+    const url = `/api/documentos/${endpoint}/${this.consultaDocumento}`;
 
     this.consultaCargando = true;
-    this.http.get<Record<string, unknown>>(url).subscribe({
+    this.http.get<Record<string, unknown>>(url, { headers: this.obtenerHeaders() }).subscribe({
       next: (respuesta) => {
         const datos = (respuesta?.['data'] as Record<string, unknown>) ?? {};
         if (this.tipoDocumentoCliente === 'dni') {
@@ -802,7 +827,7 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
         }
       },
       error: () => {
-        this.mensajeError = 'No pudimos conectar con la SUNAT/RENIEC. Revisa el numero e intenta nuevamente.';
+        this.mensajeError = 'No pudimos consultar SUNAT/RENIEC. Revisa el número o la configuración del servidor.';
         this.consultaCargando = false;
       },
       complete: () => {

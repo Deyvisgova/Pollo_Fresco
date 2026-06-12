@@ -21,7 +21,14 @@
   <p class="seccion__error" *ngIf="mensajeError">{{ mensajeError }}</p>
 
   <div class="seccion__tabla">
-    <table>
+    <table class="tabla-productos">
+      <colgroup>
+        <col class="col-id" />
+        <col class="col-nombre" />
+        <col class="col-grupo" />
+        <col class="col-estado" />
+        <col class="col-acciones" />
+      </colgroup>
       <thead>
         <tr>
           <th>#</th>
@@ -45,29 +52,32 @@
             </span>
           </td>
           <td data-label="Acciones" class="tabla__acciones">
-            <button
-              type="button"
-              class="toggle"
-              [class.toggle--activo]="producto.activo"
-              (click)="toggleActivo(producto)"
-              title="Cambiar estado"
-            >
-              <span class="toggle__circulo"></span>
-            </button>
-            <button
-              class="boton boton--accion"
-              (click)="seleccionarProducto(producto)"
-              title="Editar"
-            >
-              Editar
-            </button>
-            <button
-              class="boton boton--accion boton--peligro"
-              (click)="eliminarProducto(producto)"
-              title="Eliminar"
-            >
-              Eliminar
-            </button>
+            <div class="tabla__acciones-contenido">
+              <button
+                type="button"
+                class="toggle"
+                [class.toggle--activo]="producto.activo"
+                (click)="toggleActivo(producto)"
+                [attr.aria-label]="producto.activo ? 'Desactivar producto' : 'Activar producto'"
+                [title]="producto.activo ? 'Desactivar producto' : 'Activar producto'"
+              >
+                <span class="toggle__circulo"></span>
+              </button>
+              <button
+                class="boton boton--accion"
+                (click)="seleccionarProducto(producto)"
+                title="Editar producto"
+              >
+                Editar
+              </button>
+              <button
+                class="boton boton--accion boton--peligro"
+                (click)="eliminarProducto(producto)"
+                title="Eliminar producto"
+              >
+                Eliminar
+              </button>
+            </div>
           </td>
         </tr>
         <tr *ngIf="productosFiltrados.length === 0">

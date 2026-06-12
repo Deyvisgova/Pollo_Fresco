@@ -144,12 +144,14 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
   private token = 'f3ba6fa1f3a2b2d1a6390dc06d831ebad2f218a9d3ba43e7f1f42b425dd03e26';
 
   subpaginaActiva: 'registrar' | 'registros' | 'cuentas' | 'delivery' = 'registrar';
+  vistaDeliveryActiva: 'hoy' | 'cobros' = 'hoy';
   private solicitudPedidosId = 0;
 
   pedidos: PedidoDelivery[] = [];
   pedidosFiltrados: PedidoDelivery[] = [];
   cuentasPorCobrar: CuentaCliente[] = [];
   cuentasFiltradas: CuentaCliente[] = [];
+  cobrosAtrasadosDelivery: CuentaCliente[] = [];
   pedidoSeleccionado: PedidoDelivery | null = null;
   pedidoDetalleModal: PedidoDelivery | null = null;
   pedidoPagoPendiente: PedidoDelivery | null = null;
@@ -179,8 +181,6 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
 
   estadoDestino: 2 | 3 | 4 | 5 = 2;
   motivoCancelacion = '';
-  estadoPago: 'COMPLETO' | 'PENDIENTE' | 'PARCIAL' = 'PENDIENTE';
-  pagoParcial: number | null = null;
   montoRecibido: number | null = null;
   latitud: number | null = null;
   longitud: number | null = null;
@@ -196,6 +196,7 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
   guardandoUbicacion = false;
   mensajeError = '';
   filtro = '';
+  filtroCobrosAtrasados = '';
   filtroClienteRegistros = '';
   filtroFechaDesdeRegistros = '';
   filtroFechaHastaRegistros = '';
@@ -225,6 +226,7 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     if (this.usuarioEsDelivery()) {
       this.subpaginaActiva = 'delivery';
       this.cargarPedidos('delivery');
+      this.cargarCobrosAtrasadosDelivery();
       return;
     }
 
@@ -316,6 +318,34 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
         this.mensajeError = this.extraerError(error, 'No se pudo cargar cuentas por cobrar.');
       }
     });
+  }
+
+  cargarCobrosAtrasadosDelivery(): void {
+    this.http.get<CuentaCliente[]>('/api/pedidos-delivery/cobros-atrasados', { headers: this.obtenerHeaders() }).subscribe({
+      next: (cuentas) => {
+        this.cobrosAtrasadosDelivery = cuentas;
+      },
+      error: (error) => {
+        this.cobrosAtrasadosDelivery = [];
+        this.mensajeError = this.extraerError(error, 'No se pudo cargar cobros atrasados.');
+      }
+    });
+  }
+
+  cambiarVistaDelivery(vista: 'hoy' | 'cobros'): void {
+    this.vistaDeliveryActiva = vista;
+    this.pedidoSeleccionado = null;
+    this.pedidoDetalleModal = null;
+    this.pedidoPagoPendiente = null;
+    this.cuentaClienteSeleccionada = null;
+    this.cuentaPagoPendiente = null;
+
+    if (vista === 'hoy') {
+      this.cargarPedidos('delivery');
+      return;
+    }
+
+    this.cargarCobrosAtrasadosDelivery();
   }
 
   aplicarFiltro(): void {
@@ -668,9 +698,6 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     this.pedidoSeleccionado = pedido;
     this.estadoDestino = [2, 3, 4, 5].includes(pedido.estado_id) ? pedido.estado_id as 2 | 3 | 4 | 5 : 2;
     this.motivoCancelacion = pedido.motivo_cancelacion ?? '';
-    const ultimoPago = this.obtenerUltimoPago(pedido);
-    this.estadoPago = this.obtenerEstadoPagoCalculado(pedido) === 'COMPLETO' ? 'COMPLETO' : (ultimoPago?.estado_pago ?? 'PENDIENTE');
-    this.pagoParcial = null;
     this.montoRecibido = this.obtenerSaldoPendiente(pedido);
     this.latitud = pedido.latitud ?? pedido.cliente?.latitud ?? null;
     this.longitud = pedido.longitud ?? pedido.cliente?.longitud ?? null;
@@ -705,6 +732,23 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
 
   pedidosNoEntregadosDelivery(): PedidoDelivery[] {
     return this.pedidosFiltrados.filter((pedido) => pedido.estado_id === 5 || pedido.estado_id === 3);
+  }
+
+  cobrosAtrasadosFiltrados(): CuentaCliente[] {
+    const termino = this.filtroCobrosAtrasados.trim().toLowerCase();
+    if (!termino) {
+      return this.cobrosAtrasadosDelivery;
+    }
+
+    return this.cobrosAtrasadosDelivery.filter((cuenta) => {
+      const cliente = cuenta.cliente;
+      const nombre = this.obtenerNombreCliente(cliente).toLowerCase();
+      const documento = `${cliente?.dni ?? ''} ${cliente?.ruc ?? ''}`.toLowerCase();
+      const pedidos = cuenta.pedidos ?? [];
+      const coincidePedido = pedidos.some((pedido) => `${pedido.pedido_id}`.includes(termino));
+      const coincideProducto = pedidos.some((pedido) => (pedido.detalles ?? []).some((detalle) => detalle.descripcion.toLowerCase().includes(termino)));
+      return nombre.includes(termino) || documento.includes(termino) || coincidePedido || coincideProducto;
+    });
   }
 
   tomarPedido(pedido: PedidoDelivery): void {
@@ -785,7 +829,7 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
           estado_id: pedido.estado_id,
           motivo_cancelacion: pedido.estado_id === 3 ? pedido.motivo_cancelacion : null,
           estado_pago: 'COMPLETO',
-          // Se usa el saldo, no el total original, para no duplicar pagos parciales previos.
+          // Se usa el saldo, no el total original, para no duplicar pagos a cuenta previos.
           monto_recibido: saldo,
           pago_parcial: saldo
         },
@@ -882,10 +926,17 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       return;
     }
 
-    if (this.estadoPago === 'PARCIAL' && (this.pagoParcial === null || Number(this.pagoParcial) <= 0)) {
-      this.mensajeError = 'En pago parcial debes ingresar un monto mayor a 0.';
+    const monto = Number(this.montoRecibido ?? 0);
+    if (!Number.isFinite(monto) || monto < 0) {
+      this.mensajeError = 'Ingresa un monto recibido valido.';
       return;
     }
+
+    const saldo = this.obtenerSaldoPendiente(this.pedidoSeleccionado);
+    const estadoPagoCalculado: 'COMPLETO' | 'PENDIENTE' | 'PARCIAL' = monto <= 0
+      ? 'PENDIENTE'
+      : (monto >= saldo ? 'COMPLETO' : 'PARCIAL');
+    const pagoAplicable = Math.min(saldo, monto);
 
     this.guardandoGestion = true;
 
@@ -895,9 +946,9 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
         {
           estado_id: this.estadoDestino,
           motivo_cancelacion: this.estadoDestino === 3 || this.estadoDestino === 5 ? this.motivoCancelacion : null,
-          estado_pago: this.estadoPago,
-          monto_recibido: this.estadoPago === 'PARCIAL' ? null : this.montoRecibido,
-          pago_parcial: this.estadoPago === 'PARCIAL' ? this.pagoParcial : this.montoRecibido
+          estado_pago: estadoPagoCalculado,
+          monto_recibido: monto,
+          pago_parcial: pagoAplicable
         },
         { headers: this.obtenerHeaders() }
       )
@@ -993,9 +1044,34 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
   abrirWhatsapp(pedido: PedidoDelivery): void {
     const numero = this.normalizarNumero(pedido.cliente?.celular ?? '');
     if (!numero) {
+      this.mensajeError = 'El cliente no tiene celular valido para WhatsApp.';
       return;
     }
-    window.open(`https://wa.me/51${numero}?text=${encodeURIComponent(`Hola, tu pedido #${this.obtenerNumeroVisualPedido(pedido)} esta en ruta.`)}`, '_blank');
+    this.abrirUrlWhatsapp(numero, `Hola, tu pedido #${this.obtenerNumeroVisualPedido(pedido)} esta en ruta.`);
+  }
+
+  abrirWhatsappCuenta(cuenta: CuentaCliente): void {
+    const numero = this.obtenerNumeroWhatsappCliente(cuenta.cliente);
+    if (!numero) {
+      this.mensajeError = 'Este cliente no tiene celular valido para WhatsApp.';
+      return;
+    }
+
+    this.abrirUrlWhatsapp(numero, this.construirMensajeCuentaWhatsapp(cuenta));
+  }
+
+  abrirWhatsappPedidoPendiente(cuenta: CuentaCliente, pedido: PedidoDelivery): void {
+    const numero = this.obtenerNumeroWhatsappCliente(cuenta.cliente);
+    if (!numero) {
+      this.mensajeError = 'Este cliente no tiene celular valido para WhatsApp.';
+      return;
+    }
+
+    this.abrirUrlWhatsapp(numero, this.construirMensajePedidoWhatsapp(cuenta, pedido));
+  }
+
+  tieneWhatsappCliente(cliente: PedidoCliente | null | undefined): boolean {
+    return !!this.obtenerNumeroWhatsappCliente(cliente);
   }
 
   llamarCliente(pedido: PedidoDelivery): void {
@@ -1110,7 +1186,8 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       return 'COMPLETO  Vuelto pagado';
     }
 
-    return detalle ? `${estado}  ${detalle}` : estado;
+    const estadoVisible = estado === 'PARCIAL' ? 'PAGO RECIBIDO, QUEDA SALDO' : estado;
+    return detalle ? `${estadoVisible}  ${detalle}` : estadoVisible;
   }
 
   obtenerFechaHoraCorta(fecha: string | null | undefined): string {
@@ -1263,6 +1340,25 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     return Math.max(0, Number((Number(pedido.total ?? 0) - this.obtenerMontoPagado(pedido)).toFixed(2)));
   }
 
+  obtenerEstadoTextoCuenta(cuenta: CuentaCliente): string {
+    if (Number(cuenta.monto_pagado ?? 0) > 0 && Number(cuenta.saldo_pendiente ?? 0) > 0) {
+      return 'Pago recibido, queda saldo';
+    }
+
+    return Number(cuenta.saldo_pendiente ?? 0) > 0 ? 'Pendiente de pago' : 'Cancelado';
+  }
+
+  obtenerEstadoTextoPedido(pedido: PedidoDelivery): string {
+    const pagado = this.obtenerMontoPagado(pedido);
+    const saldo = this.obtenerSaldoPendiente(pedido);
+
+    if (pagado > 0 && saldo > 0) {
+      return 'Pago recibido, queda saldo';
+    }
+
+    return saldo > 0 ? 'Pendiente de pago' : 'Cancelado';
+  }
+
   obtenerEstadoPagoCalculado(pedido: PedidoDelivery): 'COMPLETO' | 'PENDIENTE' | 'PARCIAL' {
     if (pedido.estado_pago_calculado) {
       return pedido.estado_pago_calculado;
@@ -1285,7 +1381,7 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
   }
 
   calcularVuelto(): number {
-    if (!this.pedidoSeleccionado || this.estadoPago !== 'COMPLETO') {
+    if (!this.pedidoSeleccionado) {
       return 0;
     }
 
@@ -1294,12 +1390,12 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
   }
 
   calcularSaldoPendiente(): number {
-    if (!this.pedidoSeleccionado || this.estadoPago !== 'PARCIAL') {
+    if (!this.pedidoSeleccionado) {
       return 0;
     }
 
-    const parcial = Number(this.pagoParcial ?? 0);
-    return Math.max(0, Number((this.obtenerSaldoPendiente(this.pedidoSeleccionado) - parcial).toFixed(2)));
+    const recibido = Number(this.montoRecibido ?? 0);
+    return Math.max(0, Number((this.obtenerSaldoPendiente(this.pedidoSeleccionado) - recibido).toFixed(2)));
   }
 
   private cargarProductos(search = ''): void {
@@ -1549,6 +1645,9 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     }
 
     this.cargarPedidos(this.subpaginaActiva === 'delivery' ? 'delivery' : 'vendedor');
+    if (this.subpaginaActiva === 'delivery' && this.usuarioEsDelivery()) {
+      this.cargarCobrosAtrasadosDelivery();
+    }
   }
 
   private obtenerHeaders(): HttpHeaders {
@@ -1662,7 +1761,85 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
 
   private normalizarNumero(numero: string): string {
     const limpio = (numero || '').replace(/\D/g, '');
-    return limpio.length === 9 ? limpio : '';
+    if (limpio.length === 9) {
+      return limpio;
+    }
+
+    if (limpio.length === 11 && limpio.startsWith('51')) {
+      return limpio.slice(2);
+    }
+
+    return '';
+  }
+
+  private obtenerNumeroWhatsappCliente(cliente: PedidoCliente | null | undefined): string {
+    return this.normalizarNumero(cliente?.celular ?? '');
+  }
+
+  private abrirUrlWhatsapp(numero: string, mensaje: string): void {
+    window.open(`https://wa.me/51${numero}?text=${encodeURIComponent(mensaje)}`, '_blank');
+  }
+
+  private construirMensajeCuentaWhatsapp(cuenta: CuentaCliente): string {
+    const cliente = this.obtenerNombreCliente(cuenta.cliente);
+    const estado = this.obtenerEstadoTextoCuenta(cuenta);
+    const pedidos = (cuenta.pedidos ?? [])
+      .map((pedido) => this.construirBloquePedidoWhatsapp(pedido))
+      .join('\n\n');
+
+    return [
+      `Hola, buen dia ${cliente}.`,
+      '',
+      'Le escribimos de POLLO FRESCO para recordarle con mucho respeto que tiene una cuenta pendiente.',
+      '',
+      `Estado: ${estado}`,
+      `Total deuda: ${this.formatearSoles(cuenta.total_deuda)}`,
+      `Pagado: ${this.formatearSoles(cuenta.monto_pagado)}`,
+      `Saldo pendiente: ${this.formatearSoles(cuenta.saldo_pendiente)}`,
+      '',
+      'Detalle:',
+      pedidos,
+      '',
+      'Si ya realizo el pago, por favor ignore este mensaje o envienos la constancia.',
+      'Muchas gracias por su preferencia.'
+    ].join('\n');
+  }
+
+  private construirMensajePedidoWhatsapp(cuenta: CuentaCliente, pedido: PedidoDelivery): string {
+    const cliente = this.obtenerNombreCliente(cuenta.cliente);
+    const estado = this.obtenerEstadoTextoPedido(pedido);
+
+    return [
+      `Hola, buen dia ${cliente}.`,
+      '',
+      'Le escribimos de POLLO FRESCO para recordarle el siguiente pedido pendiente:',
+      '',
+      `Estado: ${estado}`,
+      this.construirBloquePedidoWhatsapp(pedido),
+      '',
+      `Pagado: ${this.formatearSoles(this.obtenerMontoPagado(pedido))}`,
+      `Saldo pendiente: ${this.formatearSoles(this.obtenerSaldoPendiente(pedido))}`,
+      '',
+      'Si ya realizo el pago, por favor ignore este mensaje o envienos la constancia.',
+      'Muchas gracias por su preferencia.'
+    ].join('\n');
+  }
+
+  private construirBloquePedidoWhatsapp(pedido: PedidoDelivery): string {
+    const detalles = (pedido.detalles ?? [])
+      .map((detalle) => `- ${detalle.cantidad} ${detalle.unidad} ${detalle.descripcion}: ${this.formatearSoles(detalle.subtotal)}`)
+      .join('\n');
+
+    return [
+      `Pedido #${pedido.pedido_id} - ${this.obtenerFechaHoraCorta(pedido.fecha_hora_creacion)}`,
+      detalles,
+      `Total: ${this.formatearSoles(pedido.total)}`,
+      `Debe: ${this.formatearSoles(this.obtenerSaldoPendiente(pedido))}`
+    ].filter((linea) => linea !== '').join('\n');
+  }
+
+  private formatearSoles(valor: number | string | null | undefined): string {
+    return `S/ ${Number(valor ?? 0).toFixed(2)}`;
   }
 
   usuarioEsDelivery(): boolean {

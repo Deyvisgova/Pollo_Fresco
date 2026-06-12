@@ -3,16 +3,209 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Services\Facturacion\CorrelativoComprobanteService;
+use App\Services\Facturacion\FacturacionElectronicaService;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 class VentaController extends Controller
 {
+    public function __construct(
+        private readonly CorrelativoComprobanteService $correlativos,
+        private readonly FacturacionElectronicaService $facturacionElectronica
+    ) {
+    }
+
+    public function siguienteCorrelativo(Request $request)
+    {
+        $this->autorizarFacturacion($request);
+        $request->validate([
+            'tipo' => ['required', 'string', 'max:20'],
+        ]);
+
+        return response()->json($this->correlativos->vistaPrevia((string) $request->query('tipo')));
+    }
+
+    public function enviarSunat(int $ventaId)
+    {
+        $this->autorizarFacturacion(request());
+        try {
+            return response()->json($this->facturacionElectronica->enviar($ventaId));
+        } catch (\Throwable $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+    }
+
+    public function crearNotaCredito(Request $request, int $ventaId)
+    {
+        $this->autorizarFacturacion($request);
+        $datos = $request->validate([
+            'motivo_codigo' => ['required', 'in:01,06'],
+            'motivo_descripcion' => ['required', 'string', 'max:250'],
+        ]);
+
+        $referencia = DB::table('ventas')->where('comprobante_venta_id', $ventaId)->first();
+        if (! $referencia || $referencia->codigo_tipo_comprobante !== '01') {
+            return response()->json(['message' => 'La nota de credito debe referenciar una factura.'], 422);
+        }
+        if (! in_array($referencia->estado_sunat, ['ACEPTADO', 'ACEPTADO_CON_OBSERVACIONES'], true)) {
+            return response()->json(['message' => 'Solo se puede emitir nota de credito para una factura aceptada por SUNAT.'], 422);
+        }
+        $existente = DB::table('ventas')
+            ->where('venta_referencia_id', $ventaId)
+            ->where('codigo_tipo_comprobante', '07')
+            ->whereNotIn('estado_sunat', ['RECHAZADO'])
+            ->exists();
+        if ($existente) {
+            return response()->json(['message' => 'Esta factura ya tiene una nota de credito vigente.'], 422);
+        }
+
+        try {
+            $notaId = DB::transaction(function () use ($request, $referencia, $ventaId, $datos) {
+                $correlativo = $this->correlativos->reservar('nota-credito');
+                $notaId = DB::table('ventas')->insertGetId([
+                    'usuario_id' => $request->user()->usuario_id,
+                    'tipo_comprobante' => 'nota-credito',
+                    'codigo_tipo_comprobante' => '07',
+                    'serie' => $correlativo['serie'],
+                    'numero' => $correlativo['numero'],
+                    'estado_sunat' => 'NO_ENVIADO',
+                    'fecha_emision' => now()->toDateString(),
+                    'moneda' => $referencia->moneda,
+                    'forma_pago' => 'Contado',
+                    'metodo_pago' => $referencia->metodo_pago,
+                    'cliente_tipo_documento' => $referencia->cliente_tipo_documento,
+                    'cliente_documento' => $referencia->cliente_documento,
+                    'cliente_nombre' => $referencia->cliente_nombre,
+                    'cliente_direccion' => $referencia->cliente_direccion,
+                    'subtotal' => $referencia->subtotal,
+                    'operacion_gravada' => $referencia->operacion_gravada,
+                    'operacion_exonerada' => $referencia->operacion_exonerada,
+                    'operacion_inafecta' => $referencia->operacion_inafecta,
+                    'igv' => $referencia->igv,
+                    'total_impuestos' => $referencia->total_impuestos,
+                    'total' => $referencia->total,
+                    'vuelto' => 0,
+                    'referencia_serie' => $referencia->serie,
+                    'referencia_numero' => $referencia->numero,
+                    'referencia_motivo' => $datos['motivo_descripcion'],
+                    'venta_referencia_id' => $ventaId,
+                    'nota_motivo_codigo' => $datos['motivo_codigo'],
+                    'creado_en' => now(),
+                ]);
+
+                $detalles = DB::table('venta_detalle')->where('comprobante_venta_id', $ventaId)->get();
+                foreach ($detalles as $detalle) {
+                    $copia = (array) $detalle;
+                    unset($copia['comprobante_venta_detalle_id']);
+                    $copia['comprobante_venta_id'] = $notaId;
+                    DB::table('venta_detalle')->insert($copia);
+                }
+
+                return $notaId;
+            });
+
+            return response()->json(DB::table('ventas')->where('comprobante_venta_id', $notaId)->first(), 201);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['message' => 'No se pudo crear la nota de credito.'], 500);
+        }
+    }
+
+    public function crearNotaDebito(Request $request, int $ventaId)
+    {
+        $this->autorizarFacturacion($request);
+        $datos = $request->validate([
+            'motivo_codigo' => ['required', 'in:01,02,03'],
+            'motivo_descripcion' => ['required', 'string', 'max:250'],
+            'concepto' => ['required', 'string', 'max:120'],
+            'monto' => ['required', 'numeric', 'gt:0', 'max:99999999.99'],
+        ]);
+
+        $referencia = DB::table('ventas')->where('comprobante_venta_id', $ventaId)->first();
+        if (! $referencia || $referencia->codigo_tipo_comprobante !== '01') {
+            return response()->json(['message' => 'La nota de debito debe referenciar una factura.'], 422);
+        }
+        if (! in_array($referencia->estado_sunat, ['ACEPTADO', 'ACEPTADO_CON_OBSERVACIONES'], true)) {
+            return response()->json(['message' => 'Solo se puede emitir nota de debito para una factura aceptada por SUNAT.'], 422);
+        }
+        if ((float) $referencia->operacion_gravada > 0 && (float) $referencia->operacion_exonerada > 0) {
+            return response()->json([
+                'message' => 'La factura tiene operaciones mixtas. Debe indicar el tratamiento tributario por concepto.',
+            ], 422);
+        }
+
+        try {
+            $notaId = DB::transaction(function () use ($request, $referencia, $ventaId, $datos) {
+                $correlativo = $this->correlativos->reservar('nota-debito');
+                $total = round((float) $datos['monto'], 2);
+                $esGravada = (float) $referencia->operacion_gravada > 0;
+                $valorVenta = $esGravada ? round($total / 1.18, 2) : $total;
+                $igv = $esGravada ? round($total - $valorVenta, 2) : 0;
+
+                $notaId = DB::table('ventas')->insertGetId([
+                    'usuario_id' => $request->user()->usuario_id,
+                    'tipo_comprobante' => 'nota-debito',
+                    'codigo_tipo_comprobante' => '08',
+                    'serie' => $correlativo['serie'],
+                    'numero' => $correlativo['numero'],
+                    'estado_sunat' => 'NO_ENVIADO',
+                    'fecha_emision' => now()->toDateString(),
+                    'moneda' => $referencia->moneda,
+                    'forma_pago' => 'Contado',
+                    'metodo_pago' => $referencia->metodo_pago,
+                    'cliente_tipo_documento' => $referencia->cliente_tipo_documento,
+                    'cliente_documento' => $referencia->cliente_documento,
+                    'cliente_nombre' => $referencia->cliente_nombre,
+                    'cliente_direccion' => $referencia->cliente_direccion,
+                    'subtotal' => $valorVenta,
+                    'operacion_gravada' => $esGravada ? $valorVenta : 0,
+                    'operacion_exonerada' => $esGravada ? 0 : $valorVenta,
+                    'operacion_inafecta' => 0,
+                    'igv' => $igv,
+                    'total_impuestos' => $igv,
+                    'total' => $total,
+                    'vuelto' => 0,
+                    'referencia_serie' => $referencia->serie,
+                    'referencia_numero' => $referencia->numero,
+                    'referencia_motivo' => $datos['motivo_descripcion'],
+                    'venta_referencia_id' => $ventaId,
+                    'nota_motivo_codigo' => $datos['motivo_codigo'],
+                    'creado_en' => now(),
+                ]);
+
+                DB::table('venta_detalle')->insert([
+                    'comprobante_venta_id' => $notaId,
+                    'descripcion' => trim($datos['concepto']),
+                    'unidad' => 'UND',
+                    'codigo_unidad' => 'NIU',
+                    'cantidad' => 1,
+                    'precio_unitario' => $total,
+                    'tipo_afectacion_igv' => $esGravada ? '10' : '20',
+                    'valor_unitario' => $valorVenta,
+                    'valor_venta' => $valorVenta,
+                    'igv' => $igv,
+                    'total_impuestos' => $igv,
+                    'total_linea' => $total,
+                ]);
+
+                return $notaId;
+            });
+
+            return response()->json(DB::table('ventas')->where('comprobante_venta_id', $notaId)->first(), 201);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['message' => 'No se pudo crear la nota de debito.'], 500);
+        }
+    }
+
     public function index(Request $request)
     {
+        $this->autorizarFacturacion($request);
         $this->asegurarTablasVenta();
 
         $buscar = trim((string) $request->query('buscar', ''));
@@ -50,12 +243,11 @@ class VentaController extends Controller
 
     public function store(Request $request)
     {
+        $this->autorizarFacturacion($request);
         $this->asegurarTablasVenta();
 
         $validator = Validator::make($request->all(), [
-            'tipo_comprobante' => ['required', 'string', 'max:20'],
-            'serie' => ['required', 'string', 'max:10'],
-            'numero' => ['required', 'string', 'max:20'],
+            'tipo_comprobante' => ['required', 'string', 'in:factura,boleta,nota-venta'],
             'fecha_emision' => ['required', 'date'],
             'moneda' => ['required', 'string', 'max:10'],
             'forma_pago' => ['required', 'string', 'max:40'],
@@ -64,8 +256,6 @@ class VentaController extends Controller
             'cliente_documento' => ['nullable', 'string', 'max:20'],
             'cliente_nombre' => ['nullable', 'string', 'max:150'],
             'cliente_direccion' => ['nullable', 'string', 'max:255'],
-            'subtotal' => ['required', 'numeric', 'min:0'],
-            'total' => ['required', 'numeric', 'min:0'],
             'monto_recibido' => ['nullable', 'numeric', 'min:0'],
             'vuelto' => ['nullable', 'numeric', 'min:0'],
             'referencia_serie' => ['nullable', 'string', 'max:10'],
@@ -85,6 +275,19 @@ class VentaController extends Controller
             ], 422);
         }
 
+        $tipoComprobante = strtolower(trim((string) $request->input('tipo_comprobante')));
+        $documentoCliente = preg_replace('/\D+/', '', (string) $request->input('cliente_documento')) ?? '';
+        if ($tipoComprobante === 'factura' && strlen($documentoCliente) !== 11) {
+            return response()->json([
+                'message' => 'Una factura requiere un cliente identificado con RUC de 11 dígitos.',
+            ], 422);
+        }
+        if ($tipoComprobante === 'boleta' && $documentoCliente !== '' && strlen($documentoCliente) !== 8) {
+            return response()->json([
+                'message' => 'Para una boleta, el DNI debe tener 8 dígitos.',
+            ], 422);
+        }
+
         $usuario = $request->user();
         if (!$usuario) {
             return response()->json(['message' => 'Usuario no autenticado'], 401);
@@ -101,12 +304,24 @@ class VentaController extends Controller
                     'cantidad' => $cantidad,
                     'precio_unitario' => $precio,
                     'total_linea' => round($cantidad * $precio, 2),
+                    'codigo_unidad' => $this->codigoUnidad((string) $detalle['unidad']),
+                    'tipo_afectacion_igv' => '20',
+                    'valor_unitario' => $precio,
+                    'valor_venta' => round($cantidad * $precio, 2),
+                    'igv' => 0,
+                    'total_impuestos' => 0,
                 ];
             })
             ->values();
 
+        $totalCalculado = round((float) $detalles->sum('total_linea'), 2);
+        $montoRecibido = $request->input('monto_recibido');
+        $vueltoCalculado = $montoRecibido === null ? 0 : max(round(((float) $montoRecibido) - $totalCalculado, 2), 0);
+
         DB::beginTransaction();
         try {
+            $correlativo = $this->correlativos->reservar($tipoComprobante);
+
             try {
                 $this->guardarClienteDesdeVenta($request);
             } catch (\Throwable $clienteError) {
@@ -115,9 +330,11 @@ class VentaController extends Controller
 
             $ventaId = DB::table('ventas')->insertGetId([
                 'usuario_id' => $usuario->usuario_id,
-                'tipo_comprobante' => $request->input('tipo_comprobante'),
-                'serie' => $request->input('serie'),
-                'numero' => $request->input('numero'),
+                'tipo_comprobante' => $tipoComprobante,
+                'codigo_tipo_comprobante' => $correlativo['codigo_tipo_comprobante'],
+                'serie' => $correlativo['serie'],
+                'numero' => $correlativo['numero'],
+                'estado_sunat' => $correlativo['codigo_tipo_comprobante'] === 'NV' ? 'NO_APLICA' : 'NO_ENVIADO',
                 'fecha_emision' => $request->input('fecha_emision'),
                 'moneda' => $request->input('moneda'),
                 'forma_pago' => $request->input('forma_pago'),
@@ -126,10 +343,15 @@ class VentaController extends Controller
                 'cliente_documento' => $request->input('cliente_documento'),
                 'cliente_nombre' => $request->input('cliente_nombre'),
                 'cliente_direccion' => $request->input('cliente_direccion'),
-                'subtotal' => (float) $request->input('subtotal'),
-                'total' => (float) $request->input('total'),
-                'monto_recibido' => $request->input('monto_recibido'),
-                'vuelto' => (float) $request->input('vuelto', 0),
+                'subtotal' => $totalCalculado,
+                'operacion_gravada' => 0,
+                'operacion_exonerada' => $totalCalculado,
+                'operacion_inafecta' => 0,
+                'igv' => 0,
+                'total_impuestos' => 0,
+                'total' => $totalCalculado,
+                'monto_recibido' => $montoRecibido,
+                'vuelto' => $vueltoCalculado,
                 'referencia_serie' => $request->input('referencia_serie'),
                 'referencia_numero' => $request->input('referencia_numero'),
                 'referencia_motivo' => $request->input('referencia_motivo'),
@@ -143,6 +365,12 @@ class VentaController extends Controller
                     'unidad' => $detalle['unidad'],
                     'cantidad' => $detalle['cantidad'],
                     'precio_unitario' => $detalle['precio_unitario'],
+                    'codigo_unidad' => $detalle['codigo_unidad'],
+                    'tipo_afectacion_igv' => $detalle['tipo_afectacion_igv'],
+                    'valor_unitario' => $detalle['valor_unitario'],
+                    'valor_venta' => $detalle['valor_venta'],
+                    'igv' => $detalle['igv'],
+                    'total_impuestos' => $detalle['total_impuestos'],
                     'total_linea' => $detalle['total_linea'],
                 ]);
             }
@@ -150,9 +378,9 @@ class VentaController extends Controller
             DB::commit();
         } catch (\Throwable $e) {
             DB::rollBack();
+            report($e);
             return response()->json([
                 'message' => 'No se pudo guardar la venta.',
-                'error' => $e->getMessage(),
             ], 500);
         }
 
@@ -163,6 +391,7 @@ class VentaController extends Controller
 
     public function pdf(Request $request, int $ventaId)
     {
+        $this->autorizarFacturacion($request);
         $this->asegurarTablasVenta();
 
         $formato = (string) $request->query('formato', 'a4');
@@ -217,11 +446,31 @@ class VentaController extends Controller
 
     public function xml(int $ventaId)
     {
+        $this->autorizarFacturacion(request());
         $this->asegurarTablasVenta();
 
         [$venta, $detalles] = $this->obtenerVentaConDetalles($ventaId);
         if (!$venta) {
             return response()->json(['message' => 'Venta no encontrada.'], 404);
+        }
+
+        if (($venta->codigo_tipo_comprobante ?? null) !== 'NV') {
+            try {
+                if ($venta->xml_firmado_ruta && Storage::disk('local')->exists($venta->xml_firmado_ruta)) {
+                    return response(Storage::disk('local')->get($venta->xml_firmado_ruta), 200, [
+                        'Content-Type' => 'application/xml; charset=UTF-8',
+                        'Content-Disposition' => "attachment; filename=\"{$venta->serie}-{$venta->numero}.xml\"",
+                    ]);
+                }
+                $firmado = $this->facturacionElectronica->generarXmlFirmado($ventaId);
+
+                return response($firmado['contenido'], 200, [
+                    'Content-Type' => 'application/xml; charset=UTF-8',
+                    'Content-Disposition' => "attachment; filename=\"{$firmado['nombre']}.xml\"",
+                ]);
+            } catch (\Throwable $e) {
+                return response()->json(['message' => $e->getMessage()], 422);
+            }
         }
 
         $xml = new \SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><comprobante></comprobante>');
@@ -258,6 +507,23 @@ class VentaController extends Controller
         return response($xml->asXML(), 200, [
             'Content-Type' => 'application/xml; charset=UTF-8',
             'Content-Disposition' => "attachment; filename=\"{$nombre}\"",
+        ]);
+    }
+
+    public function cdr(int $ventaId)
+    {
+        $this->autorizarFacturacion(request());
+        $venta = DB::table('ventas')->where('comprobante_venta_id', $ventaId)->first();
+        if (! $venta) {
+            return response()->json(['message' => 'Venta no encontrada.'], 404);
+        }
+        if (! $venta->cdr_ruta || ! Storage::disk('local')->exists($venta->cdr_ruta)) {
+            return response()->json(['message' => 'Este comprobante todavia no tiene un CDR disponible.'], 404);
+        }
+
+        return response(Storage::disk('local')->get($venta->cdr_ruta), 200, [
+            'Content-Type' => 'application/zip',
+            'Content-Disposition' => "attachment; filename=\"R-{$venta->serie}-{$venta->numero}.zip\"",
         ]);
     }
 
@@ -375,6 +641,19 @@ class VentaController extends Controller
         $nombres = implode(' ', $partes);
 
         return [$nombres !== '' ? $nombres : 'Cliente', $apellidos];
+    }
+
+    private function codigoUnidad(string $unidad): string
+    {
+        return match (strtoupper(trim($unidad))) {
+            'KG', 'KGM' => 'KGM',
+            default => 'NIU',
+        };
+    }
+
+    private function autorizarFacturacion(Request $request): void
+    {
+        abort_if($request->user()?->role === 'delivery', 403, 'El rol delivery no puede gestionar facturación.');
     }
 
     private function renderSimplePdf(string $content, float $width, float $height): string

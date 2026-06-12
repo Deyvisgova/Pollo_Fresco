@@ -285,6 +285,8 @@ app-root {
 
 .panel__rutas .tabla-contenedor,
 .panel__rutas .tabla__contenedor,
+.panel__rutas .tabla-scroll,
+.panel__rutas .tabla-ventas,
 .panel__rutas .tabla-pedidos__contenedor,
 .panel__rutas .seccion__tabla,
 .panel__rutas .modal__tabla,
@@ -297,6 +299,7 @@ app-root {
   max-width: 100%;
   max-height: min(64vh, 620px);
   box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
+  position: relative;
 }
 
 .panel__rutas table.tabla-sistema {
@@ -317,14 +320,116 @@ app-root {
 .panel__rutas table.tabla-sistema thead th {
   position: sticky;
   top: 0;
-  z-index: 2;
+  z-index: 5;
   background: #eef4ff;
+  background-clip: padding-box;
   color: #0d2c6f;
   border-bottom: 1px solid #d7e1f2;
+  box-shadow: 0 1px 0 #d7e1f2, 0 8px 14px rgba(15, 23, 42, 0.06);
   padding: 11px 12px;
   text-align: left;
   font-weight: 900;
   white-space: nowrap;
+}
+
+@media (min-width: 761px) {
+  .panel__rutas .tabla-contenedor,
+  .panel__rutas .tabla__contenedor,
+  .panel__rutas .tabla-scroll,
+  .panel__rutas .tabla-ventas,
+  .panel__rutas .tabla-pedidos__contenedor,
+  .panel__rutas .seccion__tabla,
+  .panel__rutas .modal__tabla,
+  .panel__rutas [class*='tabla-contenedor'],
+  .panel__rutas [class*='tabla__contenedor'] {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    max-height: none !important;
+    position: relative !important;
+  }
+
+  .panel__rutas table,
+  .panel__rutas table.tabla,
+  .panel__rutas table.tabla-sistema {
+    display: block !important;
+    width: 100% !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    table-layout: fixed !important;
+  }
+
+  .panel__rutas table thead,
+  .panel__rutas table.tabla-sistema thead {
+    display: table !important;
+    width: calc(100% - 15px) !important;
+    table-layout: fixed !important;
+    position: relative !important;
+    z-index: 30 !important;
+  }
+
+  .panel__rutas table thead th,
+  .panel__rutas table.tabla-sistema thead th {
+    position: static !important;
+    z-index: 31 !important;
+    background: #eef4ff !important;
+    background-clip: padding-box !important;
+    box-shadow: 0 1px 0 #d7e1f2, 0 8px 14px rgba(15, 23, 42, 0.08) !important;
+  }
+
+  .panel__rutas table tbody,
+  .panel__rutas table.tabla tbody,
+  .panel__rutas table.tabla-sistema tbody {
+    display: block !important;
+    width: 100% !important;
+    max-height: min(64vh, 620px) !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    scrollbar-gutter: stable;
+  }
+
+  .panel__rutas table thead tr,
+  .panel__rutas table tbody tr,
+  .panel__rutas table.tabla thead tr,
+  .panel__rutas table.tabla tbody tr,
+  .panel__rutas table.tabla-sistema thead tr,
+  .panel__rutas table.tabla-sistema tbody tr {
+    display: table !important;
+    width: 100% !important;
+    table-layout: fixed !important;
+  }
+}
+
+@media print {
+  .panel__rutas .tabla-contenedor,
+  .panel__rutas .tabla__contenedor,
+  .panel__rutas .tabla-scroll,
+  .panel__rutas .tabla-ventas,
+  .panel__rutas .tabla-pedidos__contenedor,
+  .panel__rutas .seccion__tabla,
+  .panel__rutas .modal__tabla {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .panel__rutas table {
+    display: table !important;
+  }
+
+  .panel__rutas table thead {
+    display: table-header-group !important;
+    width: auto !important;
+  }
+
+  .panel__rutas table tbody {
+    display: table-row-group !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .panel__rutas table thead tr,
+  .panel__rutas table tbody tr {
+    display: table-row !important;
+  }
 }
 
 .panel__rutas table.tabla-sistema tbody td {
@@ -482,6 +587,7 @@ app-root {
 
 .panel__rutas .accion-eliminar,
 .panel__rutas .boton--peligro,
+.panel__rutas .boton--peligro-solido,
 .panel__rutas .btn--peligro,
 .panel__rutas .btn-danger,
 .panel__rutas .boton-eliminar {
@@ -492,6 +598,7 @@ app-root {
 
 .panel__rutas .accion-eliminar:hover,
 .panel__rutas .boton--peligro:hover,
+.panel__rutas .boton--peligro-solido:hover,
 .panel__rutas .btn--peligro:hover,
 .panel__rutas .btn-danger:hover,
 .panel__rutas .boton-eliminar:hover {
@@ -889,6 +996,8 @@ app-root {
 
   .panel__rutas .tabla-contenedor,
   .panel__rutas .tabla__contenedor,
+  .panel__rutas .tabla-scroll,
+  .panel__rutas .tabla-ventas,
   .panel__rutas .tabla-pedidos__contenedor,
   .panel__rutas .seccion__tabla,
   .panel__rutas .modal__tabla,
@@ -923,6 +1032,9 @@ app-root {
     border-radius: 14px;
     padding: 10px 12px;
     box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: hidden;
   }
 
   .panel__rutas tbody td {
@@ -934,6 +1046,9 @@ app-root {
     justify-content: space-between;
     gap: 10px;
     min-width: 0;
+    min-height: 0 !important;
+    height: auto !important;
+    white-space: normal !important;
     text-align: left !important;
   }
 
@@ -960,6 +1075,63 @@ app-root {
     content: "";
     flex: 0 0 0;
     min-width: 0;
+  }
+
+  .panel__rutas tbody td:empty {
+    display: none !important;
+  }
+
+  .panel__rutas tbody td[data-label='Acciones'],
+  .panel__rutas tbody td[data-label='Accion'],
+  .panel__rutas tbody td[data-label='Opciones'] {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    align-items: stretch;
+  }
+
+  .panel__rutas tbody td[data-label='Acciones']::before,
+  .panel__rutas tbody td[data-label='Accion']::before,
+  .panel__rutas tbody td[data-label='Opciones']::before {
+    grid-column: 1 / -1;
+    flex: none;
+    min-width: 0;
+    margin-bottom: 2px;
+  }
+
+  .panel__rutas tbody td[data-label='Acciones'] button,
+  .panel__rutas tbody td[data-label='Accion'] button,
+  .panel__rutas tbody td[data-label='Opciones'] button,
+  .panel__rutas tbody td[data-label='Acciones'] a,
+  .panel__rutas tbody td[data-label='Accion'] a,
+  .panel__rutas tbody td[data-label='Opciones'] a {
+    width: 100%;
+    justify-content: center !important;
+    color: inherit;
+    min-height: 34px;
+  }
+
+  .panel__rutas tbody td[data-label='Acciones'] .switch,
+  .panel__rutas tbody td[data-label='Accion'] .switch,
+  .panel__rutas tbody td[data-label='Opciones'] .switch {
+    grid-column: 1 / -1;
+    width: 50px !important;
+    justify-self: start;
+  }
+
+  .panel__rutas tbody td[data-label='Acciones'] .boton--secundario,
+  .panel__rutas tbody td[data-label='Accion'] .boton--secundario,
+  .panel__rutas tbody td[data-label='Opciones'] .boton--secundario {
+    color: #0f2d5c !important;
+    background: #e8eef7 !important;
+  }
+
+  .panel__rutas tbody td[data-label='Acciones'] .boton--peligro,
+  .panel__rutas tbody td[data-label='Acciones'] .boton--peligro-solido,
+  .panel__rutas tbody td[data-label='Accion'] .boton--peligro,
+  .panel__rutas tbody td[data-label='Opciones'] .boton--peligro {
+    color: #ffffff !important;
+    background: #dc2626 !important;
   }
 
   .panel__rutas tbody td,

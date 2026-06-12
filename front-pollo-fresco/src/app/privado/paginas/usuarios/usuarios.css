@@ -77,7 +77,9 @@
 
 .tabla__contenedor {
   width: 100%;
-  overflow-x: auto;
+  max-height: min(64vh, 620px);
+  overflow: auto;
+  position: relative;
 }
 
 .tabla {
@@ -86,12 +88,21 @@
 
 table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 0.92rem;
 }
 
 thead {
   background: #f8fafc;
+}
+
+thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #eef4ff;
+  box-shadow: 0 1px 0 #d7e1f2, 0 8px 14px rgba(15, 23, 42, 0.06);
 }
 
 th,
@@ -141,6 +152,42 @@ td {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 16px;
+}
+
+.consulta-reniec {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 420px);
+  gap: 14px;
+  align-items: end;
+  margin-bottom: 18px;
+  padding: 14px;
+  border: 1px solid #dbeafe;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
+}
+
+.consulta-reniec strong {
+  color: #173668;
+}
+
+.consulta-reniec p {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 0.86rem;
+}
+
+.consulta-reniec__control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.consulta-reniec__control input {
+  min-height: 42px;
+  border-radius: 12px;
+  border: 1px solid #cbd5f5;
+  padding: 10px 12px;
+  background: #ffffff;
 }
 
 .campo {
@@ -290,9 +337,26 @@ td {
 }
 
 .boton--icono {
-  padding: 8px 12px;
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  min-width: 42px;
+  height: 42px;
+  padding: 0;
   border-radius: 10px;
   background: #f1f5f9;
+  color: #173668;
+  border: 1px solid #dbeafe;
+}
+
+.boton--icono svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .boton--cerrar {
@@ -354,4 +418,112 @@ td {
 
 .modal__contenedor form {
   width: 100%;
+}
+
+@media (max-width: 760px) {
+  .tabla__contenedor {
+    overflow: visible;
+  }
+
+  table,
+  thead,
+  tbody,
+  tr,
+  th,
+  td {
+    display: block;
+    width: 100%;
+  }
+
+  thead {
+    display: none;
+  }
+
+  tbody {
+    display: grid;
+    gap: 12px;
+  }
+
+  tbody tr {
+    border: 1px solid #d7e1f2;
+    border-radius: 14px;
+    padding: 10px 12px;
+    background: #ffffff;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.07);
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: hidden;
+  }
+
+  td {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: normal;
+    min-height: 0 !important;
+    height: auto !important;
+  }
+
+  td::before {
+    content: attr(data-label) ":";
+    flex: 0 0 110px;
+    color: #64748b;
+    font-weight: 700;
+  }
+
+  td:last-child {
+    border-bottom: 0;
+  }
+
+  .tabla__acciones {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    align-items: stretch;
+  }
+
+  .tabla__acciones::before {
+    grid-column: 1 / -1;
+    flex: none;
+  }
+
+  .tabla__acciones .boton {
+    width: 100%;
+  }
+
+  .switch--tabla {
+    justify-self: start;
+    grid-column: 1 / -1;
+    width: 50px;
+  }
+
+  .tabla__acciones .boton--secundario {
+    background: #e8eef7;
+    color: #0f2d5c;
+  }
+
+  .tabla__acciones .boton--peligro {
+    background: #dc2626;
+    color: #ffffff;
+  }
+
+  .consulta-reniec,
+  .consulta-reniec__control {
+    grid-template-columns: 1fr;
+  }
+
+  .modal {
+    align-items: flex-start;
+    padding: 12px;
+  }
+
+  .modal__contenedor {
+    width: 100%;
+    max-height: calc(100vh - 24px);
+    padding: 18px;
+    border-radius: 16px;
+  }
 }

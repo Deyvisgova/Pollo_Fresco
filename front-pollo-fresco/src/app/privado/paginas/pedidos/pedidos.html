@@ -188,7 +188,7 @@
             <select class="filtros-registros__control" [(ngModel)]="filtroEstadoPagoRegistros" (ngModelChange)="aplicarFiltro()">
               <option value="">Todos los pagos</option>
               <option value="PENDIENTE">Pendiente</option>
-              <option value="PARCIAL">Parcial</option>
+              <option value="PARCIAL">Pago recibido, queda saldo</option>
               <option value="COMPLETO">Completo</option>
               <option value="SIN REGISTRO">Sin registro</option>
               <option value="CANCELADO">Cancelado</option>
@@ -296,9 +296,38 @@
             <ng-template #sinPagoCliente><strong>Sin pagos registrados</strong></ng-template>
           </div>
 
+          <div class="cuenta-card__detalle">
+            <strong>Detalle pendiente</strong>
+            <div class="cuenta-card__pedido" *ngFor="let pedido of cuenta.pedidos.slice(0, 2)">
+              <div class="cuenta-card__pedido-top">
+                <span>Pedido #{{ pedido.pedido_id }} - {{ obtenerFechaHoraCorta(pedido.fecha_hora_creacion) }}</span>
+                <strong>Debe S/ {{ obtenerSaldoPendiente(pedido) | number: '1.2-2' }}</strong>
+              </div>
+              <div class="cuenta-card__producto" *ngFor="let detalle of pedido.detalles">
+                <span>{{ detalle.cantidad }} {{ detalle.unidad }} {{ detalle.descripcion }}</span>
+                  <strong>S/ {{ detalle.subtotal | number: '1.2-2' }}</strong>
+                </div>
+                <button
+                  type="button"
+                  class="boton boton--whatsapp boton--compacto"
+                  [disabled]="!tieneWhatsappCliente(cuenta.cliente)"
+                  (click)="abrirWhatsappPedidoPendiente(cuenta, pedido)">
+                  WhatsApp pedido
+                </button>
+            </div>
+            <small *ngIf="cuenta.pedidos.length > 2">Hay {{ cuenta.pedidos.length - 2 }} pedido(s) mas. Usa Ver cuenta.</small>
+          </div>
+
           <div class="cuenta-card__acciones">
             <button type="button" class="boton boton--primario" (click)="abrirRegistroPagoCliente(cuenta)">Registrar pago</button>
             <button type="button" class="boton boton--secundario" (click)="abrirCuentaCliente(cuenta)">Ver cuenta</button>
+            <button
+              type="button"
+              class="boton boton--whatsapp"
+              [disabled]="!tieneWhatsappCliente(cuenta.cliente)"
+              (click)="abrirWhatsappCuenta(cuenta)">
+              {{ tieneWhatsappCliente(cuenta.cliente) ? 'WhatsApp cuenta' : 'Sin WhatsApp' }}
+            </button>
           </div>
         </article>
       </div>
@@ -313,12 +342,60 @@
     <article class="tarjeta tarjetas-delivery tarjetas-delivery--movil">
       <div class="tarjeta__titulo delivery-header">
         <div>
-          <h4>Vista delivery de hoy</h4>
-          <p>Pedidos visibles solo durante el dia actual.</p>
+          <h4>{{ vistaDeliveryActiva === 'hoy' ? 'Entregas de hoy' : 'Cobros atrasados' }}</h4>
+          <p>{{ vistaDeliveryActiva === 'hoy' ? 'Pedidos visibles solo durante el dia actual.' : 'Pagos de clientes que deben de dias anteriores.' }}</p>
         </div>
-        <input type="text" [(ngModel)]="filtro" (ngModelChange)="aplicarFiltro()" placeholder="Buscar cliente..." />
+        <input *ngIf="vistaDeliveryActiva === 'hoy'" type="text" [(ngModel)]="filtro" (ngModelChange)="aplicarFiltro()" placeholder="Buscar cliente..." />
+        <input *ngIf="vistaDeliveryActiva === 'cobros'" type="text" [(ngModel)]="filtroCobrosAtrasados" placeholder="Buscar cliente o producto..." />
       </div>
 
+      <div class="delivery-switch">
+        <button type="button" [class.activo]="vistaDeliveryActiva === 'hoy'" (click)="cambiarVistaDelivery('hoy')">Entregas de hoy</button>
+        <button type="button" [class.activo]="vistaDeliveryActiva === 'cobros'" (click)="cambiarVistaDelivery('cobros')">
+          Cobros atrasados
+          <span *ngIf="cobrosAtrasadosDelivery.length">{{ cobrosAtrasadosDelivery.length }}</span>
+        </button>
+      </div>
+
+      <section class="delivery-bloque delivery-bloque--cobros" *ngIf="vistaDeliveryActiva === 'cobros' && cobrosAtrasadosFiltrados().length">
+        <p class="delivery-bloque__ayuda">Clientes que pagan de dias anteriores. Se muestra el detalle exacto de lo entregado.</p>
+        <div class="delivery-grid delivery-grid--movil">
+          <article class="delivery-card delivery-card--movil delivery-card--cobro" *ngFor="let cuenta of cobrosAtrasadosFiltrados()">
+            <div class="delivery-card__cabecera">
+              <h5>{{ obtenerNombreCliente(cuenta.cliente) }}</h5>
+              <strong class="badge badge--warning">Debe S/ {{ cuenta.saldo_pendiente | number: '1.2-2' }}</strong>
+            </div>
+
+            <div class="delivery-card__fila"><span>Pedidos</span><strong>{{ cuenta.cantidad_pedidos_pendientes }}</strong></div>
+            <div class="delivery-card__fila"><span>Deuda antigua</span><strong>{{ obtenerFechaHoraCorta(cuenta.fecha_deuda_mas_antigua) }}</strong></div>
+
+            <div class="cobro-pedido" *ngFor="let pedido of cuenta.pedidos">
+              <div class="cobro-pedido__cabecera">
+                <strong>Pedido #{{ pedido.pedido_id }}</strong>
+                <span>{{ obtenerFechaLarga(pedido.fecha_hora_creacion) }}</span>
+              </div>
+              <div class="cobro-detalle" *ngFor="let detalle of pedido.detalles">
+                <span>{{ detalle.cantidad }} {{ detalle.unidad }} {{ detalle.descripcion }}</span>
+                <strong>S/ {{ detalle.subtotal | number: '1.2-2' }}</strong>
+              </div>
+              <div class="cobro-pedido__total">
+                <span>Total S/ {{ pedido.total | number: '1.2-2' }}</span>
+                <strong>Saldo S/ {{ obtenerSaldoPendiente(pedido) | number: '1.2-2' }}</strong>
+              </div>
+              <div class="delivery-card__acciones delivery-card__acciones--movil">
+                <button type="button" (click)="abrirDetallePedido(pedido)">Detalle</button>
+                <button type="button" (click)="abrirRegistroPagoCuenta(pedido)">Registrar pago</button>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <p class="tabla__sin-resultados" *ngIf="vistaDeliveryActiva === 'cobros' && !cargando && cobrosAtrasadosFiltrados().length === 0">
+        No hay cobros atrasados pendientes.
+      </p>
+
+      <ng-container *ngIf="vistaDeliveryActiva === 'hoy'">
       <section class="delivery-bloque" *ngIf="pedidosPendientesDelivery().length">
         <h5>Pendientes</h5>
         <div class="delivery-grid delivery-grid--movil">
@@ -394,6 +471,7 @@
       <p class="tabla__sin-resultados" *ngIf="!cargando && pedidosFiltrados.length === 0">
         No hay pedidos visibles para hoy en la vista delivery.
       </p>
+      </ng-container>
     </article>
   </div>
 </section>
@@ -472,6 +550,12 @@
           <div>
             <strong>Pedido #{{ obtenerNumeroVisualPedido(pedido) }}  {{ obtenerTipoPedido(pedido) }}</strong>
             <span>{{ obtenerFechaLarga(pedido.fecha_hora_creacion) }}</span>
+            <div class="cuenta-pedido__detalle">
+              <div *ngFor="let detalle of pedido.detalles">
+                <span>{{ detalle.cantidad }} {{ detalle.unidad }} {{ detalle.descripcion }}</span>
+                <strong>S/ {{ detalle.subtotal | number: '1.2-2' }}</strong>
+              </div>
+            </div>
           </div>
           <div>
             <span>Total S/ {{ pedido.total | number: '1.2-2' }}</span>
@@ -565,29 +649,11 @@
           <h5>Control de pagos</h5>
           <div class="formulario-grid formulario-grid--comprobante">
             <div class="campo">
-              <label>Estado de pago</label>
-              <select [(ngModel)]="estadoPago">
-                <option value="COMPLETO">Completo</option>
-                <option value="PENDIENTE">Pendiente</option>
-                <option value="PARCIAL">Parcial</option>
-              </select>
-            </div>
-
-            <div class="campo" *ngIf="estadoPago === 'COMPLETO'">
-              <label>Monto total recibido</label>
+              <label>Monto recibido del cliente</label>
               <input type="number" min="0" step="0.01" [(ngModel)]="montoRecibido" />
-              <small *ngIf="calcularVuelto() > 0">Vuelto: S/ {{ calcularVuelto() | number: '1.2-2' }}</small>
-            </div>
-
-            <div class="campo" *ngIf="estadoPago === 'PENDIENTE'">
-              <label>Monto a pagar</label>
-              <input type="number" min="0" step="0.01" [(ngModel)]="montoRecibido" />
-            </div>
-
-            <div class="campo" *ngIf="estadoPago === 'PARCIAL'">
-              <label>Valor a pagar</label>
-              <input type="number" min="0" step="0.01" [(ngModel)]="pagoParcial" />
-              <small>Saldo pendiente: S/ {{ calcularSaldoPendiente() | number: '1.2-2' }}</small>
+              <small *ngIf="calcularSaldoPendiente() > 0">Queda pendiente: S/ {{ calcularSaldoPendiente() | number: '1.2-2' }}</small>
+              <small *ngIf="calcularVuelto() > 0">Dar vuelto: S/ {{ calcularVuelto() | number: '1.2-2' }}</small>
+              <small *ngIf="calcularSaldoPendiente() === 0 && calcularVuelto() === 0">Pago exacto.</small>
             </div>
 
             <div class="campo">

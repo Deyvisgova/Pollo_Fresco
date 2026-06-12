@@ -48,8 +48,7 @@
 .seccion__tabla {
   width: 100%;
   max-height: 58vh;
-  overflow-x: auto;
-  overflow-y: auto;
+  overflow: auto;
   position: relative;
   z-index: 3;
   overscroll-behavior: contain;
@@ -57,7 +56,8 @@
 
 .seccion__tabla table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   table-layout: fixed;
 }
 
@@ -98,8 +98,9 @@
 .seccion__tabla th {
   position: sticky;
   top: 0;
-  z-index: 5;
-  background: #f8fafc;
+  z-index: 20;
+  background: #eef4ff;
+  box-shadow: 0 1px 0 #d7e1f2, 0 8px 14px rgba(15, 23, 42, 0.08);
   white-space: nowrap;
   font-weight: 700;
   color: #334155;

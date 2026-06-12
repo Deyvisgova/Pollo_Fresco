@@ -17,8 +17,8 @@ h2 { font-size: 30px; } h3 { font-size: 22px; }
 .kpi strong { color: #10213d; font-size: 22px; }
 .kpi--principal { background: #163568; border-color: #163568; }.kpi--principal span, .kpi--principal strong { color: #fff; }
 .tabla-scroll { overflow: auto; max-height: 62vh; border: 1px solid #d7e1ef; border-radius: 8px; }
-.tabla-sistema { width: 100%; border-collapse: collapse; min-width: 860px; font-size: 13px; }
-.tabla-sistema th { position: sticky; top: 0; z-index: 1; background: #edf3fb; color: #173668; text-align: left; }
+.tabla-sistema { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 860px; font-size: 13px; }
+.tabla-sistema th { position: sticky; top: 0; z-index: 20; background: #edf3fb; color: #173668; text-align: left; box-shadow: 0 1px 0 #d7e1f2, 0 8px 14px rgba(15, 23, 42, 0.08); }
 .tabla-sistema th, .tabla-sistema td { padding: 11px 12px; border-bottom: 1px solid #dce5f1; }
 .tabla-sistema tbody tr:hover { background: #f7faff; }
 .estado { display: inline-flex; padding: 5px 9px; border-radius: 999px; color: #08753b; background: #dcf8e8; font-size: 11px; font-weight: 800; }

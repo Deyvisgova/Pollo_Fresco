@@ -6,10 +6,14 @@ use App\Http\Controllers\Api\UsuariosController;
 
 
 use App\Http\Controllers\Api\ClienteController;
+use App\Http\Controllers\Api\ComprobantePdfController;
 use App\Http\Controllers\Api\ConfiguracionController;
+use App\Http\Controllers\Api\ConfiguracionSunatController;
+use App\Http\Controllers\Api\DocumentoIdentidadController;
 use App\Http\Controllers\Api\EntregaProveedorController;
 use App\Http\Controllers\Api\GastoController;
 use App\Http\Controllers\Api\OtrosProductosController;
+use App\Http\Controllers\Api\OperacionSunatController;
 use App\Http\Controllers\Api\PagoProveedorController;
 use App\Http\Controllers\Api\PaginaPublicaController;
 use App\Http\Controllers\Api\PedidoDeliveryController;
@@ -124,16 +128,34 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('configuracion/logo', [ConfiguracionController::class, 'subirLogo']);
     Route::delete('configuracion/logo', [ConfiguracionController::class, 'eliminarLogo']);
+    Route::get('configuracion/sunat', [ConfiguracionSunatController::class, 'mostrar']);
+    Route::put('configuracion/sunat', [ConfiguracionSunatController::class, 'guardar']);
+    Route::post('configuracion/sunat/certificado', [ConfiguracionSunatController::class, 'subirCertificado']);
     Route::put('pagina-publica', [PaginaPublicaController::class, 'guardar']);
     Route::post('pagina-publica/imagen', [PaginaPublicaController::class, 'subirImagen']);
+    Route::get('documentos/{tipo}/{numero}', [DocumentoIdentidadController::class, 'mostrar'])
+        ->whereIn('tipo', ['dni', 'ruc'])
+        ->whereNumber('numero');
 
     Route::get('ventas', [VentaController::class, 'index']);
+    Route::get('ventas/siguiente-correlativo', [VentaController::class, 'siguienteCorrelativo']);
     Route::post('ventas', [VentaController::class, 'store']);
-    Route::get('ventas/{ventaId}/pdf', [VentaController::class, 'pdf']);
+    Route::post('ventas/{ventaId}/nota-credito', [VentaController::class, 'crearNotaCredito']);
+    Route::post('ventas/{ventaId}/nota-debito', [VentaController::class, 'crearNotaDebito']);
+    Route::post('ventas/{ventaId}/enviar-sunat', [VentaController::class, 'enviarSunat']);
+    Route::get('ventas/{ventaId}/pdf', [ComprobantePdfController::class, 'descargar']);
     Route::get('ventas/{ventaId}/xml', [VentaController::class, 'xml']);
+    Route::get('ventas/{ventaId}/cdr', [VentaController::class, 'cdr']);
+    Route::get('sunat/resumenes', [OperacionSunatController::class, 'resumenes']);
+    Route::post('sunat/resumenes', [OperacionSunatController::class, 'enviarResumen']);
+    Route::post('sunat/resumenes/{resumenId}/consultar', [OperacionSunatController::class, 'consultarResumen']);
+    Route::get('sunat/bajas', [OperacionSunatController::class, 'bajas']);
+    Route::post('sunat/bajas/ventas/{ventaId}', [OperacionSunatController::class, 'enviarBaja']);
+    Route::post('sunat/bajas/{bajaId}/consultar', [OperacionSunatController::class, 'consultarBaja']);
 
     Route::get('pedidos-delivery', [PedidoDeliveryController::class, 'index']);
     Route::post('pedidos-delivery', [PedidoDeliveryController::class, 'store']);
+    Route::get('pedidos-delivery/cobros-atrasados', [PedidoDeliveryController::class, 'cobrosAtrasadosDelivery']);
     Route::get('cuentas-por-cobrar', [PedidoDeliveryController::class, 'cuentasPorCobrar']);
     Route::post('cuentas-por-cobrar/clientes/{cliente}/pagos', [PedidoDeliveryController::class, 'registrarPagoCliente']);
     Route::patch('pedidos-delivery/{pedido}/tomar', [PedidoDeliveryController::class, 'tomarPedido']);

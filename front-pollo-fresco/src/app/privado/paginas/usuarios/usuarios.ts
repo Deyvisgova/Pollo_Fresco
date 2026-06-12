@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { UsuariosServicio, UsuarioApi } from '../../../servicios/usuarios.servicio';
@@ -31,8 +32,11 @@ export class PrivadoUsuarios implements OnInit {
   mostrarModal = false;
   mostrarPassword = false;
   mostrarConfirmacion = false;
+  consultaDni = '';
+  consultaCargando = false;
   usuarioSeleccionado: UsuarioApi | null = null;
   formulario: UsuarioFormulario = this.crearFormularioVacio();
+  private readonly tokenApiPeru = 'f3ba6fa1f3a2b2d1a6390dc06d831ebad2f218a9d3ba43e7f1f42b425dd03e26';
 
   roles = [
     { id: 1, nombre: 'Administrador' },
@@ -40,7 +44,10 @@ export class PrivadoUsuarios implements OnInit {
     { id: 3, nombre: 'Delivery' }
   ];
 
-  constructor(private readonly usuariosServicio: UsuariosServicio) {}
+  constructor(
+    private readonly usuariosServicio: UsuariosServicio,
+    private readonly http: HttpClient
+  ) {}
 
   ngOnInit(): void {
     this.cargarUsuarios();
@@ -89,6 +96,9 @@ export class PrivadoUsuarios implements OnInit {
     this.modoEdicion = false;
     this.usuarioSeleccionado = null;
     this.formulario = this.crearFormularioVacio();
+    this.consultaDni = '';
+    this.mostrarPassword = false;
+    this.mostrarConfirmacion = false;
     this.mostrarModal = true;
   }
 
@@ -106,6 +116,9 @@ export class PrivadoUsuarios implements OnInit {
       password_confirmation: '',
       activo: usuario.activo
     };
+    this.consultaDni = '';
+    this.mostrarPassword = false;
+    this.mostrarConfirmacion = false;
     this.mostrarModal = true;
   }
 
@@ -113,6 +126,41 @@ export class PrivadoUsuarios implements OnInit {
     this.mostrarModal = false;
     this.mostrarPassword = false;
     this.mostrarConfirmacion = false;
+    this.consultaDni = '';
+    this.consultaCargando = false;
+  }
+
+  consultarDniReniec(): void {
+    const dni = this.consultaDni.replace(/\D/g, '');
+    if (dni.length !== 8) {
+      this.mensajeError = 'Ingresa un DNI valido de 8 digitos para consultar RENIEC.';
+      return;
+    }
+
+    this.consultaCargando = true;
+    this.mensajeError = '';
+
+    this.http
+      .get<{ data?: Record<string, unknown>; success?: boolean; message?: string }>(
+        `https://apiperu.dev/api/dni/${dni}?api_token=${this.tokenApiPeru}`
+      )
+      .subscribe({
+        next: (respuesta) => {
+          const datos = respuesta?.data ?? {};
+          if (!respuesta?.success || !Object.keys(datos).length) {
+            this.mensajeError = respuesta?.message || 'No se encontraron datos para ese DNI.';
+            return;
+          }
+
+          this.autocompletarDesdeDni(datos, dni);
+        },
+        error: () => {
+          this.mensajeError = 'No pudimos conectar con RENIEC. Revisa el DNI e intenta nuevamente.';
+        },
+        complete: () => {
+          this.consultaCargando = false;
+        }
+      });
   }
 
   guardarUsuario(): void {
@@ -262,6 +310,32 @@ export class PrivadoUsuarios implements OnInit {
       password_confirmation: '',
       activo: true
     };
+  }
+
+  private autocompletarDesdeDni(datos: Record<string, unknown>, dni: string): void {
+    const apellidoPaterno = String(datos['apellido_paterno'] ?? '');
+    const apellidoMaterno = String(datos['apellido_materno'] ?? '');
+    const nombres = String(datos['nombres'] ?? datos['nombre'] ?? '');
+    const apellidos = `${apellidoPaterno} ${apellidoMaterno}`.trim() || String(datos['apellido'] ?? '');
+
+    this.formulario = {
+      ...this.formulario,
+      nombres: nombres || String(datos['nombre_completo'] ?? this.formulario.nombres),
+      apellidos: apellidos || this.formulario.apellidos,
+      usuario: this.formulario.usuario || this.crearUsuarioSugerido(nombres, apellidos, dni)
+    };
+  }
+
+  private crearUsuarioSugerido(nombres: string, apellidos: string, dni: string): string {
+    const primerNombre = nombres.trim().split(/\s+/)[0] ?? '';
+    const primerApellido = apellidos.trim().split(/\s+/)[0] ?? '';
+    const base = `${primerNombre}.${primerApellido}`
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9.]/g, '')
+      .toLowerCase();
+
+    return base || dni;
   }
 
   private obtenerPayload() {

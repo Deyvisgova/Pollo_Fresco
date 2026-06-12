@@ -52,17 +52,30 @@
 
 .seccion__tabla {
   width: 100%;
-  overflow-x: auto;
+  max-height: min(64vh, 620px);
+  overflow: auto;
+  position: relative;
+  border: 1px solid #d7e1f2;
+  border-radius: 10px;
 }
 
 table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 14px;
 }
 
 thead {
   background: #e2e8f0;
+}
+
+thead th {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: #eef4ff;
+  box-shadow: 0 1px 0 #d7e1f2, 0 8px 14px rgba(15, 23, 42, 0.08);
 }
 
 th,
@@ -296,12 +309,15 @@ td {
 
 .modal__tabla {
   width: 100%;
-  overflow-x: auto;
+  max-height: min(58vh, 520px);
+  overflow: auto;
+  position: relative;
 }
 
 .modal__tabla table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
 }
 
 .modal__tabla th,
@@ -309,6 +325,14 @@ td {
   padding: 10px 12px;
   border-bottom: 1px solid #e2e8f0;
   text-align: left;
+}
+
+.modal__tabla th {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: #eef4ff;
+  box-shadow: 0 1px 0 #d7e1f2, 0 8px 14px rgba(15, 23, 42, 0.08);
 }
 
 .modal__acciones {
