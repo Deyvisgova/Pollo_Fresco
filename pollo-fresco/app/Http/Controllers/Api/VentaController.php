@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Pedido;
 use App\Services\Facturacion\CorrelativoComprobanteService;
 use App\Services\Facturacion\FacturacionElectronicaService;
 use Illuminate\Database\Schema\Blueprint;
@@ -248,11 +249,12 @@ class VentaController extends Controller
 
         $validator = Validator::make($request->all(), [
             'tipo_comprobante' => ['required', 'string', 'in:factura,boleta,nota-venta'],
-            'fecha_emision' => ['required', 'date'],
-            'moneda' => ['required', 'string', 'max:10'],
-            'forma_pago' => ['required', 'string', 'max:40'],
-            'metodo_pago' => ['required', 'string', 'max:30'],
-            'cliente_tipo_documento' => ['nullable', 'string', 'max:10'],
+            'fecha_emision' => ['required', 'date', 'before_or_equal:today'],
+            'moneda' => ['required', 'in:PEN'],
+            'forma_pago' => ['required', 'in:Contado'],
+            'metodo_pago' => ['required', 'in:efectivo,tarjeta,transferencia,plin,yape,otro'],
+            'pedido_id' => ['nullable', 'integer', 'exists:pedidos,pedido_id'],
+            'cliente_tipo_documento' => ['nullable', 'in:ruc,dni'],
             'cliente_documento' => ['nullable', 'string', 'max:20'],
             'cliente_nombre' => ['nullable', 'string', 'max:150'],
             'cliente_direccion' => ['nullable', 'string', 'max:255'],
@@ -265,7 +267,7 @@ class VentaController extends Controller
             'detalles.*.descripcion' => ['required', 'string', 'max:120'],
             'detalles.*.unidad' => ['required', 'string', 'max:10'],
             'detalles.*.cantidad' => ['required', 'numeric', 'gt:0'],
-            'detalles.*.precio_unitario' => ['required', 'numeric', 'min:0'],
+            'detalles.*.precio_unitario' => ['required', 'numeric', 'gt:0'],
         ]);
 
         if ($validator->fails()) {
@@ -282,6 +284,11 @@ class VentaController extends Controller
                 'message' => 'Una factura requiere un cliente identificado con RUC de 11 dígitos.',
             ], 422);
         }
+        if ($tipoComprobante === 'factura' && trim((string) $request->input('cliente_nombre')) === '') {
+            return response()->json([
+                'message' => 'Una factura requiere la razon social del cliente.',
+            ], 422);
+        }
         if ($tipoComprobante === 'boleta' && $documentoCliente !== '' && strlen($documentoCliente) !== 8) {
             return response()->json([
                 'message' => 'Para una boleta, el DNI debe tener 8 dígitos.',
@@ -291,6 +298,25 @@ class VentaController extends Controller
         $usuario = $request->user();
         if (!$usuario) {
             return response()->json(['message' => 'Usuario no autenticado'], 401);
+        }
+
+        $pedidoId = $request->integer('pedido_id') ?: null;
+        if ($pedidoId !== null) {
+            if (!in_array($tipoComprobante, ['factura', 'boleta'], true)) {
+                return response()->json([
+                    'message' => 'Desde un pedido pagado solo puedes emitir boleta o factura.',
+                ], 422);
+            }
+            $pedido = Pedido::with(['detalles', 'pagos'])->find($pedidoId);
+            if (!$pedido) {
+                return response()->json(['message' => 'El pedido indicado no existe.'], 404);
+            }
+            if ($this->saldoPedido($pedido) > 0) {
+                return response()->json(['message' => 'El pedido debe estar completamente pagado antes de emitir el comprobante.'], 422);
+            }
+            if (DB::table('ventas')->where('pedido_id', $pedidoId)->exists()) {
+                return response()->json(['message' => 'Este pedido ya tiene un comprobante emitido.'], 422);
+            }
         }
 
         $detalles = collect($request->input('detalles', []))
@@ -315,6 +341,11 @@ class VentaController extends Controller
             ->values();
 
         $totalCalculado = round((float) $detalles->sum('total_linea'), 2);
+        if ($pedidoId !== null && abs($totalCalculado - round((float) $pedido->total, 2)) > 0.009) {
+            return response()->json([
+                'message' => 'El total del comprobante debe coincidir con el total del pedido.',
+            ], 422);
+        }
         $montoRecibido = $request->input('monto_recibido');
         $vueltoCalculado = $montoRecibido === null ? 0 : max(round(((float) $montoRecibido) - $totalCalculado, 2), 0);
 
@@ -330,6 +361,7 @@ class VentaController extends Controller
 
             $ventaId = DB::table('ventas')->insertGetId([
                 'usuario_id' => $usuario->usuario_id,
+                'pedido_id' => $pedidoId,
                 'tipo_comprobante' => $tipoComprobante,
                 'codigo_tipo_comprobante' => $correlativo['codigo_tipo_comprobante'],
                 'serie' => $correlativo['serie'],
@@ -387,6 +419,28 @@ class VentaController extends Controller
         $venta = DB::table('ventas')->where('comprobante_venta_id', $ventaId)->first();
 
         return response()->json($venta, 201);
+    }
+
+    public function prepararDesdePedido(Request $request, Pedido $pedido)
+    {
+        $this->autorizarFacturacion($request);
+        $this->asegurarTablasVenta();
+
+        $pedido->load(['cliente', 'detalles', 'pagos']);
+        $comprobante = DB::table('ventas')->where('pedido_id', $pedido->pedido_id)->first();
+        $saldo = $this->saldoPedido($pedido);
+
+        return response()->json([
+            'pedido_id' => $pedido->pedido_id,
+            'tipo_pedido' => $pedido->tipo_pedido,
+            'mesa' => $pedido->mesa,
+            'total' => round((float) $pedido->total, 2),
+            'saldo_pendiente' => $saldo,
+            'pagado_completo' => $saldo <= 0,
+            'comprobante' => $comprobante,
+            'cliente' => $pedido->cliente,
+            'detalles' => $pedido->detalles,
+        ]);
     }
 
     public function pdf(Request $request, int $ventaId)
@@ -694,6 +748,7 @@ class VentaController extends Controller
             Schema::create('ventas', function (Blueprint $table) {
                 $table->bigIncrements('comprobante_venta_id');
                 $table->unsignedInteger('usuario_id');
+                $table->unsignedBigInteger('pedido_id')->nullable()->unique('ventas_pedido_unique');
                 $table->string('tipo_comprobante', 20);
                 $table->string('serie', 10);
                 $table->string('numero', 20);
@@ -744,6 +799,7 @@ class VentaController extends Controller
     private function asegurarColumnasTablaVentas(): void
     {
         $columnas = [
+            'pedido_id' => fn (Blueprint $table) => $table->unsignedBigInteger('pedido_id')->nullable()->after('usuario_id'),
             'metodo_pago' => fn (Blueprint $table) => $table->string('metodo_pago', 30)->default('efectivo')->after('forma_pago'),
             'cliente_tipo_documento' => fn (Blueprint $table) => $table->string('cliente_tipo_documento', 10)->nullable()->after('metodo_pago'),
             'cliente_documento' => fn (Blueprint $table) => $table->string('cliente_documento', 20)->nullable()->after('cliente_tipo_documento'),
@@ -762,6 +818,23 @@ class VentaController extends Controller
                 Schema::table('ventas', $callback);
             }
         }
+
+        if (Schema::hasColumn('ventas', 'pedido_id')) {
+            try {
+                Schema::table('ventas', fn (Blueprint $table) => $table->unique('pedido_id', 'ventas_pedido_unique'));
+            } catch (\Throwable) {
+                // El indice ya existe.
+            }
+        }
+    }
+
+    private function saldoPedido(Pedido $pedido): float
+    {
+        $pagado = $pedido->pagos
+            ->where('estado_pago', '<>', 'PENDIENTE')
+            ->sum(fn ($pago) => (float) ($pago->pago_parcial ?? 0));
+
+        return max(0, round((float) $pedido->total - $pagado, 2));
     }
 
     private function asegurarColumnasTablaVentaDetalle(): void

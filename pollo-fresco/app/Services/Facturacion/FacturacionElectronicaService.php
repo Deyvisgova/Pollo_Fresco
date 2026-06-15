@@ -470,7 +470,7 @@ class FacturacionElectronicaService
                 ->setTipoDoc('03')
                 ->setSerieNro("{$boleta->serie}-" . (ltrim($boleta->numero, '0') ?: '0'))
                 ->setEstado('1')
-                ->setClienteTipo($boleta->cliente_documento ? '1' : '0')
+                ->setClienteTipo($boleta->cliente_tipo_documento === 'ruc' ? '6' : ($boleta->cliente_documento ? '1' : '0'))
                 ->setClienteNro($boleta->cliente_documento ?: '00000000')
                 ->setTotal((float) $boleta->total)
                 ->setMtoOperGravadas((float) $boleta->operacion_gravada)

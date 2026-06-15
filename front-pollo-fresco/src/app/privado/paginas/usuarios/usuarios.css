@@ -80,6 +80,10 @@
   max-height: min(64vh, 620px);
   overflow: auto;
   position: relative;
+  border: 1px solid #d7e1f2;
+  border-radius: 12px;
+  background: #ffffff;
+  scrollbar-gutter: stable;
 }
 
 .tabla {
@@ -88,9 +92,11 @@
 
 table {
   width: 100%;
+  min-width: 1040px;
   border-collapse: separate;
   border-spacing: 0;
   font-size: 0.92rem;
+  table-layout: fixed;
 }
 
 thead {
@@ -110,7 +116,50 @@ td {
   padding: 12px 10px;
   text-align: left;
   border-bottom: 1px solid #e2e8f0;
-  white-space: nowrap;
+  white-space: normal;
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+th:nth-child(1),
+td:nth-child(1) {
+  width: 64px;
+}
+
+th:nth-child(2),
+td:nth-child(2) {
+  width: 130px;
+}
+
+th:nth-child(3),
+td:nth-child(3) {
+  width: 150px;
+}
+
+th:nth-child(4),
+td:nth-child(4) {
+  width: 230px;
+}
+
+th:nth-child(5),
+td:nth-child(5) {
+  width: 240px;
+}
+
+th:nth-child(6),
+td:nth-child(6) {
+  width: 120px;
+}
+
+th:nth-child(7),
+td:nth-child(7) {
+  width: 180px;
+}
+
+th:nth-child(8),
+td:nth-child(8) {
+  width: 210px;
 }
 
 .tabla__vacia {
@@ -123,6 +172,23 @@ td {
   display: flex;
   gap: 8px;
   justify-content: flex-start;
+  align-items: center;
+  flex-wrap: nowrap;
+  overflow: visible;
+}
+
+.tabla__acciones-contenido {
+  display: grid;
+  grid-template-columns: 54px 72px 86px;
+  align-items: center;
+  gap: 8px;
+  width: max-content;
+}
+
+.nota {
+  color: #64748b;
+  font-size: 0.78rem;
+  line-height: 1.35;
 }
 
 .estado {
@@ -233,22 +299,23 @@ td {
   display: inline-block;
   width: 50px;
   height: 28px;
+  flex: 0 0 auto;
 }
 
 .switch--tabla {
-  width: 44px;
-  height: 24px;
+  width: 54px;
+  height: 30px;
 }
 
 .switch--tabla .switch__slider::before {
-  height: 18px;
-  width: 18px;
-  left: 3px;
+  height: 22px;
+  width: 22px;
+  left: 4px;
   bottom: 3px;
 }
 
 .switch--tabla input:checked + .switch__slider::before {
-  transform: translateX(20px);
+  transform: translateX(24px);
 }
 
 .switch input {
@@ -264,9 +331,11 @@ td {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #e2e8f0;
-  transition: 0.3s;
+  background: linear-gradient(180deg, #fee2e2 0%, #fecaca 100%);
+  border: 1px solid #fca5a5;
+  transition: 0.22s ease;
   border-radius: 999px;
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.12);
 }
 
 .switch__slider::before {
@@ -277,16 +346,28 @@ td {
   left: 3px;
   bottom: 3px;
   background-color: white;
-  transition: 0.3s;
+  transition: 0.22s ease;
   border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.22);
 }
 
 .switch input:checked + .switch__slider {
-  background-color: #38bdf8;
+  background: linear-gradient(180deg, #38bdf8 0%, #0ea5e9 100%);
+  border-color: #0284c7;
+  box-shadow: 0 8px 16px rgba(14, 165, 233, 0.2), inset 0 1px 2px rgba(255, 255, 255, 0.25);
 }
 
 .switch input:checked + .switch__slider::before {
   transform: translateX(22px);
+}
+
+.switch--tabla input:checked + .switch__slider::before {
+  transform: translateX(24px);
+}
+
+.switch input:focus-visible + .switch__slider {
+  outline: 3px solid rgba(37, 99, 235, 0.24);
+  outline-offset: 2px;
 }
 
 .formulario__acciones {
@@ -365,13 +446,15 @@ td {
 }
 
 .boton--secundario {
-  background: #fef3c7;
-  color: #92400e;
+  background: #f97316;
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(249, 115, 22, 0.18);
 }
 
 .boton--peligro {
-  background: #fee2e2;
-  color: #991b1b;
+  background: #dc2626;
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(220, 38, 38, 0.18);
 }
 
 .modal {
@@ -423,6 +506,8 @@ td {
 @media (max-width: 760px) {
   .tabla__contenedor {
     overflow: visible;
+    border: 0;
+    border-radius: 0;
   }
 
   table,
@@ -494,10 +579,17 @@ td {
     width: 100%;
   }
 
+  .tabla__acciones-contenido {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 54px 1fr 1fr;
+    width: 100%;
+  }
+
   .switch--tabla {
     justify-self: start;
     grid-column: 1 / -1;
-    width: 50px;
+    width: 54px;
   }
 
   .tabla__acciones .boton--secundario {

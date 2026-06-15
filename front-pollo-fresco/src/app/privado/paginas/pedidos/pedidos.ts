@@ -1,7 +1,13 @@
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpClientModule, HttpHeaders, HttpParams } from '@angular/common/http';
+import {
+  HttpClient,
+  HttpClientModule,
+  HttpHeaders,
+  HttpParams,
+} from '@angular/common/http';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { SesionServicio } from '../../../servicios/sesion.servicio';
 
 interface PedidoCliente {
@@ -55,6 +61,13 @@ interface PedidoDelivery {
   detalles: PedidoDetalleApi[];
   pagos: PedidoPago[];
   delivery_usuario_id?: number | null;
+  comprobante?: {
+    comprobante_venta_id: number;
+    tipo_comprobante: string;
+    serie: string;
+    numero: string;
+    estado_sunat: string;
+  } | null;
 }
 
 interface CuentaPagoHistorial {
@@ -110,14 +123,18 @@ interface ProductoApi {
   grupo_venta: 'HUEVOS' | 'CONGELADO' | 'OTROS';
 }
 
-type PresentacionHuevo = 'UNIDAD' | 'MEDIO_CASILLERO' | 'CASILLERO' | 'MEDIA_JAVA' | 'JAVA';
+type PresentacionHuevo =
+  | 'UNIDAD'
+  | 'MEDIO_CASILLERO'
+  | 'CASILLERO'
+  | 'MEDIA_JAVA'
+  | 'JAVA';
 
 interface LoteApi {
   producto_id: number;
   cantidad: number;
   estado: 'ABIERTO' | 'CERRADO';
 }
-
 
 interface EstadoVentaDiariaPedidoApi {
   filas: Array<{
@@ -138,12 +155,14 @@ interface EstadoVentaDiariaPedidoApi {
   standalone: true,
   imports: [CommonModule, FormsModule, HttpClientModule],
   templateUrl: './pedidos.html',
-  styleUrl: './pedidos.css'
+  styleUrl: './pedidos.css',
 })
 export class PrivadoPedidos implements OnInit, OnDestroy {
-  private token = 'f3ba6fa1f3a2b2d1a6390dc06d831ebad2f218a9d3ba43e7f1f42b425dd03e26';
+  private token =
+    'f3ba6fa1f3a2b2d1a6390dc06d831ebad2f218a9d3ba43e7f1f42b425dd03e26';
 
-  subpaginaActiva: 'registrar' | 'registros' | 'cuentas' | 'delivery' = 'registrar';
+  subpaginaActiva: 'registrar' | 'registros' | 'cuentas' | 'delivery' =
+    'registrar';
   vistaDeliveryActiva: 'hoy' | 'cobros' = 'hoy';
   private solicitudPedidosId = 0;
 
@@ -205,17 +224,27 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
   private readonly claveVueltosPagados = 'pedidos_delivery_vueltos_pagados';
   presentacionesHuevo = [
     { id: 'UNIDAD' as PresentacionHuevo, etiqueta: 'Unidad', factor: 1 },
-    { id: 'MEDIO_CASILLERO' as PresentacionHuevo, etiqueta: 'Medio casillero', factor: 15 },
+    {
+      id: 'MEDIO_CASILLERO' as PresentacionHuevo,
+      etiqueta: 'Medio casillero',
+      factor: 15,
+    },
     { id: 'CASILLERO' as PresentacionHuevo, etiqueta: 'Casillero', factor: 30 },
-    { id: 'MEDIA_JAVA' as PresentacionHuevo, etiqueta: 'Media java', factor: 180 },
+    {
+      id: 'MEDIA_JAVA' as PresentacionHuevo,
+      etiqueta: 'Media java',
+      factor: 180,
+    },
     { id: 'JAVA' as PresentacionHuevo, etiqueta: 'Java', factor: 360 },
   ];
   private vueltosPagados = new Set<number>();
-  private reinicioVistaDeliveryTimer: ReturnType<typeof setTimeout> | null = null;
+  private reinicioVistaDeliveryTimer: ReturnType<typeof setTimeout> | null =
+    null;
 
   constructor(
     private readonly http: HttpClient,
-    private readonly sesionServicio: SesionServicio
+    private readonly sesionServicio: SesionServicio,
+    private readonly router: Router,
   ) {}
 
   ngOnInit(): void {
@@ -242,10 +271,13 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     }
   }
 
-  cambiarSubpagina(subpagina: 'registrar' | 'registros' | 'cuentas' | 'delivery'): void {
+  cambiarSubpagina(
+    subpagina: 'registrar' | 'registros' | 'cuentas' | 'delivery',
+  ): void {
     if (this.usuarioEsDelivery()) {
       this.subpaginaActiva = 'delivery';
       this.cargarPedidos('delivery');
+      this.cargarCobrosAtrasadosDelivery();
       return;
     }
 
@@ -268,68 +300,90 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
 
     if (subpagina === 'delivery') {
       this.cargarPedidos('delivery');
+      this.cargarCobrosAtrasadosDelivery();
     }
   }
 
   cargarPedidos(rol: 'vendedor' | 'delivery'): void {
     const solicitudActual = ++this.solicitudPedidosId;
     this.cargando = true;
-    this.http.get<PedidoDelivery[]>(`/api/pedidos-delivery?rol=${rol}`, { headers: this.obtenerHeaders() }).subscribe({
-      next: (pedidos) => {
-        if (solicitudActual !== this.solicitudPedidosId) {
-          return;
-        }
-        this.pedidos = pedidos;
-        this.aplicarFiltro();
-        this.cargando = false;
-      },
-      error: (error) => {
-        if (solicitudActual !== this.solicitudPedidosId) {
-          return;
-        }
-        this.pedidos = [];
-        this.pedidosFiltrados = [];
-        this.cargando = false;
-        this.mensajeError = this.extraerError(error, 'No se pudo cargar pedidos.');
-      }
-    });
+    this.http
+      .get<
+        PedidoDelivery[]
+      >(`/api/pedidos-delivery?rol=${rol}`, { headers: this.obtenerHeaders() })
+      .subscribe({
+        next: (pedidos) => {
+          if (solicitudActual !== this.solicitudPedidosId) {
+            return;
+          }
+          this.pedidos = pedidos;
+          this.aplicarFiltro();
+          this.cargando = false;
+        },
+        error: (error) => {
+          if (solicitudActual !== this.solicitudPedidosId) {
+            return;
+          }
+          this.pedidos = [];
+          this.pedidosFiltrados = [];
+          this.cargando = false;
+          this.mensajeError = this.extraerError(
+            error,
+            'No se pudo cargar pedidos.',
+          );
+        },
+      });
   }
 
   cargarCuentasPorCobrar(): void {
     const solicitudActual = ++this.solicitudPedidosId;
     this.cargando = true;
-    this.http.get<CuentaCliente[]>('/api/cuentas-por-cobrar', { headers: this.obtenerHeaders() }).subscribe({
-      next: (cuentas) => {
-        if (solicitudActual !== this.solicitudPedidosId) {
-          return;
-        }
-        this.cuentasPorCobrar = cuentas;
-        this.pedidos = cuentas.flatMap((cuenta) => cuenta.pedidos ?? []);
-        this.aplicarFiltro();
-        this.cargando = false;
-      },
-      error: (error) => {
-        if (solicitudActual !== this.solicitudPedidosId) {
-          return;
-        }
-        this.pedidos = [];
-        this.pedidosFiltrados = [];
-        this.cargando = false;
-        this.mensajeError = this.extraerError(error, 'No se pudo cargar cuentas por cobrar.');
-      }
-    });
+    this.http
+      .get<
+        CuentaCliente[]
+      >('/api/cuentas-por-cobrar', { headers: this.obtenerHeaders() })
+      .subscribe({
+        next: (cuentas) => {
+          if (solicitudActual !== this.solicitudPedidosId) {
+            return;
+          }
+          this.cuentasPorCobrar = cuentas;
+          this.pedidos = cuentas.flatMap((cuenta) => cuenta.pedidos ?? []);
+          this.aplicarFiltro();
+          this.cargando = false;
+        },
+        error: (error) => {
+          if (solicitudActual !== this.solicitudPedidosId) {
+            return;
+          }
+          this.pedidos = [];
+          this.pedidosFiltrados = [];
+          this.cargando = false;
+          this.mensajeError = this.extraerError(
+            error,
+            'No se pudo cargar cuentas por cobrar.',
+          );
+        },
+      });
   }
 
   cargarCobrosAtrasadosDelivery(): void {
-    this.http.get<CuentaCliente[]>('/api/pedidos-delivery/cobros-atrasados', { headers: this.obtenerHeaders() }).subscribe({
-      next: (cuentas) => {
-        this.cobrosAtrasadosDelivery = cuentas;
-      },
-      error: (error) => {
-        this.cobrosAtrasadosDelivery = [];
-        this.mensajeError = this.extraerError(error, 'No se pudo cargar cobros atrasados.');
-      }
-    });
+    this.http
+      .get<
+        CuentaCliente[]
+      >('/api/pedidos-delivery/cobros-atrasados', { headers: this.obtenerHeaders() })
+      .subscribe({
+        next: (cuentas) => {
+          this.cobrosAtrasadosDelivery = cuentas;
+        },
+        error: (error) => {
+          this.cobrosAtrasadosDelivery = [];
+          this.mensajeError = this.extraerError(
+            error,
+            'No se pudo cargar cobros atrasados.',
+          );
+        },
+      });
   }
 
   cambiarVistaDelivery(vista: 'hoy' | 'cobros'): void {
@@ -355,42 +409,99 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       this.cuentasFiltradas = this.cuentasPorCobrar.filter((cuenta) => {
         const cliente = cuenta.cliente;
         const nombreCliente = this.obtenerNombreCliente(cliente).toLowerCase();
-        const documento = `${cliente?.dni ?? ''} ${cliente?.ruc ?? ''}`.toLowerCase();
+        const documento =
+          `${cliente?.dni ?? ''} ${cliente?.ruc ?? ''}`.toLowerCase();
         const pedidos = cuenta.pedidos ?? [];
-        const coincidePedido = pedidos.some((pedido) => `${pedido.pedido_id}`.includes(termino) || `${this.obtenerNumeroVisualPedido(pedido)}`.includes(termino));
-        return !termino || nombreCliente.includes(termino) || documento.includes(termino) || coincidePedido;
+        const coincidePedido = pedidos.some(
+          (pedido) =>
+            `${pedido.pedido_id}`.includes(termino) ||
+            `${this.obtenerNumeroVisualPedido(pedido)}`.includes(termino),
+        );
+        return (
+          !termino ||
+          nombreCliente.includes(termino) ||
+          documento.includes(termino) ||
+          coincidePedido
+        );
       });
-      this.pedidosFiltrados = this.cuentasFiltradas.flatMap((cuenta) => cuenta.pedidos ?? []);
+      this.pedidosFiltrados = this.cuentasFiltradas.flatMap(
+        (cuenta) => cuenta.pedidos ?? [],
+      );
       return;
     }
 
     const clienteFiltro = this.filtroClienteRegistros.trim().toLowerCase();
-    const fechaDesde = this.filtroFechaDesdeRegistros ? new Date(`${this.filtroFechaDesdeRegistros}T00:00:00`) : null;
-    const fechaHasta = this.filtroFechaHastaRegistros ? new Date(`${this.filtroFechaHastaRegistros}T23:59:59`) : null;
+    const fechaDesde = this.filtroFechaDesdeRegistros
+      ? new Date(`${this.filtroFechaDesdeRegistros}T00:00:00`)
+      : null;
+    const fechaHasta = this.filtroFechaHastaRegistros
+      ? new Date(`${this.filtroFechaHastaRegistros}T23:59:59`)
+      : null;
 
     this.pedidosFiltrados = this.pedidos.filter((pedido) => {
       // Fuente principal del nombre mostrado en la tabla y tarjetas del pedido.
-      const nombreCliente = `${pedido.cliente?.nombres ?? ''} ${pedido.cliente?.apellidos ?? ''}`.trim().toLowerCase();
+      const nombreCliente =
+        `${pedido.cliente?.nombres ?? ''} ${pedido.cliente?.apellidos ?? ''}`
+          .trim()
+          .toLowerCase();
       // Fuente secundaria para busquedas rapidas por documento.
       const dniCliente = (pedido.cliente?.dni ?? '').toLowerCase();
       // Fecha real registrada al crear el pedido, usada para los filtros de rango.
-      const fechaPedido = pedido.fecha_hora_creacion ? new Date(pedido.fecha_hora_creacion) : null;
+      const fechaPedido = pedido.fecha_hora_creacion
+        ? new Date(pedido.fecha_hora_creacion)
+        : null;
       const numeroVisual = `${this.obtenerNumeroVisualPedido(pedido)}`;
-      const coincideTexto = !termino
-        || `${pedido.pedido_id}`.includes(termino)
-        || numeroVisual.includes(termino)
-        || nombreCliente.includes(termino)
-        || dniCliente.includes(termino);
-      const usarFiltrosRegistros = this.subpaginaActiva === 'registros' || this.subpaginaActiva === 'cuentas';
-      const coincideFechaDelivery = this.subpaginaActiva !== 'delivery' || this.esPedidoDelDiaActual(pedido);
-      const coincideCuentaPendiente = this.subpaginaActiva !== 'cuentas' || this.obtenerSaldoPendiente(pedido) > 0;
-      const coincideCliente = !usarFiltrosRegistros || !clienteFiltro || nombreCliente.includes(clienteFiltro) || dniCliente.includes(clienteFiltro);
-      const coincideEstado = !usarFiltrosRegistros || !this.filtroEstadoRegistros || this.obtenerEtiquetaEstado(pedido.estado_id) === this.filtroEstadoRegistros;
-      const coincideEstadoPago = !usarFiltrosRegistros || !this.filtroEstadoPagoRegistros || this.obtenerEtiquetaEstadoPago(pedido) === this.filtroEstadoPagoRegistros;
-      const coincideFechaDesde = !usarFiltrosRegistros || !fechaDesde || !fechaPedido || fechaPedido >= fechaDesde;
-      const coincideFechaHasta = !usarFiltrosRegistros || !fechaHasta || !fechaPedido || fechaPedido <= fechaHasta;
+      const coincideTexto =
+        !termino ||
+        `${pedido.pedido_id}`.includes(termino) ||
+        numeroVisual.includes(termino) ||
+        nombreCliente.includes(termino) ||
+        dniCliente.includes(termino);
+      const usarFiltrosRegistros =
+        this.subpaginaActiva === 'registros' ||
+        this.subpaginaActiva === 'cuentas';
+      const coincideFechaDelivery =
+        this.subpaginaActiva !== 'delivery' ||
+        this.esPedidoDelDiaActual(pedido);
+      const coincideCuentaPendiente =
+        this.subpaginaActiva !== 'cuentas' ||
+        this.obtenerSaldoPendiente(pedido) > 0;
+      const coincideCliente =
+        !usarFiltrosRegistros ||
+        !clienteFiltro ||
+        nombreCliente.includes(clienteFiltro) ||
+        dniCliente.includes(clienteFiltro);
+      const coincideEstado =
+        !usarFiltrosRegistros ||
+        !this.filtroEstadoRegistros ||
+        this.obtenerEtiquetaEstado(pedido.estado_id) ===
+          this.filtroEstadoRegistros;
+      const coincideEstadoPago =
+        !usarFiltrosRegistros ||
+        !this.filtroEstadoPagoRegistros ||
+        this.obtenerEtiquetaEstadoPago(pedido) ===
+          this.filtroEstadoPagoRegistros;
+      const coincideFechaDesde =
+        !usarFiltrosRegistros ||
+        !fechaDesde ||
+        !fechaPedido ||
+        fechaPedido >= fechaDesde;
+      const coincideFechaHasta =
+        !usarFiltrosRegistros ||
+        !fechaHasta ||
+        !fechaPedido ||
+        fechaPedido <= fechaHasta;
 
-      return coincideTexto && coincideFechaDelivery && coincideCuentaPendiente && coincideCliente && coincideEstado && coincideEstadoPago && coincideFechaDesde && coincideFechaHasta;
+      return (
+        coincideTexto &&
+        coincideFechaDelivery &&
+        coincideCuentaPendiente &&
+        coincideCliente &&
+        coincideEstado &&
+        coincideEstadoPago &&
+        coincideFechaDesde &&
+        coincideFechaHasta
+      );
     });
   }
 
@@ -411,19 +522,24 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       return;
     }
 
-    this.http.get<PedidoCliente[]>(`/api/clientes?search=${encodeURIComponent(termino)}`, { headers: this.obtenerHeaders() }).subscribe({
-      next: (clientes) => {
-        this.clientesSugeridos = clientes.slice(0, 6);
-      },
-      error: () => {
-        this.clientesSugeridos = [];
-      }
-    });
+    this.http
+      .get<
+        PedidoCliente[]
+      >(`/api/clientes?search=${encodeURIComponent(termino)}`, { headers: this.obtenerHeaders() })
+      .subscribe({
+        next: (clientes) => {
+          this.clientesSugeridos = clientes.slice(0, 6);
+        },
+        error: () => {
+          this.clientesSugeridos = [];
+        },
+      });
   }
 
   seleccionarCliente(cliente: PedidoCliente): void {
     this.clienteSeleccionado = cliente;
-    this.terminoCliente = `${cliente.nombres} ${cliente.apellidos ?? ''}`.trim();
+    this.terminoCliente =
+      `${cliente.nombres} ${cliente.apellidos ?? ''}`.trim();
     this.clientesSugeridos = [];
   }
 
@@ -449,12 +565,18 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     }
 
     if (documento.length === 8) {
-      this.consultarApi(`dni/${documento}`, this.autocompletarDesdeDni.bind(this));
+      this.consultarApi(
+        `dni/${documento}`,
+        this.autocompletarDesdeDni.bind(this),
+      );
       return;
     }
 
     if (documento.length === 11) {
-      this.consultarApi(`ruc/${documento}`, this.autocompletarDesdeRuc.bind(this));
+      this.consultarApi(
+        `ruc/${documento}`,
+        this.autocompletarDesdeRuc.bind(this),
+      );
       return;
     }
 
@@ -473,20 +595,27 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       celular: this.formularioCliente.celular || '',
       direccion: this.formularioCliente.direccion || '',
       direccion_fiscal: this.formularioCliente.direccionFiscal || '',
-      referencias: this.formularioCliente.referencias || ''
+      referencias: this.formularioCliente.referencias || '',
     };
 
-    this.http.post<PedidoCliente>('/api/clientes', payload, { headers: this.obtenerHeaders() }).subscribe({
-      next: (cliente) => {
-        this.guardandoCliente = false;
-        this.seleccionarCliente(cliente);
-        this.cerrarModalCliente();
-      },
-      error: (error) => {
-        this.guardandoCliente = false;
-        this.mensajeError = this.extraerError(error, 'No se pudo guardar el cliente.');
-      }
-    });
+    this.http
+      .post<PedidoCliente>('/api/clientes', payload, {
+        headers: this.obtenerHeaders(),
+      })
+      .subscribe({
+        next: (cliente) => {
+          this.guardandoCliente = false;
+          this.seleccionarCliente(cliente);
+          this.cerrarModalCliente();
+        },
+        error: (error) => {
+          this.guardandoCliente = false;
+          this.mensajeError = this.extraerError(
+            error,
+            'No se pudo guardar el cliente.',
+          );
+        },
+      });
   }
 
   limpiarFormularioCliente(): void {
@@ -512,12 +641,15 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       return;
     }
 
-    const producto = this.productosDisponibles.find((item) => item.nombre.toLowerCase() === nombre.toLowerCase());
+    const producto = this.productosDisponibles.find(
+      (item) => item.nombre.toLowerCase() === nombre.toLowerCase(),
+    );
     if (!producto) {
       return;
     }
 
-    const stockDisponible = this.stockDisponiblePorProducto.get(producto.id) ?? 0;
+    const stockDisponible =
+      this.stockDisponiblePorProducto.get(producto.id) ?? 0;
     if (stockDisponible <= 0) {
       this.mostrarAlertaStockSinDisponibilidad(producto.nombre);
       this.productoSeleccionado = '';
@@ -530,7 +662,10 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       this.detalles[indiceFilaObjetivo].descripcion = producto.nombre;
       this.detalles[indiceFilaObjetivo].productoId = producto.id;
       this.detalles[indiceFilaObjetivo].grupoVenta = producto.grupo_venta;
-      this.detalles[indiceFilaObjetivo].unidad = producto.grupo_venta === 'HUEVOS' ? 'UND' : this.detalles[indiceFilaObjetivo].unidad;
+      this.detalles[indiceFilaObjetivo].unidad =
+        producto.grupo_venta === 'HUEVOS'
+          ? 'UND'
+          : this.detalles[indiceFilaObjetivo].unidad;
       this.detalles[indiceFilaObjetivo].presentacionVenta = 'UNIDAD';
       this.indiceFilaPreferida = null;
     } else {
@@ -538,7 +673,8 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       const nuevaFila = this.detalles[this.detalles.length - 1];
       nuevaFila.productoId = producto.id;
       nuevaFila.grupoVenta = producto.grupo_venta;
-      nuevaFila.unidad = producto.grupo_venta === 'HUEVOS' ? 'UND' : nuevaFila.unidad;
+      nuevaFila.unidad =
+        producto.grupo_venta === 'HUEVOS' ? 'UND' : nuevaFila.unidad;
       nuevaFila.presentacionVenta = 'UNIDAD';
     }
 
@@ -554,7 +690,7 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       precioUnitario: 0,
       productoId: null,
       grupoVenta: null,
-      presentacionVenta: 'UNIDAD'
+      presentacionVenta: 'UNIDAD',
     });
 
     if (!descripcion) {
@@ -568,7 +704,6 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     }
     this.detalles.splice(index, 1);
   }
-
 
   private resolverFilaObjetivoParaProducto(): number {
     if (this.indiceFilaPreferida !== null && this.indiceFilaPreferida >= 0) {
@@ -593,14 +728,17 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     }
 
     const producto = this.productosDisponibles.find(
-      (item) => item.nombre.trim().toLowerCase() === fila.descripcion.trim().toLowerCase()
+      (item) =>
+        item.nombre.trim().toLowerCase() ===
+        fila.descripcion.trim().toLowerCase(),
     );
 
     if (!producto) {
       return;
     }
 
-    const stockDisponible = this.stockDisponiblePorProducto.get(producto.id) ?? 0;
+    const stockDisponible =
+      this.stockDisponiblePorProducto.get(producto.id) ?? 0;
     if (cantidad > stockDisponible) {
       fila.cantidad = 0;
       this.mostrarAlertaCantidadMayorStock(producto.nombre, stockDisponible);
@@ -611,28 +749,50 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     if (this.esDetalleHuevos(item)) {
       return Number(item.precioUnitario ?? 0);
     }
-    return Number(((item.cantidad || 0) * (item.precioUnitario || 0)).toFixed(2));
+    return Number(
+      ((item.cantidad || 0) * (item.precioUnitario || 0)).toFixed(2),
+    );
   }
 
   esDetalleHuevos(item: DetalleFormulario): boolean {
     if (item.grupoVenta) {
       return item.grupoVenta === 'HUEVOS';
     }
-    const producto = this.productosDisponibles.find((prod) => prod.nombre.trim().toLowerCase() === item.descripcion.trim().toLowerCase());
+    const producto = this.productosDisponibles.find(
+      (prod) =>
+        prod.nombre.trim().toLowerCase() ===
+        item.descripcion.trim().toLowerCase(),
+    );
     return producto?.grupo_venta === 'HUEVOS';
   }
 
-  factorPresentacion(presentacion: PresentacionHuevo | null | undefined): number {
-    return this.presentacionesHuevo.find((item) => item.id === presentacion)?.factor ?? 1;
+  factorPresentacion(
+    presentacion: PresentacionHuevo | null | undefined,
+  ): number {
+    return (
+      this.presentacionesHuevo.find((item) => item.id === presentacion)
+        ?.factor ?? 1
+    );
   }
 
-  etiquetaPresentacion(presentacion: PresentacionHuevo | null | undefined): string {
-    return this.presentacionesHuevo.find((item) => item.id === presentacion)?.etiqueta ?? 'Unidad';
+  etiquetaPresentacion(
+    presentacion: PresentacionHuevo | null | undefined,
+  ): string {
+    return (
+      this.presentacionesHuevo.find((item) => item.id === presentacion)
+        ?.etiqueta ?? 'Unidad'
+    );
   }
 
   cantidadBaseDetalle(item: DetalleFormulario): number {
     const cantidad = Number(item.cantidad ?? 0);
-    return this.esDetalleHuevos(item) ? Number((cantidad * this.factorPresentacion(item.presentacionVenta)).toFixed(2)) : cantidad;
+    return this.esDetalleHuevos(item)
+      ? Number(
+          (cantidad * this.factorPresentacion(item.presentacionVenta)).toFixed(
+            2,
+          ),
+        )
+      : cantidad;
   }
 
   precioUnitarioDetalle(item: DetalleFormulario): number {
@@ -640,15 +800,22 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       return Number(item.precioUnitario ?? 0);
     }
     const base = this.cantidadBaseDetalle(item);
-    return base > 0 ? Number((Number(item.precioUnitario ?? 0) / base).toFixed(6)) : 0;
+    return base > 0
+      ? Number((Number(item.precioUnitario ?? 0) / base).toFixed(6))
+      : 0;
   }
 
   descripcionDetallePedido(item: DetalleFormulario): string {
-    return this.esDetalleHuevos(item) ? `${item.descripcion.trim()} (${this.etiquetaPresentacion(item.presentacionVenta)})` : item.descripcion.trim();
+    return this.esDetalleHuevos(item)
+      ? `${item.descripcion.trim()} (${this.etiquetaPresentacion(item.presentacionVenta)})`
+      : item.descripcion.trim();
   }
 
   totalPedido(): number {
-    return this.detalles.reduce((acc, item) => acc + this.totalDetalle(item), 0);
+    return this.detalles.reduce(
+      (acc, item) => acc + this.totalDetalle(item),
+      0,
+    );
   }
 
   guardarPedido(): void {
@@ -657,7 +824,12 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       return;
     }
 
-    const detallesValidos = this.detalles.filter((item) => item.descripcion.trim() && item.cantidad > 0 && item.precioUnitario >= 0);
+    const detallesValidos = this.detalles.filter(
+      (item) =>
+        item.descripcion.trim() &&
+        item.cantidad > 0 &&
+        item.precioUnitario >= 0,
+    );
 
     if (!detallesValidos.length) {
       this.mensajeError = 'Agrega al menos una linea valida en el detalle.';
@@ -670,38 +842,54 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     const payload = {
       cliente_id: this.clienteSeleccionado.cliente_id,
       tipo_pedido: this.tipoPedidoFormulario,
-      mesa: this.tipoPedidoFormulario === 'MESA' ? this.mesaFormulario.trim() || null : null,
+      mesa:
+        this.tipoPedidoFormulario === 'MESA'
+          ? this.mesaFormulario.trim() || null
+          : null,
       fecha_hora_creacion: this.fechaHoraCreacion,
       detalles: detallesValidos.map((item) => ({
         cantidad: this.cantidadBaseDetalle(item),
         unidad: this.esDetalleHuevos(item) ? 'UND' : item.unidad,
         descripcion: this.descripcionDetallePedido(item),
-        precio_unitario: this.precioUnitarioDetalle(item)
-      }))
+        precio_unitario: this.precioUnitarioDetalle(item),
+      })),
     };
 
-    this.http.post<PedidoDelivery>('/api/pedidos-delivery', payload, { headers: this.obtenerHeaders() }).subscribe({
-      next: (pedidoCreado) => {
-        this.enviarFilasAVentasDiarias(detallesValidos, pedidoCreado.pedido_id);
-        this.guardandoPedido = false;
-        this.reiniciarFormularioPedido();
-        this.cargarPedidos('vendedor');
-      },
-      error: (error) => {
-        this.guardandoPedido = false;
-        this.mensajeError = this.extraerError(error, 'No se pudo guardar el pedido.');
-      }
-    });
+    this.http
+      .post<PedidoDelivery>('/api/pedidos-delivery', payload, {
+        headers: this.obtenerHeaders(),
+      })
+      .subscribe({
+        next: (pedidoCreado) => {
+          this.enviarFilasAVentasDiarias(
+            detallesValidos,
+            pedidoCreado.pedido_id,
+          );
+          this.guardandoPedido = false;
+          this.reiniciarFormularioPedido();
+          this.cargarPedidos('vendedor');
+        },
+        error: (error) => {
+          this.guardandoPedido = false;
+          this.mensajeError = this.extraerError(
+            error,
+            'No se pudo guardar el pedido.',
+          );
+        },
+      });
   }
 
   seleccionarPedido(pedido: PedidoDelivery): void {
     this.pedidoSeleccionado = pedido;
-    this.estadoDestino = [2, 3, 4, 5].includes(pedido.estado_id) ? pedido.estado_id as 2 | 3 | 4 | 5 : 2;
+    this.estadoDestino = [2, 3, 4, 5].includes(pedido.estado_id)
+      ? (pedido.estado_id as 2 | 3 | 4 | 5)
+      : 2;
     this.motivoCancelacion = pedido.motivo_cancelacion ?? '';
-    this.montoRecibido = this.obtenerSaldoPendiente(pedido);
+    this.montoRecibido = null;
     this.latitud = pedido.latitud ?? pedido.cliente?.latitud ?? null;
     this.longitud = pedido.longitud ?? pedido.cliente?.longitud ?? null;
-    this.fotoFrontisUrl = pedido.foto_frontis_url ?? pedido.cliente?.foto_frontis_url ?? '';
+    this.fotoFrontisUrl =
+      pedido.foto_frontis_url ?? pedido.cliente?.foto_frontis_url ?? '';
     this.referenciasUbicacion = pedido.cliente?.referencias ?? '';
     this.fotoFrontisArchivo = null;
   }
@@ -731,7 +919,9 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
   }
 
   pedidosNoEntregadosDelivery(): PedidoDelivery[] {
-    return this.pedidosFiltrados.filter((pedido) => pedido.estado_id === 5 || pedido.estado_id === 3);
+    return this.pedidosFiltrados.filter(
+      (pedido) => pedido.estado_id === 5 || pedido.estado_id === 3,
+    );
   }
 
   cobrosAtrasadosFiltrados(): CuentaCliente[] {
@@ -743,11 +933,23 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     return this.cobrosAtrasadosDelivery.filter((cuenta) => {
       const cliente = cuenta.cliente;
       const nombre = this.obtenerNombreCliente(cliente).toLowerCase();
-      const documento = `${cliente?.dni ?? ''} ${cliente?.ruc ?? ''}`.toLowerCase();
+      const documento =
+        `${cliente?.dni ?? ''} ${cliente?.ruc ?? ''}`.toLowerCase();
       const pedidos = cuenta.pedidos ?? [];
-      const coincidePedido = pedidos.some((pedido) => `${pedido.pedido_id}`.includes(termino));
-      const coincideProducto = pedidos.some((pedido) => (pedido.detalles ?? []).some((detalle) => detalle.descripcion.toLowerCase().includes(termino)));
-      return nombre.includes(termino) || documento.includes(termino) || coincidePedido || coincideProducto;
+      const coincidePedido = pedidos.some((pedido) =>
+        `${pedido.pedido_id}`.includes(termino),
+      );
+      const coincideProducto = pedidos.some((pedido) =>
+        (pedido.detalles ?? []).some((detalle) =>
+          detalle.descripcion.toLowerCase().includes(termino),
+        ),
+      );
+      return (
+        nombre.includes(termino) ||
+        documento.includes(termino) ||
+        coincidePedido ||
+        coincideProducto
+      );
     });
   }
 
@@ -756,7 +958,11 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     this.mensajeError = '';
 
     this.http
-      .patch<PedidoDelivery>(`/api/pedidos-delivery/${pedido.pedido_id}/tomar`, {}, { headers: this.obtenerHeaders() })
+      .patch<PedidoDelivery>(
+        `/api/pedidos-delivery/${pedido.pedido_id}/tomar`,
+        {},
+        { headers: this.obtenerHeaders() },
+      )
       .subscribe({
         next: () => {
           this.guardandoGestion = false;
@@ -764,8 +970,11 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
         },
         error: (error) => {
           this.guardandoGestion = false;
-          this.mensajeError = this.extraerError(error, 'No se pudo tomar el pedido.');
-        }
+          this.mensajeError = this.extraerError(
+            error,
+            'No se pudo tomar el pedido.',
+          );
+        },
       });
   }
 
@@ -787,9 +996,9 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
           motivo_cancelacion: motivo,
           estado_pago: 'PENDIENTE',
           monto_recibido: null,
-          pago_parcial: null
+          pago_parcial: null,
         },
-        { headers: this.obtenerHeaders() }
+        { headers: this.obtenerHeaders() },
       )
       .subscribe({
         next: () => {
@@ -798,8 +1007,11 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
         },
         error: (error) => {
           this.guardandoGestion = false;
-          this.mensajeError = this.extraerError(error, 'No se pudo actualizar el estado del pedido.');
-        }
+          this.mensajeError = this.extraerError(
+            error,
+            'No se pudo actualizar el estado del pedido.',
+          );
+        },
       });
   }
 
@@ -827,13 +1039,14 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
         `/api/pedidos-delivery/${pedido.pedido_id}/gestion`,
         {
           estado_id: pedido.estado_id,
-          motivo_cancelacion: pedido.estado_id === 3 ? pedido.motivo_cancelacion : null,
+          motivo_cancelacion:
+            pedido.estado_id === 3 ? pedido.motivo_cancelacion : null,
           estado_pago: 'COMPLETO',
           // Se usa el saldo, no el total original, para no duplicar pagos a cuenta previos.
           monto_recibido: saldo,
-          pago_parcial: saldo
+          pago_parcial: saldo,
         },
-        { headers: this.obtenerHeaders() }
+        { headers: this.obtenerHeaders() },
       )
       .subscribe({
         next: () => {
@@ -842,8 +1055,11 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
         },
         error: (error) => {
           this.guardandoGestion = false;
-          this.mensajeError = this.extraerError(error, 'No se pudo completar el pago del pedido.');
-        }
+          this.mensajeError = this.extraerError(
+            error,
+            'No se pudo completar el pago del pedido.',
+          );
+        },
       });
   }
 
@@ -859,7 +1075,7 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
   abrirRegistroPagoCuenta(pedido: PedidoDelivery): void {
     this.pedidoPagoPendiente = pedido;
     this.cuentaPagoPendiente = null;
-    this.montoPagoCuenta = this.obtenerSaldoPendiente(pedido);
+    this.montoPagoCuenta = null;
     this.mensajeError = '';
   }
 
@@ -875,7 +1091,7 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
   abrirRegistroPagoCliente(cuenta: CuentaCliente): void {
     this.cuentaPagoPendiente = cuenta;
     this.pedidoPagoPendiente = null;
-    this.montoPagoCuenta = cuenta.saldo_pendiente;
+    this.montoPagoCuenta = null;
     this.mensajeError = '';
   }
 
@@ -904,7 +1120,9 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       : `/api/pedidos-delivery/${this.pedidoPagoPendiente?.pedido_id}/pagos`;
 
     this.http
-      .post<PedidoDelivery | CuentaCliente>(url, { monto }, { headers: this.obtenerHeaders() })
+      .post<
+        PedidoDelivery | CuentaCliente
+      >(url, { monto }, { headers: this.obtenerHeaders() })
       .subscribe({
         next: (respuesta) => {
           this.registrandoPago = false;
@@ -916,8 +1134,11 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
         },
         error: (error) => {
           this.registrandoPago = false;
-          this.mensajeError = this.extraerError(error, 'No se pudo registrar el pago.');
-        }
+          this.mensajeError = this.extraerError(
+            error,
+            'No se pudo registrar el pago.',
+          );
+        },
       });
   }
 
@@ -933,9 +1154,8 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     }
 
     const saldo = this.obtenerSaldoPendiente(this.pedidoSeleccionado);
-    const estadoPagoCalculado: 'COMPLETO' | 'PENDIENTE' | 'PARCIAL' = monto <= 0
-      ? 'PENDIENTE'
-      : (monto >= saldo ? 'COMPLETO' : 'PARCIAL');
+    const estadoPagoCalculado: 'COMPLETO' | 'PENDIENTE' | 'PARCIAL' =
+      monto <= 0 ? 'PENDIENTE' : monto >= saldo ? 'COMPLETO' : 'PARCIAL';
     const pagoAplicable = Math.min(saldo, monto);
 
     this.guardandoGestion = true;
@@ -945,12 +1165,15 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
         `/api/pedidos-delivery/${this.pedidoSeleccionado.pedido_id}/gestion`,
         {
           estado_id: this.estadoDestino,
-          motivo_cancelacion: this.estadoDestino === 3 || this.estadoDestino === 5 ? this.motivoCancelacion : null,
+          motivo_cancelacion:
+            this.estadoDestino === 3 || this.estadoDestino === 5
+              ? this.motivoCancelacion
+              : null,
           estado_pago: estadoPagoCalculado,
           monto_recibido: monto,
-          pago_parcial: pagoAplicable
+          pago_parcial: pagoAplicable,
         },
-        { headers: this.obtenerHeaders() }
+        { headers: this.obtenerHeaders() },
       )
       .subscribe({
         next: (pedidoActualizado) => {
@@ -960,8 +1183,11 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
         },
         error: (error) => {
           this.guardandoGestion = false;
-          this.mensajeError = this.extraerError(error, 'No se pudo guardar el estado y pago.');
-        }
+          this.mensajeError = this.extraerError(
+            error,
+            'No se pudo guardar el estado y pago.',
+          );
+        },
       });
   }
 
@@ -997,7 +1223,7 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       .post(
         `/api/pedidos-delivery/${this.pedidoSeleccionado.pedido_id}/ubicacion-evidencia`,
         formData,
-        { headers: this.obtenerHeaders() }
+        { headers: this.obtenerHeaders() },
       )
       .subscribe({
         next: (pedidoActualizado) => {
@@ -1008,8 +1234,11 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
         },
         error: (error) => {
           this.guardandoUbicacion = false;
-          this.mensajeError = this.extraerError(error, 'No se pudo guardar la evidencia.');
-        }
+          this.mensajeError = this.extraerError(
+            error,
+            'No se pudo guardar la evidencia.',
+          );
+        },
       });
   }
 
@@ -1025,9 +1254,10 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
         this.longitud = Number(posicion.coords.longitude.toFixed(7));
       },
       () => {
-        this.mensajeError = 'No se pudo obtener la ubicacion. Revisa permisos de GPS.';
+        this.mensajeError =
+          'No se pudo obtener la ubicacion. Revisa permisos de GPS.';
       },
-      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
     );
   }
 
@@ -1047,7 +1277,10 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       this.mensajeError = 'El cliente no tiene celular valido para WhatsApp.';
       return;
     }
-    this.abrirUrlWhatsapp(numero, `Hola, tu pedido #${this.obtenerNumeroVisualPedido(pedido)} esta en ruta.`);
+    this.abrirUrlWhatsapp(
+      numero,
+      `Hola, tu pedido #${this.obtenerNumeroVisualPedido(pedido)} esta en ruta.`,
+    );
   }
 
   abrirWhatsappCuenta(cuenta: CuentaCliente): void {
@@ -1060,14 +1293,20 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     this.abrirUrlWhatsapp(numero, this.construirMensajeCuentaWhatsapp(cuenta));
   }
 
-  abrirWhatsappPedidoPendiente(cuenta: CuentaCliente, pedido: PedidoDelivery): void {
+  abrirWhatsappPedidoPendiente(
+    cuenta: CuentaCliente,
+    pedido: PedidoDelivery,
+  ): void {
     const numero = this.obtenerNumeroWhatsappCliente(cuenta.cliente);
     if (!numero) {
       this.mensajeError = 'Este cliente no tiene celular valido para WhatsApp.';
       return;
     }
 
-    this.abrirUrlWhatsapp(numero, this.construirMensajePedidoWhatsapp(cuenta, pedido));
+    this.abrirUrlWhatsapp(
+      numero,
+      this.construirMensajePedidoWhatsapp(cuenta, pedido),
+    );
   }
 
   tieneWhatsappCliente(cliente: PedidoCliente | null | undefined): boolean {
@@ -1086,14 +1325,25 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     const latitud = Number(pedido.latitud ?? pedido.cliente?.latitud ?? 0);
     const longitud = Number(pedido.longitud ?? pedido.cliente?.longitud ?? 0);
 
-    if (Number.isFinite(latitud) && Number.isFinite(longitud) && (latitud !== 0 || longitud !== 0)) {
-      window.open(`https://www.google.com/maps/dir/?api=1&destination=${latitud},${longitud}&travelmode=driving`, '_blank');
+    if (
+      Number.isFinite(latitud) &&
+      Number.isFinite(longitud) &&
+      (latitud !== 0 || longitud !== 0)
+    ) {
+      window.open(
+        `https://www.google.com/maps/dir/?api=1&destination=${latitud},${longitud}&travelmode=driving`,
+        '_blank',
+      );
       return;
     }
 
-    const direccion = pedido.cliente?.direccion || pedido.cliente?.direccion_fiscal;
+    const direccion =
+      pedido.cliente?.direccion || pedido.cliente?.direccion_fiscal;
     if (direccion) {
-      window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(direccion)}&travelmode=driving`, '_blank');
+      window.open(
+        `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(direccion)}&travelmode=driving`,
+        '_blank',
+      );
       return;
     }
 
@@ -1101,9 +1351,11 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
   }
 
   verFotoFrontis(pedido: PedidoDelivery): void {
-    const foto = pedido.foto_frontis_url || pedido.cliente?.foto_frontis_url || '';
+    const foto =
+      pedido.foto_frontis_url || pedido.cliente?.foto_frontis_url || '';
     if (!foto) {
-      this.mensajeError = 'Este pedido no tiene foto de frontis registrada aun.';
+      this.mensajeError =
+        'Este pedido no tiene foto de frontis registrada aun.';
       return;
     }
 
@@ -1153,7 +1405,11 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     const estado = this.obtenerEtiquetaEstadoPago(pedido);
     const ultimoPago = this.obtenerUltimoPago(pedido);
 
-    if (ultimoPago && Number(ultimoPago.vuelto ?? 0) > 0 && this.estaVueltoPagado(pedido)) {
+    if (
+      ultimoPago &&
+      Number(ultimoPago.vuelto ?? 0) > 0 &&
+      this.estaVueltoPagado(pedido)
+    ) {
       return 'badge--success';
     }
 
@@ -1182,11 +1438,16 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     const detalle = this.obtenerDetalleEstadoPago(pedido);
     const ultimoPago = this.obtenerUltimoPago(pedido);
 
-    if (ultimoPago && Number(ultimoPago.vuelto ?? 0) > 0 && this.estaVueltoPagado(pedido)) {
+    if (
+      ultimoPago &&
+      Number(ultimoPago.vuelto ?? 0) > 0 &&
+      this.estaVueltoPagado(pedido)
+    ) {
       return 'COMPLETO  Vuelto pagado';
     }
 
-    const estadoVisible = estado === 'PARCIAL' ? 'PAGO RECIBIDO, QUEDA SALDO' : estado;
+    const estadoVisible =
+      estado === 'PARCIAL' ? 'PAGO RECIBIDO, QUEDA SALDO' : estado;
     return detalle ? `${estadoVisible}  ${detalle}` : estadoVisible;
   }
 
@@ -1206,7 +1467,7 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       year: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
-      hour12: false
+      hour12: false,
     }).format(date);
   }
 
@@ -1219,7 +1480,9 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       .filter((item) => this.esPedidoDelMismoDia(item, pedido))
       .sort((a, b) => a.pedido_id - b.pedido_id);
 
-    const indice = pedidosDelDia.findIndex((item) => item.pedido_id === pedido.pedido_id);
+    const indice = pedidosDelDia.findIndex(
+      (item) => item.pedido_id === pedido.pedido_id,
+    );
     return indice >= 0 ? indice + 1 : pedido.pedido_id;
   }
 
@@ -1229,7 +1492,11 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
 
   mostrarAccionPagarVuelto(pedido: PedidoDelivery): boolean {
     const ultimoPago = this.obtenerUltimoPago(pedido);
-    return !!ultimoPago && Number(ultimoPago.vuelto ?? 0) > 0 && !this.estaVueltoPagado(pedido);
+    return (
+      !!ultimoPago &&
+      Number(ultimoPago.vuelto ?? 0) > 0 &&
+      !this.estaVueltoPagado(pedido)
+    );
   }
 
   mostrarAccionPagarTodo(pedido: PedidoDelivery): boolean {
@@ -1264,7 +1531,11 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     }
 
     const ultimoPago = this.obtenerUltimoPago(pedido);
-    if (ultimoPago && ultimoPago.estado_pago === 'COMPLETO' && Number(ultimoPago.vuelto ?? 0) > 0) {
+    if (
+      ultimoPago &&
+      ultimoPago.estado_pago === 'COMPLETO' &&
+      Number(ultimoPago.vuelto ?? 0) > 0
+    ) {
       return `Vuelto: S/ ${Number(ultimoPago.vuelto).toFixed(2)}`;
     }
 
@@ -1276,7 +1547,9 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
   }
 
   obtenerTipoPedido(pedido: PedidoDelivery): string {
-    return pedido.tipo_pedido === 'MESA' ? `Mesa${pedido.mesa ? ` ${pedido.mesa}` : ''}` : 'Delivery';
+    return pedido.tipo_pedido === 'MESA'
+      ? `Mesa${pedido.mesa ? ` ${pedido.mesa}` : ''}`
+      : 'Delivery';
   }
 
   obtenerNombreCliente(cliente: PedidoCliente | null | undefined): string {
@@ -1290,12 +1563,14 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
 
   obtenerInicialesCliente(cliente: PedidoCliente | null | undefined): string {
     const nombre = this.obtenerNombreCliente(cliente);
-    return nombre
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((parte) => parte.charAt(0).toUpperCase())
-      .join('') || 'CL';
+    return (
+      nombre
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((parte) => parte.charAt(0).toUpperCase())
+        .join('') || 'CL'
+    );
   }
 
   obtenerFechaLarga(fecha: string | null | undefined): string {
@@ -1315,13 +1590,16 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-      hour12: false
+      hour12: false,
     }).format(date);
   }
 
   obtenerMontoPagado(pedido: PedidoDelivery): number {
     if (pedido.monto_pagado !== undefined && pedido.monto_pagado !== null) {
-      return Math.min(Number(pedido.total ?? 0), Number(pedido.monto_pagado ?? 0));
+      return Math.min(
+        Number(pedido.total ?? 0),
+        Number(pedido.monto_pagado ?? 0),
+      );
     }
 
     const total = Number(pedido.total ?? 0);
@@ -1333,19 +1611,61 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
   }
 
   obtenerSaldoPendiente(pedido: PedidoDelivery): number {
-    if (pedido.saldo_pendiente !== undefined && pedido.saldo_pendiente !== null) {
+    if (
+      pedido.saldo_pendiente !== undefined &&
+      pedido.saldo_pendiente !== null
+    ) {
       return Math.max(0, Number(pedido.saldo_pendiente ?? 0));
     }
 
-    return Math.max(0, Number((Number(pedido.total ?? 0) - this.obtenerMontoPagado(pedido)).toFixed(2)));
+    return Math.max(
+      0,
+      Number(
+        (Number(pedido.total ?? 0) - this.obtenerMontoPagado(pedido)).toFixed(
+          2,
+        ),
+      ),
+    );
+  }
+
+  puedeEmitirComprobante(pedido: PedidoDelivery): boolean {
+    return (
+      !this.usuarioEsDelivery() &&
+      pedido.estado_id !== 3 &&
+      this.obtenerSaldoPendiente(pedido) <= 0 &&
+      !pedido.comprobante
+    );
+  }
+
+  emitirComprobantePedido(pedido: PedidoDelivery): void {
+    if (!this.puedeEmitirComprobante(pedido)) {
+      return;
+    }
+
+    this.router.navigate(['/privado/venta'], {
+      queryParams: { pedido: pedido.pedido_id },
+    });
+  }
+
+  obtenerEtiquetaComprobante(pedido: PedidoDelivery): string {
+    if (!pedido.comprobante) {
+      return 'Emitir comprobante';
+    }
+
+    return `${pedido.comprobante.serie}-${pedido.comprobante.numero}`;
   }
 
   obtenerEstadoTextoCuenta(cuenta: CuentaCliente): string {
-    if (Number(cuenta.monto_pagado ?? 0) > 0 && Number(cuenta.saldo_pendiente ?? 0) > 0) {
+    if (
+      Number(cuenta.monto_pagado ?? 0) > 0 &&
+      Number(cuenta.saldo_pendiente ?? 0) > 0
+    ) {
       return 'Pago recibido, queda saldo';
     }
 
-    return Number(cuenta.saldo_pendiente ?? 0) > 0 ? 'Pendiente de pago' : 'Cancelado';
+    return Number(cuenta.saldo_pendiente ?? 0) > 0
+      ? 'Pendiente de pago'
+      : 'Cancelado';
   }
 
   obtenerEstadoTextoPedido(pedido: PedidoDelivery): string {
@@ -1359,7 +1679,9 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     return saldo > 0 ? 'Pendiente de pago' : 'Cancelado';
   }
 
-  obtenerEstadoPagoCalculado(pedido: PedidoDelivery): 'COMPLETO' | 'PENDIENTE' | 'PARCIAL' {
+  obtenerEstadoPagoCalculado(
+    pedido: PedidoDelivery,
+  ): 'COMPLETO' | 'PENDIENTE' | 'PARCIAL' {
     if (pedido.estado_pago_calculado) {
       return pedido.estado_pago_calculado;
     }
@@ -1386,7 +1708,14 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     }
 
     const monto = Number(this.montoRecibido ?? 0);
-    return Math.max(0, Number((monto - this.obtenerSaldoPendiente(this.pedidoSeleccionado)).toFixed(2)));
+    return Math.max(
+      0,
+      Number(
+        (monto - this.obtenerSaldoPendiente(this.pedidoSeleccionado)).toFixed(
+          2,
+        ),
+      ),
+    );
   }
 
   calcularSaldoPendiente(): number {
@@ -1395,7 +1724,14 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     }
 
     const recibido = Number(this.montoRecibido ?? 0);
-    return Math.max(0, Number((this.obtenerSaldoPendiente(this.pedidoSeleccionado) - recibido).toFixed(2)));
+    return Math.max(
+      0,
+      Number(
+        (
+          this.obtenerSaldoPendiente(this.pedidoSeleccionado) - recibido
+        ).toFixed(2),
+      ),
+    );
   }
 
   private cargarProductos(search = ''): void {
@@ -1404,40 +1740,56 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       params = params.set('buscar', search.trim());
     }
 
-    this.http.get<ProductoApi[]>('/api/otros-productos/productos', { headers: this.obtenerHeaders(), params }).subscribe({
-      next: (productos) => {
-        this.productosDisponibles = productos;
-      },
-      error: () => {
-        this.productosDisponibles = [];
-      }
-    });
+    this.http
+      .get<
+        ProductoApi[]
+      >('/api/otros-productos/productos', { headers: this.obtenerHeaders(), params })
+      .subscribe({
+        next: (productos) => {
+          this.productosDisponibles = productos;
+        },
+        error: () => {
+          this.productosDisponibles = [];
+        },
+      });
   }
 
-
   private cargarStockDisponible(): void {
-    this.http.get<LoteApi[]>('/api/otros-productos/lotes', { headers: this.obtenerHeaders() }).subscribe({
-      next: (lotes) => {
-        const stockPorProducto = new Map<number, number>();
-        lotes
-          .filter((lote) => lote.estado === 'ABIERTO')
-          .forEach((lote) => {
-            const acumulado = stockPorProducto.get(lote.producto_id) ?? 0;
-            stockPorProducto.set(lote.producto_id, acumulado + Number(lote.cantidad ?? 0));
-          });
+    this.http
+      .get<
+        LoteApi[]
+      >('/api/otros-productos/lotes', { headers: this.obtenerHeaders() })
+      .subscribe({
+        next: (lotes) => {
+          const stockPorProducto = new Map<number, number>();
+          lotes
+            .filter((lote) => lote.estado === 'ABIERTO')
+            .forEach((lote) => {
+              const acumulado = stockPorProducto.get(lote.producto_id) ?? 0;
+              stockPorProducto.set(
+                lote.producto_id,
+                acumulado + Number(lote.cantidad ?? 0),
+              );
+            });
 
-        this.stockDisponiblePorProducto = stockPorProducto;
-      },
-      error: () => {
-        this.stockDisponiblePorProducto = new Map<number, number>();
-      }
-    });
+          this.stockDisponiblePorProducto = stockPorProducto;
+        },
+        error: () => {
+          this.stockDisponiblePorProducto = new Map<number, number>();
+        },
+      });
   }
 
   private mostrarAlertaStockSinDisponibilidad(nombreProducto: string): void {
-    const swal = (window as unknown as {
-      Swal?: { fire: (options: Record<string, unknown>) => Promise<{ isConfirmed: boolean }> };
-    }).Swal;
+    const swal = (
+      window as unknown as {
+        Swal?: {
+          fire: (
+            options: Record<string, unknown>,
+          ) => Promise<{ isConfirmed: boolean }>;
+        };
+      }
+    ).Swal;
 
     if (!swal) {
       this.mensajeError = `No hay stock disponible para ${nombreProducto}.`;
@@ -1448,14 +1800,23 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       icon: 'warning',
       title: 'Stock insuficiente',
       text: `El producto ${nombreProducto} no tiene stock disponible en lotes abiertos.`,
-      confirmButtonText: 'Entendido'
+      confirmButtonText: 'Entendido',
     });
   }
 
-  private mostrarAlertaCantidadMayorStock(nombreProducto: string, stockDisponible: number): void {
-    const swal = (window as unknown as {
-      Swal?: { fire: (options: Record<string, unknown>) => Promise<{ isConfirmed: boolean }> };
-    }).Swal;
+  private mostrarAlertaCantidadMayorStock(
+    nombreProducto: string,
+    stockDisponible: number,
+  ): void {
+    const swal = (
+      window as unknown as {
+        Swal?: {
+          fire: (
+            options: Record<string, unknown>,
+          ) => Promise<{ isConfirmed: boolean }>;
+        };
+      }
+    ).Swal;
 
     const mensaje = `La cantidad supera el stock disponible de ${nombreProducto} (${stockDisponible.toFixed(2)}).`;
 
@@ -1468,21 +1829,28 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       icon: 'warning',
       title: 'Cantidad invalida',
       text: mensaje,
-      confirmButtonText: 'Entendido'
+      confirmButtonText: 'Entendido',
     });
   }
-
-
 
   /**
    * Envia en paralelo las filas del pedido al modulo de ventas diarias manuales.
    */
-  private enviarFilasAVentasDiarias(detallesValidos: DetalleFormulario[], pedidoId: number): void {
+  private enviarFilasAVentasDiarias(
+    detallesValidos: DetalleFormulario[],
+    pedidoId: number,
+  ): void {
     const filas = detallesValidos
       .map((detalle) => {
         const producto = detalle.productoId
-          ? this.productosDisponibles.find((item) => item.id === detalle.productoId)
-          : this.productosDisponibles.find((item) => item.nombre.trim().toLowerCase() === detalle.descripcion.trim().toLowerCase());
+          ? this.productosDisponibles.find(
+              (item) => item.id === detalle.productoId,
+            )
+          : this.productosDisponibles.find(
+              (item) =>
+                item.nombre.trim().toLowerCase() ===
+                detalle.descripcion.trim().toLowerCase(),
+            );
 
         if (!producto) {
           return null;
@@ -1493,15 +1861,21 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
           pedido_id: pedidoId,
           origen: 'PEDIDO_DELIVERY',
           cantidad: this.cantidadBaseDetalle(detalle),
-          precio: this.esDetalleHuevos(detalle) ? Number(detalle.precioUnitario) : Number(detalle.precioUnitario),
-          presentacion_venta: this.esDetalleHuevos(detalle) ? detalle.presentacionVenta ?? 'UNIDAD' : null,
-          cantidad_presentacion: this.esDetalleHuevos(detalle) ? Number(detalle.cantidad) : null,
-          fecha_hora: this.formatearFechaHoraApi(this.fechaHoraCreacion)
+          precio: this.esDetalleHuevos(detalle)
+            ? Number(detalle.precioUnitario)
+            : Number(detalle.precioUnitario),
+          presentacion_venta: this.esDetalleHuevos(detalle)
+            ? (detalle.presentacionVenta ?? 'UNIDAD')
+            : null,
+          cantidad_presentacion: this.esDetalleHuevos(detalle)
+            ? Number(detalle.cantidad)
+            : null,
+          fecha_hora: this.formatearFechaHoraApi(this.fechaHoraCreacion),
         };
       })
       .filter(
         (
-          fila
+          fila,
         ): fila is {
           producto_id: number;
           pedido_id: number;
@@ -1511,7 +1885,7 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
           presentacion_venta: PresentacionHuevo | null;
           cantidad_presentacion: number | null;
           fecha_hora: string;
-        } => fila !== null
+        } => fila !== null,
       );
 
     if (!filas.length) {
@@ -1524,13 +1898,21 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     this.http
       .get<EstadoVentaDiariaPedidoApi>('/api/otros-productos/ventas-diarias', {
         headers,
-        params: new HttpParams().set('fecha', fecha)
+        params: new HttpParams().set('fecha', fecha),
       })
       .subscribe({
         next: (estado) => {
-          const filasAbiertas = (estado.filas ?? []).filter((fila) => !fila.cerrado_en);
+          const filasAbiertas = (estado.filas ?? []).filter(
+            (fila) => !fila.cerrado_en,
+          );
           const filasSinPedidoActual = filasAbiertas
-            .filter((fila) => !(Number(fila.pedido_id ?? 0) === pedidoId && (fila.origen ?? '') === 'PEDIDO_DELIVERY'))
+            .filter(
+              (fila) =>
+                !(
+                  Number(fila.pedido_id ?? 0) === pedidoId &&
+                  (fila.origen ?? '') === 'PEDIDO_DELIVERY'
+                ),
+            )
             .map((fila) => ({
               producto_id: Number(fila.producto_id),
               cantidad: Number(fila.cantidad ?? 0),
@@ -1539,22 +1921,28 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
               pedido_id: fila.pedido_id ?? null,
               origen: fila.origen ?? null,
               presentacion_venta: fila.presentacion_venta ?? null,
-              cantidad_presentacion: fila.cantidad_presentacion ?? null
+              cantidad_presentacion: fila.cantidad_presentacion ?? null,
             }));
 
           const filasCombinadas = [...filasSinPedidoActual, ...filas];
 
           this.http
-            .put('/api/otros-productos/ventas-diarias', { fecha, filas: filasCombinadas }, { headers })
+            .put(
+              '/api/otros-productos/ventas-diarias',
+              { fecha, filas: filasCombinadas },
+              { headers },
+            )
             .subscribe({
               error: () => {
-                this.mensajeError = 'Pedido guardado, pero no se pudo enviar automaticamente a Ventas diarias.';
-              }
+                this.mensajeError =
+                  'Pedido guardado, pero no se pudo enviar automaticamente a Ventas diarias.';
+              },
             });
         },
         error: () => {
-          this.mensajeError = 'Pedido guardado, pero no se pudo consultar Ventas diarias para sincronizarlo.';
-        }
+          this.mensajeError =
+            'Pedido guardado, pero no se pudo consultar Ventas diarias para sincronizarlo.';
+        },
       });
   }
 
@@ -1567,38 +1955,55 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     return base.replace('T', ' ');
   }
 
-  private consultarApi(endpoint: string, autocompletar: (data: Record<string, unknown>) => void): void {
+  private consultarApi(
+    endpoint: string,
+    autocompletar: (data: Record<string, unknown>) => void,
+  ): void {
     const url = `https://apiperu.dev/api/${endpoint}?api_token=${this.token}`;
     this.consultaCargando = true;
 
-    this.http.get<{ data?: Record<string, unknown>; success?: boolean; message?: string }>(url).subscribe({
-      next: (response) => {
-        if (!response?.success || !response?.data) {
-          this.mensajeError = response?.message || 'No se encontraron datos del documento.';
-          return;
-        }
-        autocompletar(response.data);
-      },
-      error: () => {
-        this.mensajeError = 'No se pudo consultar el documento en API externa.';
-      },
-      complete: () => {
-        this.consultaCargando = false;
-      }
-    });
+    this.http
+      .get<{
+        data?: Record<string, unknown>;
+        success?: boolean;
+        message?: string;
+      }>(url)
+      .subscribe({
+        next: (response) => {
+          if (!response?.success || !response?.data) {
+            this.mensajeError =
+              response?.message || 'No se encontraron datos del documento.';
+            return;
+          }
+          autocompletar(response.data);
+        },
+        error: () => {
+          this.mensajeError =
+            'No se pudo consultar el documento en API externa.';
+        },
+        complete: () => {
+          this.consultaCargando = false;
+        },
+      });
   }
 
   private autocompletarDesdeDni(data: Record<string, unknown>): void {
-    this.formularioCliente.dni = String(data['numero'] ?? this.consultaDocumento);
+    this.formularioCliente.dni = String(
+      data['numero'] ?? this.consultaDocumento,
+    );
     this.formularioCliente.nombres = String(data['nombres'] ?? '');
-    this.formularioCliente.apellidos = `${String(data['apellido_paterno'] ?? '')} ${String(data['apellido_materno'] ?? '')}`.trim();
+    this.formularioCliente.apellidos =
+      `${String(data['apellido_paterno'] ?? '')} ${String(data['apellido_materno'] ?? '')}`.trim();
   }
 
   private autocompletarDesdeRuc(data: Record<string, unknown>): void {
     this.formularioCliente.ruc = String(data['ruc'] ?? this.consultaDocumento);
-    this.formularioCliente.nombreEmpresa = String(data['nombre_o_razon_social'] ?? '');
+    this.formularioCliente.nombreEmpresa = String(
+      data['nombre_o_razon_social'] ?? '',
+    );
     this.formularioCliente.direccion = String(data['direccion'] ?? '');
-    this.formularioCliente.nombres = this.formularioCliente.nombres || this.formularioCliente.nombreEmpresa;
+    this.formularioCliente.nombres =
+      this.formularioCliente.nombres || this.formularioCliente.nombreEmpresa;
   }
 
   private crearDetalleVacio(): DetalleFormulario {
@@ -1609,7 +2014,7 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       precioUnitario: 0,
       productoId: null,
       grupoVenta: null,
-      presentacionVenta: 'UNIDAD'
+      presentacionVenta: 'UNIDAD',
     };
   }
 
@@ -1624,7 +2029,7 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       celular: '',
       direccion: '',
       direccionFiscal: '',
-      referencias: ''
+      referencias: '',
     };
   }
 
@@ -1644,15 +2049,19 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       return;
     }
 
-    this.cargarPedidos(this.subpaginaActiva === 'delivery' ? 'delivery' : 'vendedor');
-    if (this.subpaginaActiva === 'delivery' && this.usuarioEsDelivery()) {
+    this.cargarPedidos(
+      this.subpaginaActiva === 'delivery' ? 'delivery' : 'vendedor',
+    );
+    if (this.subpaginaActiva === 'delivery') {
       this.cargarCobrosAtrasadosDelivery();
     }
   }
 
   private obtenerHeaders(): HttpHeaders {
     const token = this.sesionServicio.obtenerToken();
-    return token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : new HttpHeaders();
+    return token
+      ? new HttpHeaders({ Authorization: `Bearer ${token}` })
+      : new HttpHeaders();
   }
 
   private fechaActualIsoLocal(): string {
@@ -1673,7 +2082,10 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     const ahora = new Date();
     const siguienteMedianoche = new Date(ahora);
     siguienteMedianoche.setHours(24, 0, 0, 0);
-    const milisegundosRestantes = Math.max(1000, siguienteMedianoche.getTime() - ahora.getTime());
+    const milisegundosRestantes = Math.max(
+      1000,
+      siguienteMedianoche.getTime() - ahora.getTime(),
+    );
 
     this.reinicioVistaDeliveryTimer = window.setTimeout(() => {
       this.aplicarFiltro();
@@ -1696,11 +2108,17 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     return this.esMismaFechaLocal(fechaPedido, hoy);
   }
 
-  private esPedidoDelMismoDia(origen: PedidoDelivery, comparado: PedidoDelivery): boolean {
+  private esPedidoDelMismoDia(
+    origen: PedidoDelivery,
+    comparado: PedidoDelivery,
+  ): boolean {
     const fechaOrigen = new Date(origen.fecha_hora_creacion);
     const fechaComparada = new Date(comparado.fecha_hora_creacion);
 
-    if (Number.isNaN(fechaOrigen.getTime()) || Number.isNaN(fechaComparada.getTime())) {
+    if (
+      Number.isNaN(fechaOrigen.getTime()) ||
+      Number.isNaN(fechaComparada.getTime())
+    ) {
       return false;
     }
 
@@ -1708,13 +2126,17 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
   }
 
   private esMismaFechaLocal(fechaA: Date, fechaB: Date): boolean {
-    return fechaA.getFullYear() === fechaB.getFullYear()
-      && fechaA.getMonth() === fechaB.getMonth()
-      && fechaA.getDate() === fechaB.getDate();
+    return (
+      fechaA.getFullYear() === fechaB.getFullYear() &&
+      fechaA.getMonth() === fechaB.getMonth() &&
+      fechaA.getDate() === fechaB.getDate()
+    );
   }
 
   private extraerError(error: unknown, fallback: string): string {
-    const errorApi = error as { error?: { message?: string; errors?: Record<string, string[]> } };
+    const errorApi = error as {
+      error?: { message?: string; errors?: Record<string, string[]> };
+    };
     const errores = errorApi?.error?.errors;
     if (errores) {
       const primerError = Object.values(errores)?.[0]?.[0];
@@ -1730,7 +2152,11 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       return null;
     }
 
-    return [...pedido.pagos].sort((a, b) => b.pedido_pago_id - a.pedido_pago_id)[0] ?? null;
+    return (
+      [...pedido.pagos].sort(
+        (a, b) => b.pedido_pago_id - a.pedido_pago_id,
+      )[0] ?? null
+    );
   }
 
   private cargarVueltosPagados(): void {
@@ -1756,7 +2182,10 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       return;
     }
 
-    window.localStorage.setItem(this.claveVueltosPagados, JSON.stringify([...this.vueltosPagados]));
+    window.localStorage.setItem(
+      this.claveVueltosPagados,
+      JSON.stringify([...this.vueltosPagados]),
+    );
   }
 
   private normalizarNumero(numero: string): string {
@@ -1772,12 +2201,17 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     return '';
   }
 
-  private obtenerNumeroWhatsappCliente(cliente: PedidoCliente | null | undefined): string {
+  private obtenerNumeroWhatsappCliente(
+    cliente: PedidoCliente | null | undefined,
+  ): string {
     return this.normalizarNumero(cliente?.celular ?? '');
   }
 
   private abrirUrlWhatsapp(numero: string, mensaje: string): void {
-    window.open(`https://wa.me/51${numero}?text=${encodeURIComponent(mensaje)}`, '_blank');
+    window.open(
+      `https://wa.me/51${numero}?text=${encodeURIComponent(mensaje)}`,
+      '_blank',
+    );
   }
 
   private construirMensajeCuentaWhatsapp(cuenta: CuentaCliente): string {
@@ -1795,17 +2229,20 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       `Estado: ${estado}`,
       `Total deuda: ${this.formatearSoles(cuenta.total_deuda)}`,
       `Pagado: ${this.formatearSoles(cuenta.monto_pagado)}`,
-      `Saldo pendiente: ${this.formatearSoles(cuenta.saldo_pendiente)}`,
+      `*Saldo pendiente:* ${this.formatearSoles(cuenta.saldo_pendiente)}`,
       '',
       'Detalle:',
       pedidos,
       '',
       'Si ya realizo el pago, por favor ignore este mensaje o envienos la constancia.',
-      'Muchas gracias por su preferencia.'
+      'Muchas gracias por su preferencia.',
     ].join('\n');
   }
 
-  private construirMensajePedidoWhatsapp(cuenta: CuentaCliente, pedido: PedidoDelivery): string {
+  private construirMensajePedidoWhatsapp(
+    cuenta: CuentaCliente,
+    pedido: PedidoDelivery,
+  ): string {
     const cliente = this.obtenerNombreCliente(cuenta.cliente);
     const estado = this.obtenerEstadoTextoPedido(pedido);
 
@@ -1818,24 +2255,29 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       this.construirBloquePedidoWhatsapp(pedido),
       '',
       `Pagado: ${this.formatearSoles(this.obtenerMontoPagado(pedido))}`,
-      `Saldo pendiente: ${this.formatearSoles(this.obtenerSaldoPendiente(pedido))}`,
+      `*Saldo pendiente:* ${this.formatearSoles(this.obtenerSaldoPendiente(pedido))}`,
       '',
       'Si ya realizo el pago, por favor ignore este mensaje o envienos la constancia.',
-      'Muchas gracias por su preferencia.'
+      'Muchas gracias por su preferencia.',
     ].join('\n');
   }
 
   private construirBloquePedidoWhatsapp(pedido: PedidoDelivery): string {
     const detalles = (pedido.detalles ?? [])
-      .map((detalle) => `- ${detalle.cantidad} ${detalle.unidad} ${detalle.descripcion}: ${this.formatearSoles(detalle.subtotal)}`)
+      .map(
+        (detalle) =>
+          `- ${detalle.cantidad} ${detalle.unidad} ${detalle.descripcion}: ${this.formatearSoles(detalle.subtotal)}`,
+      )
       .join('\n');
 
     return [
       `Pedido #${pedido.pedido_id} - ${this.obtenerFechaHoraCorta(pedido.fecha_hora_creacion)}`,
       detalles,
       `Total: ${this.formatearSoles(pedido.total)}`,
-      `Debe: ${this.formatearSoles(this.obtenerSaldoPendiente(pedido))}`
-    ].filter((linea) => linea !== '').join('\n');
+      `Debe: ${this.formatearSoles(this.obtenerSaldoPendiente(pedido))}`,
+    ]
+      .filter((linea) => linea !== '')
+      .join('\n');
   }
 
   private formatearSoles(valor: number | string | null | undefined): string {
@@ -1848,10 +2290,17 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
 
   pedidoTomadoPorMi(pedido: PedidoDelivery): boolean {
     const usuarioId = this.sesionServicio.obtenerUsuario()?.id;
-    return !!usuarioId && Number(pedido.delivery_usuario_id ?? 0) === Number(usuarioId);
+    return (
+      !!usuarioId &&
+      Number(pedido.delivery_usuario_id ?? 0) === Number(usuarioId)
+    );
   }
 
   pedidoDisponibleParaTomar(pedido: PedidoDelivery): boolean {
-    return this.usuarioEsDelivery() && !pedido.delivery_usuario_id && pedido.estado_id === 1;
+    return (
+      this.usuarioEsDelivery() &&
+      !pedido.delivery_usuario_id &&
+      pedido.estado_id === 1
+    );
   }
 }

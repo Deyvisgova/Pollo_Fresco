@@ -31,33 +31,33 @@
         <table>
           <thead>
             <tr>
-              <th>ID</th>
+              <th>N°</th>
               <th>Rol</th>
-              <th>Nombre</th>
               <th>Usuario</th>
-              <th>Email</th>
-              <th>Telefono</th>
+              <th>Nombre</th>
+              <th>Contacto</th>
               <th>Estado</th>
-              <th>Creado</th>
-              <th>Actualizado</th>
+              <th>Registro</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngIf="!cargando && usuariosFiltrados.length === 0">
-              <td colspan="10" class="tabla__vacia">
+              <td colspan="8" class="tabla__vacia">
                 No hay usuarios que coincidan con tu busqueda.
               </td>
             </tr>
-            <tr *ngFor="let usuario of usuariosFiltrados">
-              <td data-label="ID">#{{ usuario.usuario_id }}</td>
+            <tr *ngFor="let usuario of usuariosFiltrados; let i = index">
+              <td data-label="N°">{{ i + 1 }}</td>
               <td data-label="Rol">{{ obtenerNombreRol(usuario.rol_id) }}</td>
+              <td data-label="Usuario">{{ usuario.usuario }}</td>
               <td data-label="Nombre">
                 <strong>{{ usuario.nombres }} {{ usuario.apellidos }}</strong>
               </td>
-              <td data-label="Usuario">{{ usuario.usuario }}</td>
-              <td data-label="Email">{{ usuario.email }}</td>
-              <td data-label="Telefono">{{ usuario.telefono || 'No registrado' }}</td>
+              <td data-label="Contacto">
+                <div>{{ usuario.email }}</div>
+                <div class="nota">Tel: {{ usuario.telefono || 'No registrado' }}</div>
+              </td>
               <td data-label="Estado">
                 <span
                   class="estado"
@@ -67,31 +67,35 @@
                   {{ usuario.activo ? 'Activo' : 'Inactivo' }}
                 </span>
               </td>
-              <td data-label="Creado">{{ usuario.creado_en | date: 'short' }}</td>
-              <td data-label="Actualizado">{{ usuario.actualizado_en | date: 'short' }}</td>
+              <td data-label="Registro">
+                <div>Creado: {{ usuario.creado_en | date: 'short' }}</div>
+                <div class="nota">Actualizado: {{ usuario.actualizado_en | date: 'short' }}</div>
+              </td>
               <td data-label="Acciones" class="tabla__acciones">
-                <label class="switch switch--tabla" title="Activar o desactivar usuario">
-                  <input
-                    type="checkbox"
-                    [checked]="usuario.activo"
-                    (change)="cambiarEstado(usuario)"
-                  />
-                  <span class="switch__slider"></span>
-                </label>
-                <button
-                  class="boton boton--secundario"
-                  type="button"
-                  (click)="seleccionarUsuario(usuario)"
-                >
-                  Editar
-                </button>
-                <button
-                  class="boton boton--peligro"
-                  type="button"
-                  (click)="eliminarUsuario(usuario)"
-                >
-                  Eliminar
-                </button>
+                <div class="tabla__acciones-contenido">
+                  <label class="switch switch--tabla" title="Activar o desactivar usuario">
+                    <input
+                      type="checkbox"
+                      [checked]="usuario.activo"
+                      (change)="cambiarEstado(usuario)"
+                    />
+                    <span class="switch__slider"></span>
+                  </label>
+                  <button
+                    class="boton boton--secundario"
+                    type="button"
+                    (click)="seleccionarUsuario(usuario)"
+                  >
+                    Editar
+                  </button>
+                  <button
+                    class="boton boton--peligro"
+                    type="button"
+                    (click)="eliminarUsuario(usuario)"
+                  >
+                    Eliminar
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>

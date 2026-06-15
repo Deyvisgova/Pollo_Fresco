@@ -322,10 +322,6 @@ class PedidoDeliveryController extends Controller
     {
         $this->asegurarColumnasPedidos();
 
-        if (!$this->usuarioEsDelivery($request->user())) {
-            return response()->json(['message' => 'Solo el rol delivery puede consultar cobros atrasados.'], 403);
-        }
-
         $hoy = now('America/Lima')->toDateString();
 
         $pedidosPendientes = Pedido::query()
@@ -510,6 +506,15 @@ class PedidoDeliveryController extends Controller
         $pedido->setAttribute('monto_pagado', round($pagado, 2));
         $pedido->setAttribute('saldo_pendiente', $saldo);
         $pedido->setAttribute('estado_pago_calculado', $saldo <= 0 ? 'COMPLETO' : ($pagado > 0 ? 'PARCIAL' : 'PENDIENTE'));
+        $pedido->setAttribute(
+            'comprobante',
+            Schema::hasTable('ventas') && Schema::hasColumn('ventas', 'pedido_id')
+                ? DB::table('ventas')
+                    ->select('comprobante_venta_id', 'tipo_comprobante', 'serie', 'numero', 'estado_sunat')
+                    ->where('pedido_id', $pedido->pedido_id)
+                    ->first()
+                : null
+        );
 
         if ($pedido->relationLoaded('cliente') && $pedido->cliente) {
             $pedido->setAttribute('latitud', $pedido->latitud ?? $pedido->cliente->latitud);

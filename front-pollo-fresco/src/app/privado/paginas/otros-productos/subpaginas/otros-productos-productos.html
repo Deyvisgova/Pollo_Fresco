@@ -31,7 +31,7 @@
       </colgroup>
       <thead>
         <tr>
-          <th>#</th>
+          <th>N°</th>
           <th>Nombre</th>
           <th>Grupo venta</th>
           <th>Estado</th>
@@ -39,8 +39,8 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let producto of productosFiltrados">
-          <td data-label="#">{{ producto.id }}</td>
+        <tr *ngFor="let producto of productosFiltrados; let i = index">
+          <td data-label="N°">{{ i + 1 }}</td>
           <td data-label="Nombre">{{ producto.nombre }}</td>
           <td data-label="Grupo venta">{{ producto.grupoVenta }}</td>
           <td data-label="Estado">

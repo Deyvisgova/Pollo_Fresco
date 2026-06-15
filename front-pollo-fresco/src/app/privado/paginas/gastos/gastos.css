@@ -13,6 +13,15 @@
   gap: 14px;
 }
 
+.gastos-header {
+  flex-wrap: wrap;
+}
+
+.gastos-header > div {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
 .gastos-header h2,
 .panel__titulo h3 {
   margin: 0;
@@ -21,6 +30,19 @@
 .gastos-header p {
   margin: 4px 0 0;
   color: #53637d;
+}
+
+.acciones-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  margin-left: auto;
+}
+
+.acciones-header .btn {
+  white-space: nowrap;
 }
 
 .btn {
@@ -134,7 +156,7 @@ textarea {
 
 .resumen-grid {
   display: grid;
-  grid-template-columns: repeat(6, minmax(140px, 1fr));
+  grid-template-columns: repeat(7, minmax(140px, 1fr));
   gap: 12px;
 }
 
@@ -167,6 +189,15 @@ textarea {
 
 .kpi--saldo span {
   color: #cfe0ff;
+}
+
+.kpi--capital {
+  background: #ecfdf5;
+  border-color: #bbf7d0;
+}
+
+.kpi--capital strong {
+  color: #047857;
 }
 
 .panel {
@@ -221,6 +252,24 @@ textarea {
   color: #b91c1c;
 }
 
+.movimiento--capital {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.movimiento--capital .movimiento__monto strong {
+  color: #047857;
+}
+
+.movimiento--compra {
+  border-color: #fed7aa;
+  background: #fff7ed;
+}
+
+.movimiento--compra .movimiento__monto strong {
+  color: #c2410c;
+}
+
 .movimiento__monto button {
   border: 0;
   background: #fff7ed;
@@ -265,6 +314,12 @@ textarea {
 
 .formulario-panel {
   max-width: 980px;
+}
+
+.ayuda-panel {
+  margin: 12px 0 0;
+  color: #53637d;
+  line-height: 1.5;
 }
 
 .form-grid {
@@ -384,6 +439,12 @@ textarea {
   .resumen-grid {
     grid-template-columns: repeat(3, minmax(150px, 1fr));
   }
+
+  .acciones-header {
+    width: 100%;
+    justify-content: flex-start;
+    margin-left: 0;
+  }
 }
 
 @media (max-width: 720px) {
@@ -397,6 +458,8 @@ textarea {
   }
 
   .gastos-header .btn,
+  .acciones-header,
+  .acciones-header .btn,
   .filtros label,
   .filtros .btn,
   .categoria-form input,

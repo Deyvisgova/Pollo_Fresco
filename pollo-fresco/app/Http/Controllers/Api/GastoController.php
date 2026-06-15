@@ -170,6 +170,96 @@ class GastoController extends Controller
         return response()->json(['message' => 'Gasto anulado correctamente.']);
     }
 
+    public function guardarCapital(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'fondo' => ['required', Rule::in([self::FONDO_POLLO, self::FONDO_OTROS])],
+            'fecha' => ['required', 'date'],
+            'descripcion' => ['required', 'string', 'max:200'],
+            'monto' => ['required', 'numeric', 'min:0.01'],
+            'nota' => ['nullable', 'string', 'max:250'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['message' => 'Datos invalidos', 'errors' => $validator->errors()], 422);
+        }
+
+        $validated = $validator->validated();
+        $fechaCapital = Carbon::parse($validated['fecha'])->toDateString();
+        if ($this->periodoEstaCerrado($fechaCapital)) {
+            return response()->json(['message' => 'Este mes ya esta cerrado. No se puede agregar capital en ese periodo.'], 409);
+        }
+
+        $capitalId = DB::table('gasto_capitales')->insertGetId([
+            'usuario_id' => $request->user()->usuario_id,
+            'fondo' => $validated['fondo'],
+            'fecha' => $fechaCapital,
+            'monto' => (float) $validated['monto'],
+            'descripcion' => trim($validated['descripcion']),
+            'nota' => isset($validated['nota']) ? trim((string) $validated['nota']) : null,
+            'estado' => 'ACTIVO',
+            'creado_en' => now(),
+        ]);
+
+        $capital = DB::table('gasto_capitales')->where('capital_id', $capitalId)->first();
+        $this->registrarAuditoria(
+            $request,
+            'CAPITAL_AGREGADO',
+            'gasto_capitales',
+            $capitalId,
+            $validated['fondo'],
+            'Capital agregado: ' . trim($validated['descripcion']),
+            null,
+            $capital
+        );
+
+        return response()->json([
+            'message' => 'Capital agregado correctamente.',
+            'capital' => $capital,
+        ], 201);
+    }
+
+    public function anularCapital(Request $request, int $capitalId)
+    {
+        $capital = DB::table('gasto_capitales')->where('capital_id', $capitalId)->first();
+
+        if (!$capital) {
+            return response()->json(['message' => 'Capital no encontrado.'], 404);
+        }
+
+        if (($capital->estado ?? 'ACTIVO') === 'ANULADO') {
+            return response()->json(['message' => 'Este capital ya esta anulado.'], 409);
+        }
+
+        if ($this->periodoEstaCerrado($capital->fecha)) {
+            return response()->json(['message' => 'Este mes ya esta cerrado. No se puede anular capital de ese periodo.'], 409);
+        }
+
+        $motivo = trim((string) $request->input('motivo', 'Anulacion sin detalle'));
+        DB::table('gasto_capitales')
+            ->where('capital_id', $capitalId)
+            ->update([
+                'estado' => 'ANULADO',
+                'anulado_en' => now(),
+                'anulado_por' => $request->user()->usuario_id,
+                'motivo_anulacion' => $motivo,
+            ]);
+
+        $capitalAnulado = DB::table('gasto_capitales')->where('capital_id', $capitalId)->first();
+        $this->registrarAuditoria(
+            $request,
+            'CAPITAL_ANULADO',
+            'gasto_capitales',
+            $capitalId,
+            $capital->fondo ?? null,
+            'Capital anulado: ' . ($capital->descripcion ?? ''),
+            $capital,
+            $capitalAnulado
+        );
+
+        return response()->json(['message' => 'Capital anulado correctamente.']);
+    }
+
     public function guardarVentaPolloGallina(Request $request)
     {
         $validated = $request->validate([
@@ -300,12 +390,18 @@ class GastoController extends Controller
 
         foreach ($fondos as $codigo => $datos) {
             $gastos = $this->sumarGastos($codigo, $desde, $hasta);
+            $capital = $this->sumarCapital($codigo, $desde, $hasta);
+            $pagosCompras = $codigo === self::FONDO_POLLO
+                ? (float) $datos['costos']
+                : $this->sumarComprasOtrosProductos($desde, $hasta);
             $saldoTotal = $this->calcularSaldoTotal($codigo);
             $fondos[$codigo] = array_merge($datos, [
                 'codigo' => $codigo,
                 'nombre' => $codigo === self::FONDO_POLLO ? 'Pollo + Gallina' : 'Congelados + Huevos',
+                'capital' => $capital,
+                'pagos_compras' => round($pagosCompras, 2),
                 'gastos' => $gastos,
-                'saldo_periodo' => round($datos['ganancia'] - $gastos, 2),
+                'saldo_periodo' => round($capital + $datos['ventas'] - $pagosCompras - $gastos, 2),
                 'saldo_disponible' => $saldoTotal,
             ]);
         }
@@ -401,8 +497,11 @@ class GastoController extends Controller
         $datos = $fondo === self::FONDO_POLLO
             ? $this->calcularPolloGallina($desde, $hasta)
             : $this->calcularCongeladosHuevos($desde, $hasta);
+        $pagosCompras = $fondo === self::FONDO_POLLO
+            ? (float) $datos['costos']
+            : $this->sumarComprasOtrosProductos($desde, $hasta);
 
-        return round($datos['ganancia'] - $this->sumarGastos($fondo, $desde, $hasta), 2);
+        return round($this->sumarCapital($fondo, $desde, $hasta) + $datos['ventas'] - $pagosCompras - $this->sumarGastos($fondo, $desde, $hasta), 2);
     }
 
     private function sumarGastos(string $fondo, string $desde, string $hasta): float
@@ -412,6 +511,37 @@ class GastoController extends Controller
             ->where('estado', 'ACTIVO')
             ->whereBetween('fecha', [$desde, $hasta])
             ->sum('monto'), 2);
+    }
+
+    private function sumarCapital(string $fondo, string $desde, string $hasta): float
+    {
+        if (!Schema::hasTable('gasto_capitales')) {
+            return 0;
+        }
+
+        return round((float) DB::table('gasto_capitales')
+            ->where('fondo', $fondo)
+            ->where('estado', 'ACTIVO')
+            ->whereBetween('fecha', [$desde, $hasta])
+            ->sum('monto'), 2);
+    }
+
+    private function sumarComprasOtrosProductos(string $desde, string $hasta): float
+    {
+        if (!Schema::hasTable('compras_lote') || !Schema::hasTable('compras_lote_detalle')) {
+            return 0;
+        }
+
+        $usaCostoTotalCompra = Schema::hasColumn('compras_lote_detalle', 'costo_total_compra');
+        $formula = $usaCostoTotalCompra
+            ? 'COALESCE(cld.costo_total_compra, cld.costo_kilo * cld.cantidad)'
+            : 'cld.costo_kilo * cld.cantidad';
+
+        return round((float) DB::table('compras_lote as cl')
+            ->join('compras_lote_detalle as cld', 'cl.compra_lote_id', '=', 'cld.compra_lote_id')
+            ->whereBetween('cl.fecha_ingreso', [$desde, $hasta])
+            ->selectRaw("COALESCE(SUM($formula), 0) as total")
+            ->value('total'), 2);
     }
 
     private function movimientos(string $desde, string $hasta, ?string $fondoFiltro): array
@@ -451,7 +581,127 @@ class GastoController extends Controller
             })
             ->all();
 
-        return $gastos;
+        $capitales = $this->movimientosCapital($desde, $hasta, $fondoFiltro);
+        $compras = $this->movimientosCompras($desde, $hasta, $fondoFiltro);
+
+        return collect([...$gastos, ...$capitales, ...$compras])
+            ->sortByDesc('fecha')
+            ->take(120)
+            ->values()
+            ->all();
+    }
+
+    private function movimientosCapital(string $desde, string $hasta, ?string $fondoFiltro): array
+    {
+        if (!Schema::hasTable('gasto_capitales')) {
+            return [];
+        }
+
+        return DB::table('gasto_capitales')
+            ->select([
+                'capital_id as id',
+                'fecha',
+                'fondo',
+                'descripcion as titulo',
+                'monto',
+                'nota',
+                'estado',
+                'motivo_anulacion',
+            ])
+            ->whereBetween('fecha', [$desde, $hasta])
+            ->when($fondoFiltro, fn ($query) => $query->where('fondo', $fondoFiltro))
+            ->orderByDesc('fecha')
+            ->orderByDesc('capital_id')
+            ->limit(80)
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'id' => (int) $item->id,
+                    'fecha' => $item->fecha,
+                    'fondo' => $item->fondo,
+                    'tipo' => 'CAPITAL',
+                    'titulo' => $item->titulo,
+                    'categoria' => 'Capital agregado',
+                    'monto' => (float) $item->monto,
+                    'nota' => $item->nota,
+                    'estado' => $item->estado ?? 'ACTIVO',
+                    'motivo_anulacion' => $item->motivo_anulacion,
+                ];
+            })
+            ->all();
+    }
+
+    private function movimientosCompras(string $desde, string $hasta, ?string $fondoFiltro): array
+    {
+        $movimientos = [];
+
+        if (!$fondoFiltro || $fondoFiltro === self::FONDO_POLLO) {
+            $movimientos = array_merge($movimientos, DB::table('entregas_proveedor')
+                ->select([
+                    'entrega_id as id',
+                    DB::raw('DATE(fecha_hora) as fecha'),
+                    DB::raw("'" . self::FONDO_POLLO . "' as fondo"),
+                    DB::raw("CONCAT('Compra ', COALESCE(tipo, 'pollo/gallina')) as titulo"),
+                    'costo_total as monto',
+                    DB::raw('NULL as nota'),
+                    DB::raw("'ACTIVO' as estado"),
+                    DB::raw('NULL as motivo_anulacion'),
+                ])
+                ->whereBetween(DB::raw('DATE(fecha_hora)'), [$desde, $hasta])
+                ->where(function ($query) {
+                    $query
+                        ->whereRaw('UPPER(tipo) LIKE ?', ['%POLLO%'])
+                        ->orWhereRaw('UPPER(tipo) LIKE ?', ['%GALLINA%']);
+                })
+                ->limit(80)
+                ->get()
+                ->map(fn ($item) => $this->formatearMovimientoCompra($item))
+                ->all());
+        }
+
+        if ((!$fondoFiltro || $fondoFiltro === self::FONDO_OTROS) && Schema::hasTable('compras_lote') && Schema::hasTable('compras_lote_detalle')) {
+            $usaCostoTotalCompra = Schema::hasColumn('compras_lote_detalle', 'costo_total_compra');
+            $formula = $usaCostoTotalCompra
+                ? 'COALESCE(cld.costo_total_compra, cld.costo_kilo * cld.cantidad)'
+                : 'cld.costo_kilo * cld.cantidad';
+
+            $movimientos = array_merge($movimientos, DB::table('compras_lote as cl')
+                ->join('compras_lote_detalle as cld', 'cl.compra_lote_id', '=', 'cld.compra_lote_id')
+                ->join('productos as p', 'p.producto_id', '=', 'cld.producto_id')
+                ->select([
+                    'cld.compra_lote_detalle_id as id',
+                    'cl.fecha_ingreso as fecha',
+                    DB::raw("'" . self::FONDO_OTROS . "' as fondo"),
+                    DB::raw("CONCAT('Compra ', p.nombre) as titulo"),
+                    DB::raw("$formula as monto"),
+                    'cl.codigo_comprobante as nota',
+                    DB::raw("'ACTIVO' as estado"),
+                    DB::raw('NULL as motivo_anulacion'),
+                ])
+                ->whereBetween('cl.fecha_ingreso', [$desde, $hasta])
+                ->limit(80)
+                ->get()
+                ->map(fn ($item) => $this->formatearMovimientoCompra($item))
+                ->all());
+        }
+
+        return $movimientos;
+    }
+
+    private function formatearMovimientoCompra(object $item): array
+    {
+        return [
+            'id' => (int) $item->id,
+            'fecha' => $item->fecha,
+            'fondo' => $item->fondo,
+            'tipo' => 'COMPRA',
+            'titulo' => $item->titulo,
+            'categoria' => 'Pago de compra',
+            'monto' => (float) $item->monto,
+            'nota' => $item->nota,
+            'estado' => $item->estado ?? 'ACTIVO',
+            'motivo_anulacion' => $item->motivo_anulacion,
+        ];
     }
 
     private function auditoria(string $desde, string $hasta, ?string $fondoFiltro): array

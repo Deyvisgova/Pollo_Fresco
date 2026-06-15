@@ -247,6 +247,16 @@
                   (click)="abrirDetallePedido(pedido)">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5c-7 0-11 7-11 7s4 7 11 7 11-7 11-7-4-7-11-7Zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm0-2.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/></svg>
                 </button>
+                <button
+                  *ngIf="puedeEmitirComprobante(pedido)"
+                  type="button"
+                  class="boton boton-tabla boton-tabla--comprobante"
+                  (click)="emitirComprobantePedido(pedido)">
+                  Emitir comprobante
+                </button>
+                <span *ngIf="pedido.comprobante" class="badge badge--comprobante" title="Comprobante ya emitido">
+                  {{ obtenerEtiquetaComprobante(pedido) }}
+                </span>
               </div>
             </td>
           </tr>
@@ -307,13 +317,21 @@
                 <span>{{ detalle.cantidad }} {{ detalle.unidad }} {{ detalle.descripcion }}</span>
                   <strong>S/ {{ detalle.subtotal | number: '1.2-2' }}</strong>
                 </div>
-                <button
-                  type="button"
-                  class="boton boton--whatsapp boton--compacto"
-                  [disabled]="!tieneWhatsappCliente(cuenta.cliente)"
-                  (click)="abrirWhatsappPedidoPendiente(cuenta, pedido)">
-                  WhatsApp pedido
-                </button>
+                <div class="cuenta-card__pedido-acciones">
+                  <button
+                    type="button"
+                    class="boton boton--primario boton--compacto"
+                    (click)="abrirRegistroPagoCuenta(pedido)">
+                    Pagar pedido
+                  </button>
+                  <button
+                    type="button"
+                    class="boton boton--whatsapp boton--compacto"
+                    [disabled]="!tieneWhatsappCliente(cuenta.cliente)"
+                    (click)="abrirWhatsappPedidoPendiente(cuenta, pedido)">
+                    WhatsApp pedido
+                  </button>
+                </div>
             </div>
             <small *ngIf="cuenta.pedidos.length > 2">Hay {{ cuenta.pedidos.length - 2 }} pedido(s) mas. Usa Ver cuenta.</small>
           </div>
@@ -518,6 +536,16 @@
           <span>Total</span>
           <strong>S/ {{ pedidoDetalleModal.total | number: '1.2-2' }}</strong>
         </div>
+        <div class="detalle-pedido__comprobante" *ngIf="puedeEmitirComprobante(pedidoDetalleModal)">
+          <span>El pedido esta completamente pagado.</span>
+          <button type="button" class="boton boton--primario" (click)="emitirComprobantePedido(pedidoDetalleModal)">
+            Emitir boleta o factura
+          </button>
+        </div>
+        <div class="detalle-pedido__comprobante detalle-pedido__comprobante--emitido" *ngIf="pedidoDetalleModal.comprobante">
+          <span>Comprobante emitido</span>
+          <strong>{{ obtenerEtiquetaComprobante(pedidoDetalleModal) }}</strong>
+        </div>
       </div>
       <ng-template #sinDetallePedidoModal>
         <p class="detalle-pedido__vacio">Sin detalle registrado.</p>
@@ -529,55 +557,90 @@
 
 <div class="modal-fondo" *ngIf="cuentaClienteSeleccionada" (click)="cerrarCuentaCliente()">
   <article class="modal-contenido modal-contenido--cuenta-cliente" (click)="$event.stopPropagation()">
-    <header class="tarjeta__encabezado tarjeta__encabezado--acciones">
+    <header class="cuenta-modal-header">
       <div>
         <h4>{{ obtenerNombreCliente(cuentaClienteSeleccionada.cliente) }}</h4>
-        <p>Historial de cuenta corriente y deudas pendientes.</p>
+        <p>Resumen de deuda, pedidos pendientes y pagos registrados.</p>
       </div>
       <button type="button" class="boton boton--secundario" (click)="cerrarCuentaCliente()">Cerrar</button>
     </header>
 
     <section class="cuenta-modal-resumen">
-      <span>Total deuda <strong>S/ {{ cuentaClienteSeleccionada.total_deuda | number: '1.2-2' }}</strong></span>
-      <span>Pagado <strong>S/ {{ cuentaClienteSeleccionada.monto_pagado | number: '1.2-2' }}</strong></span>
-      <span>Saldo <strong>S/ {{ cuentaClienteSeleccionada.saldo_pendiente | number: '1.2-2' }}</strong></span>
+      <span><small>Total deuda</small><strong>S/ {{ cuentaClienteSeleccionada.total_deuda | number: '1.2-2' }}</strong></span>
+      <span><small>Pagado</small><strong>S/ {{ cuentaClienteSeleccionada.monto_pagado | number: '1.2-2' }}</strong></span>
+      <span class="cuenta-modal-resumen__saldo"><small>Saldo pendiente</small><strong>S/ {{ cuentaClienteSeleccionada.saldo_pendiente | number: '1.2-2' }}</strong></span>
     </section>
 
     <section class="cuenta-modal-grid">
-      <div class="bloque bloque--sin-borde">
-        <h5>Pedidos pendientes</h5>
-        <div class="cuenta-pedido" *ngFor="let pedido of cuentaClienteSeleccionada.pedidos">
-          <div>
-            <strong>Pedido #{{ obtenerNumeroVisualPedido(pedido) }}  {{ obtenerTipoPedido(pedido) }}</strong>
-            <span>{{ obtenerFechaLarga(pedido.fecha_hora_creacion) }}</span>
+      <div class="cuenta-modal-panel">
+        <div class="cuenta-modal-panel__titulo">
+          <h5>Pedidos pendientes</h5>
+          <span>{{ cuentaClienteSeleccionada.pedidos.length }} pedido(s)</span>
+        </div>
+
+        <div class="cuenta-lista">
+          <article class="cuenta-pedido" *ngFor="let pedido of cuentaClienteSeleccionada.pedidos">
+            <header class="cuenta-pedido__cabecera">
+              <div class="cuenta-pedido__info">
+                <strong>Pedido #{{ obtenerNumeroVisualPedido(pedido) }}</strong>
+                <span>{{ obtenerTipoPedido(pedido) }}</span>
+                <small>{{ obtenerFechaLarga(pedido.fecha_hora_creacion) }}</small>
+              </div>
+              <div class="cuenta-pedido__saldo">
+                <small>Debe</small>
+                <strong>S/ {{ obtenerSaldoPendiente(pedido) | number: '1.2-2' }}</strong>
+              </div>
+            </header>
+
             <div class="cuenta-pedido__detalle">
-              <div *ngFor="let detalle of pedido.detalles">
+              <div class="cuenta-pedido__producto" *ngFor="let detalle of pedido.detalles">
                 <span>{{ detalle.cantidad }} {{ detalle.unidad }} {{ detalle.descripcion }}</span>
                 <strong>S/ {{ detalle.subtotal | number: '1.2-2' }}</strong>
               </div>
             </div>
-          </div>
-          <div>
-            <span>Total S/ {{ pedido.total | number: '1.2-2' }}</span>
-            <strong>Debe S/ {{ obtenerSaldoPendiente(pedido) | number: '1.2-2' }}</strong>
-          </div>
+
+            <footer class="cuenta-pedido__pie">
+              <div class="cuenta-pedido__total">
+                <span>Total pedido</span>
+                <strong>S/ {{ pedido.total | number: '1.2-2' }}</strong>
+              </div>
+              <button
+                type="button"
+                class="boton boton--primario cuenta-pedido__pagar"
+                (click)="abrirRegistroPagoCuenta(pedido)"
+              >
+                Pagar este pedido
+              </button>
+            </footer>
+          </article>
         </div>
       </div>
 
-      <div class="bloque bloque--sin-borde">
-        <h5>Historial de pagos</h5>
-        <div class="cuenta-pago" *ngFor="let pago of cuentaClienteSeleccionada.historial_pagos">
-          <div>
-            <strong>{{ obtenerFechaLarga(pago.fecha_hora) }}</strong>
-            <span>Pedido #{{ pago.pedido_id }}  {{ pago.registrado_por }}</span>
-          </div>
-          <strong>S/ {{ pago.monto | number: '1.2-2' }}</strong>
+      <div class="cuenta-modal-panel">
+        <div class="cuenta-modal-panel__titulo">
+          <h5>Historial de pagos</h5>
+          <span>{{ cuentaClienteSeleccionada.historial_pagos.length }} pago(s)</span>
         </div>
-        <p class="detalle-pedido__vacio" *ngIf="!cuentaClienteSeleccionada.historial_pagos.length">Sin pagos registrados.</p>
+
+        <div class="cuenta-lista cuenta-lista--pagos" *ngIf="cuentaClienteSeleccionada.historial_pagos.length; else sinPagosCuentaModal">
+          <article class="cuenta-pago" *ngFor="let pago of cuentaClienteSeleccionada.historial_pagos">
+            <div>
+              <strong>{{ obtenerFechaLarga(pago.fecha_hora) }}</strong>
+              <span>Pedido #{{ pago.pedido_id }} - {{ pago.registrado_por }}</span>
+            </div>
+            <strong class="cuenta-pago__monto">S/ {{ pago.monto | number: '1.2-2' }}</strong>
+          </article>
+        </div>
+
+        <ng-template #sinPagosCuentaModal>
+          <p class="detalle-pedido__vacio cuenta-modal-vacio">Sin pagos registrados.</p>
+        </ng-template>
       </div>
     </section>
 
-    <button type="button" class="boton boton--primario" (click)="abrirRegistroPagoCliente(cuentaClienteSeleccionada)">Registrar pago</button>
+    <footer class="cuenta-modal-footer">
+      <button type="button" class="boton boton--primario" (click)="abrirRegistroPagoCliente(cuentaClienteSeleccionada)">Registrar pago</button>
+    </footer>
   </article>
 </div>
 
@@ -586,7 +649,7 @@
     <header class="tarjeta__encabezado tarjeta__encabezado--acciones">
       <div>
         <h4>Registrar pago</h4>
-        <p *ngIf="pedidoPagoPendiente">{{ obtenerNombreCliente(pedidoPagoPendiente.cliente) }} ? {{ obtenerTipoPedido(pedidoPagoPendiente) }}</p>
+        <p *ngIf="pedidoPagoPendiente">{{ obtenerNombreCliente(pedidoPagoPendiente.cliente) }} - {{ obtenerTipoPedido(pedidoPagoPendiente) }}</p>
         <p *ngIf="cuentaPagoPendiente">{{ obtenerNombreCliente(cuentaPagoPendiente.cliente) }} - se aplicara a la deuda mas antigua.</p>
       </div>
       <button type="button" class="boton boton--secundario" (click)="cerrarRegistroPagoCuenta()">Cerrar</button>
@@ -606,7 +669,7 @@
 
       <label class="campo">
         <span>Monto recibido</span>
-        <input type="number" min="0" step="0.01" [(ngModel)]="montoPagoCuenta" />
+        <input type="number" min="0" step="0.01" [(ngModel)]="montoPagoCuenta" placeholder="Escribe el monto recibido" />
       </label>
 
       <button type="button" class="boton boton--primario" [disabled]="registrandoPago" (click)="registrarPagoCuenta()">

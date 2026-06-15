@@ -1311,3 +1311,308 @@ app-root {
     scroll-snap-align: start;
   }
 }
+/*
+ * Tablas responsive del panel privado.
+ * Escritorio queda intacto. Tablet conserva tabla real con scroll horizontal,
+ * celular convierte filas con data-label en tarjetas legibles.
+ */
+@media (min-width: 601px) and (max-width: 900px) {
+  .panel__rutas .tabla-contenedor,
+  .panel__rutas .tabla__contenedor,
+  .panel__rutas .tabla-scroll,
+  .panel__rutas .tabla-ventas,
+  .panel__rutas .tabla-pedidos__contenedor,
+  .panel__rutas .seccion__tabla,
+  .panel__rutas .modal__tabla,
+  .panel__rutas [class*='tabla-contenedor'],
+  .panel__rutas [class*='tabla__contenedor'] {
+    max-width: 100% !important;
+    max-height: min(62vh, 560px) !important;
+    overflow: auto !important;
+    border: 1px solid var(--border-soft) !important;
+    border-radius: 10px !important;
+    background: var(--surface-card) !important;
+    box-shadow: 0 10px 26px rgba(15, 23, 42, 0.08) !important;
+  }
+
+  .panel__rutas table,
+  .panel__rutas table.tabla,
+  .panel__rutas table.tabla-sistema,
+  .panel__rutas .seccion__tabla table {
+    display: table !important;
+    width: max-content !important;
+    min-width: 760px !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    table-layout: auto !important;
+  }
+
+  .panel__rutas table thead,
+  .panel__rutas .seccion__tabla thead {
+    display: table-header-group !important;
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    clip: auto !important;
+  }
+
+  .panel__rutas table tbody,
+  .panel__rutas .seccion__tabla tbody {
+    display: table-row-group !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .panel__rutas table tr,
+  .panel__rutas .seccion__tabla tr {
+    display: table-row !important;
+    width: auto !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+  }
+
+  .panel__rutas table th,
+  .panel__rutas table td,
+  .panel__rutas .seccion__tabla th,
+  .panel__rutas .seccion__tabla td {
+    display: table-cell !important;
+    width: auto !important;
+    min-width: 120px !important;
+    padding: 10px 12px !important;
+    border-bottom: 1px solid var(--border-soft) !important;
+    vertical-align: middle !important;
+    text-align: left !important;
+    white-space: normal !important;
+  }
+
+  .panel__rutas table th,
+  .panel__rutas .seccion__tabla th {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 5 !important;
+    background: var(--surface-table-head) !important;
+    color: var(--text-primary) !important;
+    font-weight: 900 !important;
+    white-space: nowrap !important;
+  }
+
+  .panel__rutas table td::before,
+  .panel__rutas .seccion__tabla td::before {
+    content: none !important;
+  }
+
+  .panel__rutas .tabla__acciones,
+  .panel__rutas .tabla-acciones,
+  .panel__rutas .acciones-tabla,
+  .panel__rutas .seccion__acciones-fila {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 8px !important;
+    width: auto !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .panel__rutas .tabla-contenedor,
+  .panel__rutas .tabla__contenedor,
+  .panel__rutas .tabla-scroll,
+  .panel__rutas .tabla-ventas,
+  .panel__rutas .tabla-pedidos__contenedor,
+  .panel__rutas .seccion__tabla,
+  .panel__rutas .modal__tabla,
+  .panel__rutas [class*='tabla-contenedor'],
+  .panel__rutas [class*='tabla__contenedor'] {
+    max-width: 100% !important;
+    max-height: none !important;
+    overflow: visible !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .panel__rutas table:has(td[data-label]),
+  .panel__rutas table:has(td[data-label]) thead,
+  .panel__rutas table:has(td[data-label]) tbody,
+  .panel__rutas table:has(td[data-label]) tr,
+  .panel__rutas table:has(td[data-label]) th,
+  .panel__rutas table:has(td[data-label]) td {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .panel__rutas table:has(td[data-label]) thead {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    border: 0 !important;
+  }
+
+  .panel__rutas table:has(td[data-label]) tbody {
+    display: grid !important;
+    gap: 12px !important;
+  }
+
+  .panel__rutas table:has(td[data-label]) tbody tr {
+    display: block !important;
+    padding: 12px !important;
+    margin: 0 !important;
+    border: 1px solid var(--border-soft) !important;
+    border-radius: 12px !important;
+    background: var(--surface-card) !important;
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08) !important;
+    overflow: hidden !important;
+  }
+
+  .panel__rutas table:has(td[data-label]) tbody td {
+    display: grid !important;
+    grid-template-columns: minmax(96px, 36%) minmax(0, 1fr) !important;
+    align-items: center !important;
+    gap: 10px !important;
+    min-height: 40px !important;
+    padding: 9px 0 !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--border-soft) !important;
+    color: var(--text-primary) !important;
+    text-align: left !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  .panel__rutas table:has(td[data-label]) tbody tr td:last-child {
+    border-bottom: 0 !important;
+  }
+
+  .panel__rutas table:has(td[data-label]) tbody td::before {
+    content: attr(data-label) ":" !important;
+    position: static !important;
+    width: auto !important;
+    min-width: 0 !important;
+    flex: none !important;
+    color: var(--text-secondary) !important;
+    font-weight: 800 !important;
+    line-height: 1.2 !important;
+  }
+
+  .panel__rutas table:has(td[data-label]) tbody td[data-label='']::before {
+    content: none !important;
+  }
+
+  .panel__rutas table:has(td[data-label]) tbody td[colspan] {
+    display: block !important;
+    padding: 14px !important;
+    text-align: center !important;
+    color: var(--text-secondary) !important;
+  }
+
+  .panel__rutas table:has(td[data-label]) tbody td[colspan]::before {
+    content: none !important;
+  }
+
+  .panel__rutas table:has(td[data-label]) tbody td[data-label='Acciones'],
+  .panel__rutas table:has(td[data-label]) tbody td[data-label='Accion'],
+  .panel__rutas table:has(td[data-label]) tbody td[data-label='Opciones'] {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    padding-top: 12px !important;
+  }
+
+  .panel__rutas table:has(td[data-label]) td > * {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .panel__rutas table:has(td[data-label]) td input,
+  .panel__rutas table:has(td[data-label]) td select,
+  .panel__rutas table:has(td[data-label]) td textarea {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .panel__rutas table:has(td[data-label]) .tabla__acciones,
+  .panel__rutas table:has(td[data-label]) .tabla-acciones,
+  .panel__rutas table:has(td[data-label]) .acciones-tabla,
+  .panel__rutas table:has(td[data-label]) .seccion__acciones-fila,
+  .panel__rutas table:has(td[data-label]) .tabla__acciones-contenido {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    width: 100% !important;
+    align-items: stretch !important;
+    justify-content: stretch !important;
+  }
+
+  .panel__rutas table:has(td[data-label]) td[data-label='Acciones'] button,
+  .panel__rutas table:has(td[data-label]) td[data-label='Acciones'] a,
+  .panel__rutas table:has(td[data-label]) td[data-label='Accion'] button,
+  .panel__rutas table:has(td[data-label]) td[data-label='Opciones'] button {
+    width: 100% !important;
+    min-height: 38px !important;
+    justify-content: center !important;
+    text-align: center !important;
+    margin: 0 !important;
+  }
+
+  .panel__rutas table:has(td[data-label]) td[data-label='Acciones'] .boton-icono,
+  .panel__rutas table:has(td[data-label]) td[data-label='Acciones'] button[aria-label],
+  .panel__rutas table:has(td[data-label]) td[data-label='Acciones'] .accion-icono {
+    width: 42px !important;
+    min-width: 42px !important;
+    height: 38px !important;
+    padding: 0 !important;
+    justify-self: start !important;
+  }
+
+  .panel__rutas table:has(td[data-label]) td[data-label='Acciones'] .switch,
+  .panel__rutas table:has(td[data-label]) td[data-label='Accion'] .switch,
+  .panel__rutas table:has(td[data-label]) td[data-label='Opciones'] .switch {
+    width: 54px !important;
+    justify-self: start !important;
+  }
+
+  .panel__rutas table:not(:has(td[data-label])) {
+    display: table !important;
+    min-width: 680px !important;
+  }
+
+  .panel__rutas .tabla-contenedor:has(table:not(:has(td[data-label]))),
+  .panel__rutas .tabla__contenedor:has(table:not(:has(td[data-label]))),
+  .panel__rutas .tabla-scroll:has(table:not(:has(td[data-label]))),
+  .panel__rutas .seccion__tabla:has(table:not(:has(td[data-label]))) {
+    overflow-x: auto !important;
+    border: 1px solid var(--border-soft) !important;
+    border-radius: 10px !important;
+    background: var(--surface-card) !important;
+  }
+}
+/* Modal de cuenta corriente en pedidos */
+.modal-contenido--cuenta-cliente{width:min(960px,100%);gap:16px;padding:20px}.cuenta-modal-header{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;border-bottom:1px solid #e2e8f0;padding-bottom:12px}.cuenta-modal-header h4{margin:0;color:#111827;font-size:1.15rem}.cuenta-modal-header p{margin:4px 0 0;color:#64748b}.cuenta-modal-resumen{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.cuenta-modal-resumen span{display:grid;gap:7px;border:1px solid #dbeafe;border-radius:12px;background:#f8fbff;padding:12px 14px;color:#334155}.cuenta-modal-resumen small{color:#64748b;font-weight:700}.cuenta-modal-resumen strong{color:#0f172a;font-size:1.05rem}.cuenta-modal-resumen__saldo{border-color:#bfdbfe!important;background:#eff6ff!important}.cuenta-modal-resumen__saldo strong{color:#1d4ed8}.cuenta-modal-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(280px,.75fr);gap:14px;align-items:start}.cuenta-modal-panel{border:1px solid #e2e8f0;border-radius:14px;background:#fff;overflow:hidden}.cuenta-modal-panel__titulo{display:flex;justify-content:space-between;align-items:center;gap:10px;background:#f8fbff;border-bottom:1px solid #e2e8f0;padding:12px 14px}.cuenta-modal-panel__titulo h5{margin:0;color:#173668;font-size:1rem}.cuenta-modal-panel__titulo span{color:#64748b;font-size:.8rem;font-weight:800}.cuenta-lista{display:grid;gap:10px;max-height:360px;overflow:auto;padding:12px}.cuenta-pedido{border:1px solid #dbeafe;border-radius:12px;background:#fcfdff;padding:12px;display:grid;gap:10px}.cuenta-pedido__cabecera{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.cuenta-pedido__cabecera strong{color:#111827}.cuenta-pedido__cabecera span,.cuenta-pedido__saldo small,.cuenta-pedido__producto span,.cuenta-pedido__total span,.cuenta-pago span{color:#64748b;font-size:.82rem}.cuenta-pedido__saldo{min-width:112px;text-align:right;display:grid;gap:2px}.cuenta-pedido__saldo strong{color:#b45309}.cuenta-pedido__detalle{display:grid;gap:7px;border-top:1px dashed #cbd5e1;padding-top:9px;margin:0}.cuenta-pedido__producto,.cuenta-pedido__total{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.cuenta-pedido__producto strong{white-space:nowrap}.cuenta-pedido__total{border-top:1px solid #e2e8f0;padding-top:9px;font-weight:800}.cuenta-pago{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc;padding:12px}.cuenta-pago strong{color:#111827}.cuenta-pago__monto{color:#166534!important;white-space:nowrap}.cuenta-modal-vacio{margin:12px}.cuenta-modal-footer{display:flex;justify-content:flex-end;border-top:1px solid #e2e8f0;padding-top:12px}.cuenta-modal-footer .boton{min-width:180px}
+
+@media (max-width:760px){.cuenta-modal-resumen,.cuenta-modal-grid{grid-template-columns:1fr}.cuenta-modal-header,.cuenta-pedido__cabecera,.cuenta-pago{flex-direction:column}.cuenta-modal-header .boton,.cuenta-modal-footer .boton{width:100%}.cuenta-pedido__saldo{text-align:left}.cuenta-lista{max-height:none}}
+
+/* Ajuste visual final del modal "Ver cuenta" */
+.modal-contenido--cuenta-cliente{max-height:min(88vh,760px);overflow:hidden}.cuenta-modal-grid{grid-template-columns:minmax(0,1.1fr) minmax(300px,.9fr);min-height:0}.cuenta-modal-panel{min-width:0}.cuenta-modal-panel__titulo{position:sticky;top:0;z-index:2}.cuenta-lista{align-content:start}.cuenta-pedido{box-shadow:0 8px 20px rgba(15,23,42,.04)}.cuenta-pedido__cabecera{border-bottom:1px solid #e2e8f0;padding-bottom:10px}.cuenta-pedido__cabecera>div:first-child{display:grid;gap:3px;min-width:0}.cuenta-pedido__cabecera span{line-height:1.35}.cuenta-pedido__saldo{background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:8px 10px}.cuenta-pedido__detalle{border-top:0;padding-top:0}.cuenta-pedido__producto{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start}.cuenta-pedido__producto span{line-height:1.35;overflow-wrap:anywhere}.cuenta-pedido__producto strong,.cuenta-pedido__total strong{white-space:nowrap}.cuenta-pedido__total{background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;padding:9px 10px}.cuenta-pedido__pagar{width:100%;min-height:38px}.cuenta-pago{align-items:center}.cuenta-lista--pagos{max-height:360px}.cuenta-modal-footer{background:#fff;position:sticky;bottom:0}
+
+@media (max-width:900px){.modal-contenido--cuenta-cliente{max-height:92vh;overflow:auto}.cuenta-modal-grid{grid-template-columns:1fr}.cuenta-lista,.cuenta-lista--pagos{max-height:none}}
+
+@media (max-width:560px){.cuenta-modal-resumen{grid-template-columns:1fr}.cuenta-pedido__cabecera,.cuenta-pago{align-items:stretch}.cuenta-pedido__saldo{text-align:left}.cuenta-pedido__producto,.cuenta-pedido__total{grid-template-columns:1fr;gap:4px}.cuenta-pedido__producto strong,.cuenta-pedido__total strong{justify-self:start}.cuenta-modal-footer .boton{width:100%}}
+
+/* Ver cuenta: estructura aislada para evitar cruces con tarjetas de cuentas por cobrar */
+.modal-contenido--cuenta-cliente .cuenta-pedido{display:flex;flex-direction:column;gap:12px;padding:14px;border:1px solid #dbeafe;border-radius:14px;background:#fff;min-width:0}.modal-contenido--cuenta-cliente .cuenta-pedido__cabecera{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:start;border-bottom:1px solid #e2e8f0;padding-bottom:10px}.modal-contenido--cuenta-cliente .cuenta-pedido__info{display:grid;gap:4px;min-width:0}.modal-contenido--cuenta-cliente .cuenta-pedido__info strong{font-size:.98rem;color:#0f172a}.modal-contenido--cuenta-cliente .cuenta-pedido__info span,.modal-contenido--cuenta-cliente .cuenta-pedido__info small{color:#64748b;font-size:.82rem;line-height:1.25}.modal-contenido--cuenta-cliente .cuenta-pedido__saldo{min-width:118px;text-align:right;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:8px 10px}.modal-contenido--cuenta-cliente .cuenta-pedido__saldo small{display:block;color:#92400e;font-weight:700}.modal-contenido--cuenta-cliente .cuenta-pedido__saldo strong{display:block;color:#b45309;font-size:1rem;white-space:nowrap}.modal-contenido--cuenta-cliente .cuenta-pedido__detalle{display:grid;gap:8px;margin:0;padding:0;border:0}.modal-contenido--cuenta-cliente .cuenta-pedido__producto{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:start;padding-bottom:8px;border-bottom:1px dashed #e2e8f0}.modal-contenido--cuenta-cliente .cuenta-pedido__producto:last-child{padding-bottom:0;border-bottom:0}.modal-contenido--cuenta-cliente .cuenta-pedido__producto span{color:#475569;font-size:.84rem;line-height:1.35;overflow-wrap:anywhere}.modal-contenido--cuenta-cliente .cuenta-pedido__producto strong{color:#0f172a;font-size:.88rem;white-space:nowrap}.modal-contenido--cuenta-cliente .cuenta-pedido__pie{display:grid;grid-template-columns:minmax(130px,.45fr) minmax(170px,1fr);gap:10px;align-items:stretch}.modal-contenido--cuenta-cliente .cuenta-pedido__total{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0;padding:10px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc}.modal-contenido--cuenta-cliente .cuenta-pedido__total span{color:#64748b;font-size:.82rem;font-weight:700}.modal-contenido--cuenta-cliente .cuenta-pedido__total strong{color:#0f172a;white-space:nowrap}.modal-contenido--cuenta-cliente .cuenta-pedido__pagar{width:100%;min-height:44px}
+
+@media (max-width:640px){.modal-contenido--cuenta-cliente .cuenta-pedido__cabecera,.modal-contenido--cuenta-cliente .cuenta-pedido__producto,.modal-contenido--cuenta-cliente .cuenta-pedido__pie{grid-template-columns:1fr}.modal-contenido--cuenta-cliente .cuenta-pedido__saldo{text-align:left}.modal-contenido--cuenta-cliente .cuenta-pedido__producto strong{justify-self:start}}

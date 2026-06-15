@@ -105,6 +105,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('gastos/categorias', [GastoController::class, 'categorias']);
     Route::post('gastos/categorias', [GastoController::class, 'guardarCategoria']);
     Route::post('gastos', [GastoController::class, 'guardarGasto']);
+    Route::post('gastos/capital', [GastoController::class, 'guardarCapital']);
+    Route::patch('gastos/capital/{capitalId}/anular', [GastoController::class, 'anularCapital']);
     Route::patch('gastos/{gastoId}/anular', [GastoController::class, 'eliminarGasto']);
     Route::delete('gastos/{gastoId}', [GastoController::class, 'eliminarGasto']);
     Route::put('gastos/venta-pollo-gallina', [GastoController::class, 'guardarVentaPolloGallina']);
@@ -138,6 +140,7 @@ Route::middleware('auth:sanctum')->group(function () {
         ->whereNumber('numero');
 
     Route::get('ventas', [VentaController::class, 'index']);
+    Route::get('ventas/preparar-desde-pedido/{pedido}', [VentaController::class, 'prepararDesdePedido']);
     Route::get('ventas/siguiente-correlativo', [VentaController::class, 'siguienteCorrelativo']);
     Route::post('ventas', [VentaController::class, 'store']);
     Route::post('ventas/{ventaId}/nota-credito', [VentaController::class, 'crearNotaCredito']);

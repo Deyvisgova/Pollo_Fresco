@@ -12,6 +12,8 @@ interface FondoResumen {
   ventas: number;
   costos: number;
   ganancia: number;
+  capital: number;
+  pagos_compras: number;
   gastos: number;
   saldo_periodo: number;
   saldo_disponible: number;
@@ -26,7 +28,7 @@ interface MovimientoGasto {
   id: number;
   fecha: string;
   fondo: FondoCodigo;
-  tipo: 'GASTO';
+  tipo: 'GASTO' | 'CAPITAL' | 'COMPRA';
   titulo: string;
   categoria: string;
   monto: number;
@@ -90,12 +92,13 @@ export class PrivadoGastos implements OnInit {
   auditoria: AuditoriaGasto[] = [];
   cierresMensuales: CierreMensual[] = [];
   fondoActivo: FondoCodigo = 'POLLO_GALLINA';
-  vistaActiva: 'resumen' | 'gasto' | 'venta' | 'categorias' | 'trazabilidad' | 'cierre' = 'resumen';
+  vistaActiva: 'resumen' | 'gasto' | 'capital' | 'venta' | 'categorias' | 'trazabilidad' | 'cierre' = 'resumen';
 
   fechaDesde = this.inicioMesActual();
   fechaHasta = this.finMesActual();
   cargando = false;
   guardandoGasto = false;
+  guardandoCapital = false;
   guardandoVenta = false;
   cerrandoMes = false;
   mensajeError = '';
@@ -105,6 +108,14 @@ export class PrivadoGastos implements OnInit {
     fondo: 'POLLO_GALLINA' as FondoCodigo,
     categoriaId: null as number | null,
     categoriaNombre: '',
+    fecha: this.fechaHoy(),
+    descripcion: '',
+    monto: null as number | null,
+    nota: ''
+  };
+
+  capitalForm = {
+    fondo: 'POLLO_GALLINA' as FondoCodigo,
     fecha: this.fechaHoy(),
     descripcion: '',
     monto: null as number | null,
@@ -163,12 +174,52 @@ export class PrivadoGastos implements OnInit {
   seleccionarFondo(fondo: FondoCodigo): void {
     this.fondoActivo = fondo;
     this.gastoForm.fondo = fondo;
+    this.capitalForm.fondo = fondo;
   }
 
-  cambiarVista(vista: 'resumen' | 'gasto' | 'venta' | 'categorias' | 'trazabilidad' | 'cierre'): void {
+  cambiarVista(vista: 'resumen' | 'gasto' | 'capital' | 'venta' | 'categorias' | 'trazabilidad' | 'cierre'): void {
     this.vistaActiva = vista;
     this.mensajeError = '';
     this.mensajeOk = '';
+  }
+
+  guardarCapital(): void {
+    this.mensajeError = '';
+    this.mensajeOk = '';
+
+    if (!this.capitalForm.descripcion.trim()) {
+      this.mensajeError = 'Escribe el origen del capital.';
+      return;
+    }
+
+    if (!this.capitalForm.monto || Number(this.capitalForm.monto) <= 0) {
+      this.mensajeError = 'Ingresa un monto valido para el capital.';
+      return;
+    }
+
+    this.guardandoCapital = true;
+    this.http.post(
+      '/api/gastos/capital',
+      {
+        fondo: this.capitalForm.fondo,
+        fecha: this.capitalForm.fecha,
+        descripcion: this.capitalForm.descripcion.trim(),
+        monto: Number(this.capitalForm.monto),
+        nota: this.capitalForm.nota.trim() || null
+      },
+      { headers: this.obtenerHeaders() }
+    ).subscribe({
+      next: (respuesta: any) => {
+        this.guardandoCapital = false;
+        this.mensajeOk = respuesta?.message || 'Capital agregado correctamente.';
+        this.limpiarCapital();
+        this.cargarResumen();
+      },
+      error: (error) => {
+        this.guardandoCapital = false;
+        this.mensajeError = error?.error?.message || 'No se pudo agregar el capital.';
+      }
+    });
   }
 
   guardarGasto(): void {
@@ -290,15 +341,25 @@ export class PrivadoGastos implements OnInit {
   }
 
   anularGasto(movimiento: MovimientoGasto): void {
-    const motivo = window.prompt(`Motivo para anular el gasto "${movimiento.titulo}"`);
+    if (movimiento.tipo === 'COMPRA') {
+      this.mensajeError = 'Las compras se corrigen desde su modulo de origen.';
+      return;
+    }
+
+    const etiqueta = movimiento.tipo === 'CAPITAL' ? 'capital' : 'gasto';
+    const motivo = window.prompt(`Motivo para anular el ${etiqueta} "${movimiento.titulo}"`);
     if (!motivo?.trim()) {
       return;
     }
 
-    this.http.patch(`/api/gastos/${movimiento.id}/anular`, { motivo: motivo.trim() }, { headers: this.obtenerHeaders() }).subscribe({
+    const url = movimiento.tipo === 'CAPITAL'
+      ? `/api/gastos/capital/${movimiento.id}/anular`
+      : `/api/gastos/${movimiento.id}/anular`;
+
+    this.http.patch(url, { motivo: motivo.trim() }, { headers: this.obtenerHeaders() }).subscribe({
       next: () => this.cargarResumen(),
       error: (error) => {
-        this.mensajeError = error?.error?.message || 'No se pudo anular el gasto.';
+        this.mensajeError = error?.error?.message || `No se pudo anular el ${etiqueta}.`;
       }
     });
   }
@@ -327,6 +388,18 @@ export class PrivadoGastos implements OnInit {
     return Number(this.ventaAcumulada?.venta_pollo ?? 0) + Number(this.ventaAcumulada?.venta_gallina ?? 0);
   }
 
+  signoMovimiento(movimiento: MovimientoGasto): string {
+    return movimiento.tipo === 'CAPITAL' ? '+' : '-';
+  }
+
+  claseMovimiento(movimiento: MovimientoGasto): string {
+    return `movimiento--${movimiento.tipo.toLowerCase()}`;
+  }
+
+  puedeAnularMovimiento(movimiento: MovimientoGasto): boolean {
+    return movimiento.estado !== 'ANULADO' && movimiento.tipo !== 'COMPRA';
+  }
+
   aplicarMesActual(): void {
     this.fechaDesde = this.inicioMesActual();
     this.fechaHasta = this.finMesActual();
@@ -339,6 +412,16 @@ export class PrivadoGastos implements OnInit {
       fondo: this.fondoActivo,
       categoriaId: null,
       categoriaNombre: '',
+      fecha: this.fechaHoy(),
+      descripcion: '',
+      monto: null,
+      nota: ''
+    };
+  }
+
+  private limpiarCapital(): void {
+    this.capitalForm = {
+      fondo: this.fondoActivo,
       fecha: this.fechaHoy(),
       descripcion: '',
       monto: null,

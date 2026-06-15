@@ -26,6 +26,7 @@
     <table class="tabla">
       <thead>
         <tr>
+          <th>N°</th>
           <th>Cliente / Empresa</th>
           <th>Documento</th>
           <th>Contacto</th>
@@ -36,7 +37,8 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let cliente of clientes">
+        <tr *ngFor="let cliente of clientes; let i = index">
+          <td data-label="N°">{{ i + 1 }}</td>
           <td data-label="Cliente / Empresa">
             <strong>{{ ((cliente.nombres || '') + ' ' + (cliente.apellidos || '')).trim() || '-' }}</strong>
             <div class="nota">{{ cliente.nombre_empresa || 'Sin empresa' }}</div>
@@ -63,7 +65,7 @@
           </td>
         </tr>
         <tr *ngIf="clientes.length === 0">
-          <td colspan="7">Todavia no hay clientes registrados.</td>
+          <td colspan="8">Todavia no hay clientes registrados.</td>
         </tr>
       </tbody>
     </table>

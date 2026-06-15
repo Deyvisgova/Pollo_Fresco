@@ -4,7 +4,10 @@
       <h2>Gastos</h2>
       <p>Control de fondos, ganancias y gastos por linea de negocio.</p>
     </div>
-    <button type="button" class="btn btn--primario" (click)="cambiarVista('gasto')">+ Gasto</button>
+    <div class="acciones-header">
+      <button type="button" class="btn" (click)="cambiarVista('capital')">+ Capital</button>
+      <button type="button" class="btn btn--primario" (click)="cambiarVista('gasto')">+ Gasto</button>
+    </div>
   </header>
 
   <div class="filtros">
@@ -45,9 +48,17 @@
         <span>Ventas</span>
         <strong>S/ {{ fondo.ventas | number: '1.2-2' }}</strong>
       </article>
+      <article class="kpi kpi--capital">
+        <span>Capital</span>
+        <strong>S/ {{ fondo.capital | number: '1.2-2' }}</strong>
+      </article>
       <article class="kpi">
-        <span>Costos</span>
+        <span>Costo vendido</span>
         <strong>S/ {{ fondo.costos | number: '1.2-2' }}</strong>
+      </article>
+      <article class="kpi">
+        <span>Pagos compras</span>
+        <strong>S/ {{ fondo.pagos_compras | number: '1.2-2' }}</strong>
       </article>
       <article class="kpi">
         <span>Ganancia</span>
@@ -67,6 +78,7 @@
   <nav class="subtabs">
     <button type="button" [class.activo]="vistaActiva === 'resumen'" (click)="cambiarVista('resumen')">Resumen</button>
     <button type="button" [class.activo]="vistaActiva === 'gasto'" (click)="cambiarVista('gasto')">Registrar gasto</button>
+    <button type="button" [class.activo]="vistaActiva === 'capital'" (click)="cambiarVista('capital')">Agregar capital</button>
     <button type="button" [class.activo]="vistaActiva === 'venta'" (click)="cambiarVista('venta')">Venta pollo/gallina</button>
     <button type="button" [class.activo]="vistaActiva === 'categorias'" (click)="cambiarVista('categorias')">Categorias</button>
     <button type="button" [class.activo]="vistaActiva === 'cierre'" (click)="cambiarVista('cierre')">Cierre mensual</button>
@@ -80,7 +92,12 @@
     </div>
 
     <div class="movimientos" *ngIf="movimientosDelFondo().length; else sinMovimientos">
-      <article class="movimiento" [class.movimiento--anulado]="movimiento.estado === 'ANULADO'" *ngFor="let movimiento of movimientosDelFondo()">
+      <article
+        class="movimiento"
+        [ngClass]="claseMovimiento(movimiento)"
+        [class.movimiento--anulado]="movimiento.estado === 'ANULADO'"
+        *ngFor="let movimiento of movimientosDelFondo()"
+      >
         <div>
           <span class="movimiento__fecha">{{ movimiento.fecha }}</span>
           <h4>{{ movimiento.titulo }}</h4>
@@ -88,8 +105,8 @@
           <p class="movimiento__estado" *ngIf="movimiento.estado === 'ANULADO'">Anulado: {{ movimiento.motivo_anulacion || 'Sin motivo registrado' }}</p>
         </div>
         <div class="movimiento__monto">
-          <strong>- S/ {{ movimiento.monto | number: '1.2-2' }}</strong>
-          <button type="button" *ngIf="movimiento.estado !== 'ANULADO'" (click)="anularGasto(movimiento)">Anular</button>
+          <strong>{{ signoMovimiento(movimiento) }} S/ {{ movimiento.monto | number: '1.2-2' }}</strong>
+          <button type="button" *ngIf="puedeAnularMovimiento(movimiento)" (click)="anularGasto(movimiento)">Anular</button>
           <span class="badge-anulado" *ngIf="movimiento.estado === 'ANULADO'">ANULADO</span>
         </div>
       </article>
@@ -98,6 +115,51 @@
     <ng-template #sinMovimientos>
       <div class="estado-vacio">No hay gastos registrados para este fondo en el rango seleccionado.</div>
     </ng-template>
+  </section>
+
+  <section class="panel formulario-panel" *ngIf="vistaActiva === 'capital'">
+    <div class="panel__titulo">
+      <h3>Agregar capital</h3>
+      <span>{{ nombreFondo(capitalForm.fondo) }}</span>
+    </div>
+
+    <p class="ayuda-panel">
+      Usa esta opcion cuando pongas dinero propio o de caja para comprar mercaderia sin que el fondo quede en negativo.
+    </p>
+
+    <form class="form-grid" (ngSubmit)="guardarCapital()">
+      <label>
+        Fondo
+        <select [(ngModel)]="capitalForm.fondo" name="fondoCapital">
+          <option value="POLLO_GALLINA">Pollo + Gallina</option>
+          <option value="CONGELADOS_HUEVOS">Congelados + Huevos</option>
+        </select>
+      </label>
+
+      <label>
+        Fecha
+        <input type="date" [(ngModel)]="capitalForm.fecha" name="fechaCapital" />
+      </label>
+
+      <label class="span-2">
+        Origen del capital
+        <input type="text" [(ngModel)]="capitalForm.descripcion" name="descripcionCapital" placeholder="Ej. Capital inicial, prestamo, dinero de caja" />
+      </label>
+
+      <label>
+        Monto
+        <input type="number" min="0" step="0.01" [(ngModel)]="capitalForm.monto" name="montoCapital" placeholder="0.00" />
+      </label>
+
+      <label class="span-2">
+        Nota
+        <textarea rows="3" [(ngModel)]="capitalForm.nota" name="notaCapital" placeholder="Detalle opcional"></textarea>
+      </label>
+
+      <button type="submit" class="btn btn--primario span-2" [disabled]="guardandoCapital">
+        {{ guardandoCapital ? 'Guardando...' : 'Guardar capital' }}
+      </button>
+    </form>
   </section>
 
   <section class="panel formulario-panel" *ngIf="vistaActiva === 'gasto'">

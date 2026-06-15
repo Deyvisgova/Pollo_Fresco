@@ -26,6 +26,7 @@
     <table class="tabla">
       <thead>
         <tr>
+          <th>N°</th>
           <th>Proveedor / Empresa</th>
           <th>Documento</th>
           <th>Contacto</th>
@@ -35,7 +36,8 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let proveedor of proveedores">
+        <tr *ngFor="let proveedor of proveedores; let i = index">
+          <td data-label="N°">{{ i + 1 }}</td>
           <td data-label="Proveedor / Empresa">
             <strong>{{ ((proveedor.nombres || '') + ' ' + (proveedor.apellidos || '')).trim() || '-' }}</strong>
             <div class="nota">{{ proveedor.nombre_empresa || 'Sin empresa' }}</div>
@@ -58,7 +60,7 @@
           </td>
         </tr>
         <tr *ngIf="proveedores.length === 0">
-          <td colspan="6">Todavia no hay proveedores registrados.</td>
+          <td colspan="7">Todavia no hay proveedores registrados.</td>
         </tr>
       </tbody>
     </table>

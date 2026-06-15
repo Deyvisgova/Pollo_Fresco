@@ -124,6 +124,7 @@
 
 .tabla {
   width: 100%;
+  min-width: 1120px;
   border-collapse: separate;
   border-spacing: 0;
   font-size: 0.88rem;
@@ -142,6 +143,13 @@
   background: #eff6ff;
 }
 
+.tabla th:first-child,
+.tabla td:first-child {
+  width: 64px;
+  min-width: 64px;
+  text-align: center;
+}
+
 .nota {
   color: #64748b;
   font-size: 0.75rem;
@@ -151,6 +159,17 @@
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  align-items: center;
+  min-width: 168px;
+}
+
+.acciones-tabla .boton--secundario {
+  background: #f97316;
+  color: #ffffff;
+}
+
+.acciones-tabla .boton--peligro-solido {
+  box-shadow: 0 4px 10px rgba(220, 38, 38, 0.18);
 }
 
 .modal-fondo {

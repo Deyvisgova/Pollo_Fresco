@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Component, DoCheck, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { SesionServicio } from '../../../servicios/sesion.servicio';
 
 type TipoComprobante = 'factura' | 'boleta' | 'nota-venta';
@@ -63,7 +64,6 @@ interface FilaVentaDiariaPayload {
 interface MetodoPago {
   id: string;
   etiqueta: string;
-  icono: string;
 }
 
 interface VentaGuardada {
@@ -82,6 +82,31 @@ interface DetalleVentaValido {
   grupo_venta?: 'HUEVOS' | 'CONGELADO' | 'OTROS' | null;
   presentacion_venta?: PresentacionHuevo | null;
   cantidad_presentacion?: number | null;
+}
+
+interface PreparacionPedido {
+  pedido_id: number;
+  tipo_pedido: 'MESA' | 'DELIVERY';
+  mesa: string | null;
+  total: number;
+  saldo_pendiente: number;
+  pagado_completo: boolean;
+  comprobante: VentaGuardada | null;
+  cliente: {
+    dni: string | null;
+    ruc: string | null;
+    nombres: string | null;
+    apellidos: string | null;
+    nombre_empresa: string | null;
+    direccion: string | null;
+    direccion_fiscal: string | null;
+  } | null;
+  detalles: Array<{
+    descripcion: string;
+    unidad: string;
+    cantidad: number;
+    precio_unitario: number;
+  }>;
 }
 
 @Component({
@@ -105,10 +130,6 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
   moneda = 'PEN';
   formaPago = 'Contado';
 
-  referenciaSerie = '';
-  referenciaNumero = '';
-  referenciaMotivo = '';
-
   consultaDocumento = '';
   consultaCargando = false;
   mensajeError = '';
@@ -131,12 +152,12 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
   metodoPagoSeleccionado = 'efectivo';
   montoRecibido: number | null = null;
   metodosPago: MetodoPago[] = [
-    { id: 'efectivo', etiqueta: 'Efectivo', icono: '' },
-    { id: 'tarjeta', etiqueta: 'Tarjeta', icono: '' },
-    { id: 'transferencia', etiqueta: 'Transf.', icono: '' },
-    { id: 'plin', etiqueta: 'Plin', icono: '' },
-    { id: 'yape', etiqueta: 'Yape', icono: '' },
-    { id: 'otro', etiqueta: 'Otro', icono: '' }
+    { id: 'efectivo', etiqueta: 'Efectivo' },
+    { id: 'tarjeta', etiqueta: 'Tarjeta' },
+    { id: 'transferencia', etiqueta: 'Transferencia' },
+    { id: 'plin', etiqueta: 'Plin' },
+    { id: 'yape', etiqueta: 'Yape' },
+    { id: 'otro', etiqueta: 'Otro' }
   ];
   guardandoVenta = false;
   mensajeVenta = '';
@@ -145,6 +166,8 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
   ultimaVentaEmitida: VentaGuardada | null = null;
   formatoVoucher: 'a4' | 'ticket-80' | 'ticket-57' = 'a4';
   mostrarModalVoucher = false;
+  pedidoOrigenId: number | null = null;
+  cargandoPedidoOrigen = false;
   presentacionesHuevo = [
     { id: 'UNIDAD' as PresentacionHuevo, etiqueta: 'Unidad', factor: 1 },
     { id: 'MEDIO_CASILLERO' as PresentacionHuevo, etiqueta: 'Medio casillero', factor: 15 },
@@ -155,12 +178,20 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
 
   constructor(
     private readonly http: HttpClient,
-    private readonly sesionServicio: SesionServicio
+    private readonly sesionServicio: SesionServicio,
+    private readonly route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
     this.cargarProductos();
-    this.restaurarBorradorVenta();
+    const pedidoId = Number(this.route.snapshot.queryParamMap.get('pedido') ?? 0);
+    if (pedidoId > 0) {
+      this.cargarPedidoParaFacturar(pedidoId);
+    } else {
+      this.restaurarBorradorVenta();
+    }
+    this.moneda = 'PEN';
+    this.formaPago = 'Contado';
     this.actualizarSerieNumero();
     this.ultimoBorradorSerializado = JSON.stringify(this.obtenerBorradorVenta());
   }
@@ -174,6 +205,7 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
   }
 
   actualizarSerieNumero(): void {
+    this.ajustarClienteAlComprobante();
     const params = new HttpParams().set('tipo', this.tipoComprobante);
     this.http.get<{ serie: string; numero: string }>('/api/ventas/siguiente-correlativo', {
       headers: this.obtenerHeaders(),
@@ -379,6 +411,22 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
       this.errorVenta = 'Agrega al menos un producto para registrar la venta.';
       return;
     }
+    if (this.tipoComprobante === 'factura' && !/^\d{11}$/.test(this.cliente.documento)) {
+      this.errorVenta = 'Para emitir una factura, consulta o ingresa un RUC valido de 11 digitos.';
+      return;
+    }
+    if (this.tipoComprobante === 'factura' && !this.cliente.nombre.trim()) {
+      this.errorVenta = 'La factura requiere la razon social del cliente.';
+      return;
+    }
+    if (this.tipoComprobante === 'boleta' && this.cliente.documento && !/^\d{8}$/.test(this.cliente.documento)) {
+      this.errorVenta = 'El DNI de la boleta debe tener 8 digitos.';
+      return;
+    }
+    if (this.metodoPagoSeleccionado === 'efectivo' && this.montoRecibido !== null && this.montoRecibido < this.total) {
+      this.errorVenta = 'El monto recibido es menor que el total. Corrige el pago antes de emitir.';
+      return;
+    }
 
     const detallesValidos: DetalleVentaValido[] = this.detalles
       .filter((item) => !!item.descripcion.trim() && (item.cantidad ?? 0) > 0)
@@ -404,6 +452,7 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
       moneda: this.moneda,
       forma_pago: this.formaPago,
       metodo_pago: this.metodoPagoSeleccionado,
+      pedido_id: this.pedidoOrigenId,
       cliente_tipo_documento: this.tipoDocumentoCliente,
       cliente_documento: this.cliente.documento,
       cliente_nombre: this.cliente.nombre,
@@ -412,9 +461,6 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
       total: this.total,
       monto_recibido: this.montoRecibido,
       vuelto: this.vuelto,
-      referencia_serie: this.referenciaSerie,
-      referencia_numero: this.referenciaNumero,
-      referencia_motivo: this.referenciaMotivo,
       detalles: detallesValidos
     };
 
@@ -428,7 +474,9 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
         this.advertenciaVenta = '';
         this.ultimaVentaEmitida = venta;
         this.mostrarModalVoucher = true;
-        this.sincronizarConVentasDiarias(detallesValidos);
+        if (this.pedidoOrigenId === null) {
+          this.sincronizarConVentasDiarias(detallesValidos);
+        }
         this.limpiarFormularioVenta();
       },
       error: (err) => {
@@ -472,6 +520,28 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
     });
   }
 
+  cambiarTipoDocumento(): void {
+    this.limpiarCliente();
+  }
+
+  limpiarCliente(): void {
+    this.consultaDocumento = '';
+    this.cliente = { documento: '', nombre: '', direccion: '' };
+    this.mensajeError = '';
+  }
+
+  private ajustarClienteAlComprobante(): void {
+    if (this.tipoComprobante === 'factura' && this.tipoDocumentoCliente !== 'ruc') {
+      this.tipoDocumentoCliente = 'ruc';
+      this.limpiarCliente();
+      return;
+    }
+    if (this.tipoComprobante === 'boleta' && this.tipoDocumentoCliente !== 'dni') {
+      this.tipoDocumentoCliente = 'dni';
+      this.limpiarCliente();
+    }
+  }
+
   enviarVoucher(): void {
     if (!this.ultimaVentaEmitida) {
       return;
@@ -492,7 +562,7 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
           return;
         }
 
-        this.errorVenta = 'Tu navegador no soporta el envio directo. Usa Descargar ??.';
+        this.errorVenta = 'Tu navegador no soporta el envio directo. Usa Descargar PDF.';
       },
       error: () => {
         this.errorVenta = 'No se pudo generar el voucher para enviar.';
@@ -517,15 +587,61 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
       nombre: '',
       direccion: ''
     };
-    this.referenciaSerie = '';
-    this.referenciaNumero = '';
-    this.referenciaMotivo = '';
     this.detalles = [];
     this.productoSeleccionado = '';
     this.metodoPagoSeleccionado = 'efectivo';
     this.montoRecibido = null;
     this.advertenciaVenta = '';
+    this.pedidoOrigenId = null;
     this.limpiarBorradorVenta();
+  }
+
+  private cargarPedidoParaFacturar(pedidoId: number): void {
+    this.cargandoPedidoOrigen = true;
+    this.errorVenta = '';
+
+    this.http.get<PreparacionPedido>(`/api/ventas/preparar-desde-pedido/${pedidoId}`, {
+      headers: this.obtenerHeaders()
+    }).subscribe({
+      next: (preparacion) => {
+        this.cargandoPedidoOrigen = false;
+        if (preparacion.comprobante) {
+          this.errorVenta = `El pedido ya tiene el comprobante ${preparacion.comprobante.serie}-${preparacion.comprobante.numero}.`;
+          return;
+        }
+        if (!preparacion.pagado_completo) {
+          this.errorVenta = `El pedido aun tiene un saldo pendiente de S/ ${Number(preparacion.saldo_pendiente).toFixed(2)}.`;
+          return;
+        }
+
+        const cliente = preparacion.cliente;
+        const documento = cliente?.ruc || cliente?.dni || '';
+        this.pedidoOrigenId = preparacion.pedido_id;
+        this.tipoDocumentoCliente = cliente?.ruc ? 'ruc' : 'dni';
+        this.tipoComprobante = cliente?.ruc ? 'factura' : 'boleta';
+        this.consultaDocumento = documento;
+        this.cliente = {
+          documento,
+          nombre: cliente?.nombre_empresa
+            || `${cliente?.nombres ?? ''} ${cliente?.apellidos ?? ''}`.trim(),
+          direccion: cliente?.direccion_fiscal || cliente?.direccion || ''
+        };
+        this.detalles = preparacion.detalles.map((detalle) => ({
+          descripcion: detalle.descripcion,
+          unidad: detalle.unidad,
+          cantidad: Number(detalle.cantidad),
+          precioUnitario: Number(detalle.precio_unitario)
+        }));
+        this.metodoPagoSeleccionado = 'efectivo';
+        this.montoRecibido = Number(preparacion.total);
+        this.actualizarSerieNumero();
+        this.ultimoBorradorSerializado = JSON.stringify(this.obtenerBorradorVenta());
+      },
+      error: (error) => {
+        this.cargandoPedidoOrigen = false;
+        this.errorVenta = error?.error?.message ?? 'No se pudo cargar el pedido para emitir su comprobante.';
+      }
+    });
   }
 
   private sincronizarConVentasDiarias(detalles: DetalleVentaValido[]): void {
@@ -669,7 +785,7 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
         enlace.click();
       },
       error: () => {
-        this.errorVenta = 'No se pudo generar el voucher en ??.';
+        this.errorVenta = 'No se pudo generar el voucher en PDF.';
       }
     });
   }
@@ -725,15 +841,13 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
       fechaEmision: this.fechaEmision,
       moneda: this.moneda,
       formaPago: this.formaPago,
-      referenciaSerie: this.referenciaSerie,
-      referenciaNumero: this.referenciaNumero,
-      referenciaMotivo: this.referenciaMotivo,
       consultaDocumento: this.consultaDocumento,
       cliente: this.cliente,
       detalles: this.detalles,
       productoSeleccionado: this.productoSeleccionado,
       metodoPagoSeleccionado: this.metodoPagoSeleccionado,
-      montoRecibido: this.montoRecibido
+      montoRecibido: this.montoRecibido,
+      pedidoOrigenId: this.pedidoOrigenId
     };
   }
 
@@ -762,15 +876,13 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
         fechaEmision: string;
         moneda: string;
         formaPago: string;
-        referenciaSerie: string;
-        referenciaNumero: string;
-        referenciaMotivo: string;
         consultaDocumento: string;
         cliente: ClienteFactura;
         detalles: DetalleFactura[];
         productoSeleccionado: string;
         metodoPagoSeleccionado: string;
         montoRecibido: number | null;
+        pedidoOrigenId: number | null;
       }>;
 
       this.tipoComprobante = data.tipoComprobante ?? this.tipoComprobante;
@@ -780,15 +892,13 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
       this.fechaEmision = data.fechaEmision ?? this.fechaEmision;
       this.moneda = data.moneda ?? this.moneda;
       this.formaPago = data.formaPago ?? this.formaPago;
-      this.referenciaSerie = data.referenciaSerie ?? this.referenciaSerie;
-      this.referenciaNumero = data.referenciaNumero ?? this.referenciaNumero;
-      this.referenciaMotivo = data.referenciaMotivo ?? this.referenciaMotivo;
       this.consultaDocumento = data.consultaDocumento ?? this.consultaDocumento;
       this.cliente = data.cliente ?? this.cliente;
       this.detalles = Array.isArray(data.detalles) ? data.detalles : this.detalles;
       this.productoSeleccionado = data.productoSeleccionado ?? this.productoSeleccionado;
       this.metodoPagoSeleccionado = data.metodoPagoSeleccionado ?? this.metodoPagoSeleccionado;
       this.montoRecibido = data.montoRecibido ?? this.montoRecibido;
+      this.pedidoOrigenId = data.pedidoOrigenId ?? this.pedidoOrigenId;
     } catch {
       localStorage.removeItem(this.claveBorradorVenta);
     }
@@ -801,6 +911,7 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
 
   consultarDocumento(): void {
     this.mensajeError = '';
+    this.consultaDocumento = this.consultaDocumento.replace(/\D+/g, '');
 
     if (!this.consultaDocumento.trim()) {
       this.mensajeError = 'Ingresa el numero de documento.';
