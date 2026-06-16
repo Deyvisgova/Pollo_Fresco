@@ -444,7 +444,7 @@ class PedidoDeliveryController extends Controller
             'latitud' => ['nullable', 'numeric', 'between:-90,90'],
             'longitud' => ['nullable', 'numeric', 'between:-180,180'],
             'foto_frontis_url' => ['nullable', 'string', 'max:255'],
-            'frontis_foto' => ['nullable', 'file', 'max:4096'],
+            'frontis_foto' => ['nullable', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'referencias' => ['nullable', 'string', 'max:250'],
         ]);
 
@@ -456,7 +456,8 @@ class PedidoDeliveryController extends Controller
                 return response()->json(['message' => 'La foto del frontis debe ser una imagen valida.'], 422);
             }
 
-            $extension = $archivo->getClientOriginalExtension() ?: $archivo->extension() ?: 'jpg';
+            $extension = strtolower($archivo->extension() ?: $archivo->getClientOriginalExtension() ?: 'jpg');
+            $extension = in_array($extension, ['jpg', 'jpeg', 'png', 'webp'], true) ? $extension : 'jpg';
             $nombreArchivo = 'frontis-' . Str::uuid() . '.' . $extension;
             $rutaPublica = public_path('assets/images/frontis');
 
@@ -473,19 +474,23 @@ class PedidoDeliveryController extends Controller
                 $pedido->delivery_usuario_id = $request->user()->id;
             }
 
+            $fotoFrontisUrl = array_key_exists('foto_frontis_url', $payload) && trim((string) ($payload['foto_frontis_url'] ?? '')) !== ''
+                ? trim((string) $payload['foto_frontis_url'])
+                : ($pedido->foto_frontis_url ?? $pedido->cliente?->foto_frontis_url);
+
             $pedido->fill([
-                'latitud' => $payload['latitud'] ?? null,
-                'longitud' => $payload['longitud'] ?? null,
-                'foto_frontis_url' => $payload['foto_frontis_url'] ?? null,
+                'latitud' => $payload['latitud'] ?? $pedido->latitud,
+                'longitud' => $payload['longitud'] ?? $pedido->longitud,
+                'foto_frontis_url' => $fotoFrontisUrl,
             ]);
             $pedido->save();
 
             $cliente = $pedido->cliente;
             if ($cliente) {
                 $cliente->fill([
-                    'latitud' => $payload['latitud'] ?? null,
-                    'longitud' => $payload['longitud'] ?? null,
-                    'foto_frontis_url' => $payload['foto_frontis_url'] ?? null,
+                    'latitud' => $payload['latitud'] ?? $cliente->latitud,
+                    'longitud' => $payload['longitud'] ?? $cliente->longitud,
+                    'foto_frontis_url' => $fotoFrontisUrl,
                     'referencias' => isset($payload['referencias']) ? trim((string) $payload['referencias']) : $cliente->referencias,
                     'ubicacion_actualizada_por' => $request->user()->id,
                     'ubicacion_actualizada_en' => now(),

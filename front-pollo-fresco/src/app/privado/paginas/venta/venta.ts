@@ -1,6 +1,6 @@
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { HttpClient, HttpClientModule, HttpHeaders, HttpParams } from '@angular/common/http';
-import { Component, DoCheck, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { SesionServicio } from '../../../servicios/sesion.servicio';
@@ -117,9 +117,8 @@ interface PreparacionPedido {
   templateUrl: './venta.html',
   styleUrl: './venta.css'
 })
-export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
+export class PrivadoVenta implements OnInit {
   private readonly claveBorradorVenta = 'pollo-fresco:venta:borrador:v1';
-  private ultimoBorradorSerializado = '';
 
   tipoComprobante: TipoComprobante = 'factura';
   tipoDocumentoCliente: TipoDocumentoCliente = 'ruc';
@@ -179,29 +178,23 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
   constructor(
     private readonly http: HttpClient,
     private readonly sesionServicio: SesionServicio,
-    private readonly route: ActivatedRoute
+    private readonly route: ActivatedRoute,
+    private readonly location: Location
   ) {}
 
   ngOnInit(): void {
+    this.limpiarBorradorVenta();
     this.cargarProductos();
     const pedidoId = Number(this.route.snapshot.queryParamMap.get('pedido') ?? 0);
     if (pedidoId > 0) {
       this.cargarPedidoParaFacturar(pedidoId);
-    } else {
-      this.restaurarBorradorVenta();
+    }
+    if (pedidoId > 0) {
+      this.location.replaceState('/privado/venta');
     }
     this.moneda = 'PEN';
     this.formaPago = 'Contado';
     this.actualizarSerieNumero();
-    this.ultimoBorradorSerializado = JSON.stringify(this.obtenerBorradorVenta());
-  }
-
-  ngDoCheck(): void {
-    this.guardarBorradorVentaSiCambio();
-  }
-
-  ngOnDestroy(): void {
-    this.guardarBorradorVentaSiCambio();
   }
 
   actualizarSerieNumero(): void {
@@ -635,7 +628,7 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
         this.metodoPagoSeleccionado = 'efectivo';
         this.montoRecibido = Number(preparacion.total);
         this.actualizarSerieNumero();
-        this.ultimoBorradorSerializado = JSON.stringify(this.obtenerBorradorVenta());
+        this.limpiarBorradorVenta();
       },
       error: (error) => {
         this.cargandoPedidoOrigen = false;
@@ -832,81 +825,8 @@ export class PrivadoVenta implements OnInit, DoCheck, OnDestroy {
     return `/api/ventas/${ventaId}/xml`;
   }
 
-  private obtenerBorradorVenta() {
-    return {
-      tipoComprobante: this.tipoComprobante,
-      tipoDocumentoCliente: this.tipoDocumentoCliente,
-      serie: this.serie,
-      numero: this.numero,
-      fechaEmision: this.fechaEmision,
-      moneda: this.moneda,
-      formaPago: this.formaPago,
-      consultaDocumento: this.consultaDocumento,
-      cliente: this.cliente,
-      detalles: this.detalles,
-      productoSeleccionado: this.productoSeleccionado,
-      metodoPagoSeleccionado: this.metodoPagoSeleccionado,
-      montoRecibido: this.montoRecibido,
-      pedidoOrigenId: this.pedidoOrigenId
-    };
-  }
-
-  private guardarBorradorVentaSiCambio(): void {
-    const serializado = JSON.stringify(this.obtenerBorradorVenta());
-    if (serializado === this.ultimoBorradorSerializado) {
-      return;
-    }
-
-    localStorage.setItem(this.claveBorradorVenta, serializado);
-    this.ultimoBorradorSerializado = serializado;
-  }
-
-  private restaurarBorradorVenta(): void {
-    const borrador = localStorage.getItem(this.claveBorradorVenta);
-    if (!borrador) {
-      return;
-    }
-
-    try {
-      const data = JSON.parse(borrador) as Partial<{
-        tipoComprobante: TipoComprobante;
-        tipoDocumentoCliente: TipoDocumentoCliente;
-        serie: string;
-        numero: string;
-        fechaEmision: string;
-        moneda: string;
-        formaPago: string;
-        consultaDocumento: string;
-        cliente: ClienteFactura;
-        detalles: DetalleFactura[];
-        productoSeleccionado: string;
-        metodoPagoSeleccionado: string;
-        montoRecibido: number | null;
-        pedidoOrigenId: number | null;
-      }>;
-
-      this.tipoComprobante = data.tipoComprobante ?? this.tipoComprobante;
-      this.tipoDocumentoCliente = data.tipoDocumentoCliente ?? this.tipoDocumentoCliente;
-      this.serie = data.serie ?? this.serie;
-      this.numero = data.numero ?? this.numero;
-      this.fechaEmision = data.fechaEmision ?? this.fechaEmision;
-      this.moneda = data.moneda ?? this.moneda;
-      this.formaPago = data.formaPago ?? this.formaPago;
-      this.consultaDocumento = data.consultaDocumento ?? this.consultaDocumento;
-      this.cliente = data.cliente ?? this.cliente;
-      this.detalles = Array.isArray(data.detalles) ? data.detalles : this.detalles;
-      this.productoSeleccionado = data.productoSeleccionado ?? this.productoSeleccionado;
-      this.metodoPagoSeleccionado = data.metodoPagoSeleccionado ?? this.metodoPagoSeleccionado;
-      this.montoRecibido = data.montoRecibido ?? this.montoRecibido;
-      this.pedidoOrigenId = data.pedidoOrigenId ?? this.pedidoOrigenId;
-    } catch {
-      localStorage.removeItem(this.claveBorradorVenta);
-    }
-  }
-
   private limpiarBorradorVenta(): void {
     localStorage.removeItem(this.claveBorradorVenta);
-    this.ultimoBorradorSerializado = JSON.stringify(this.obtenerBorradorVenta());
   }
 
   consultarDocumento(): void {

@@ -1,5 +1,7 @@
 @import '@angular/material/prebuilt-themes/indigo-pink.css';
 
+@import 'leaflet/dist/leaflet.css';
+
 :root {
   --app-bg: #f5f7fb;
   --surface-card: #ffffff;
@@ -1421,6 +1423,29 @@ app-root {
 }
 
 @media (max-width: 600px) {
+  .panel__rutas .tabs-vista,
+  .panel__rutas .seccion__tabs,
+  .panel__rutas .fondos-tabs,
+  .panel__rutas .subtabs,
+  .panel__rutas .reportes-tabs {
+    justify-content: flex-start !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scroll-padding-left: 2px !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .panel__rutas .tabs-vista button,
+  .panel__rutas .seccion__tabs button,
+  .panel__rutas .seccion__tabs a,
+  .panel__rutas .fondos-tabs button,
+  .panel__rutas .subtabs button,
+  .panel__rutas .reportes-tabs button {
+    flex: 0 0 auto !important;
+    touch-action: manipulation !important;
+  }
+
   .panel__rutas .tabla-contenedor,
   .panel__rutas .tabla__contenedor,
   .panel__rutas .tabla-scroll,
@@ -1616,3 +1641,10 @@ app-root {
 .modal-contenido--cuenta-cliente .cuenta-pedido{display:flex;flex-direction:column;gap:12px;padding:14px;border:1px solid #dbeafe;border-radius:14px;background:#fff;min-width:0}.modal-contenido--cuenta-cliente .cuenta-pedido__cabecera{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:start;border-bottom:1px solid #e2e8f0;padding-bottom:10px}.modal-contenido--cuenta-cliente .cuenta-pedido__info{display:grid;gap:4px;min-width:0}.modal-contenido--cuenta-cliente .cuenta-pedido__info strong{font-size:.98rem;color:#0f172a}.modal-contenido--cuenta-cliente .cuenta-pedido__info span,.modal-contenido--cuenta-cliente .cuenta-pedido__info small{color:#64748b;font-size:.82rem;line-height:1.25}.modal-contenido--cuenta-cliente .cuenta-pedido__saldo{min-width:118px;text-align:right;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:8px 10px}.modal-contenido--cuenta-cliente .cuenta-pedido__saldo small{display:block;color:#92400e;font-weight:700}.modal-contenido--cuenta-cliente .cuenta-pedido__saldo strong{display:block;color:#b45309;font-size:1rem;white-space:nowrap}.modal-contenido--cuenta-cliente .cuenta-pedido__detalle{display:grid;gap:8px;margin:0;padding:0;border:0}.modal-contenido--cuenta-cliente .cuenta-pedido__producto{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:start;padding-bottom:8px;border-bottom:1px dashed #e2e8f0}.modal-contenido--cuenta-cliente .cuenta-pedido__producto:last-child{padding-bottom:0;border-bottom:0}.modal-contenido--cuenta-cliente .cuenta-pedido__producto span{color:#475569;font-size:.84rem;line-height:1.35;overflow-wrap:anywhere}.modal-contenido--cuenta-cliente .cuenta-pedido__producto strong{color:#0f172a;font-size:.88rem;white-space:nowrap}.modal-contenido--cuenta-cliente .cuenta-pedido__pie{display:grid;grid-template-columns:minmax(130px,.45fr) minmax(170px,1fr);gap:10px;align-items:stretch}.modal-contenido--cuenta-cliente .cuenta-pedido__total{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0;padding:10px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc}.modal-contenido--cuenta-cliente .cuenta-pedido__total span{color:#64748b;font-size:.82rem;font-weight:700}.modal-contenido--cuenta-cliente .cuenta-pedido__total strong{color:#0f172a;white-space:nowrap}.modal-contenido--cuenta-cliente .cuenta-pedido__pagar{width:100%;min-height:44px}
 
 @media (max-width:640px){.modal-contenido--cuenta-cliente .cuenta-pedido__cabecera,.modal-contenido--cuenta-cliente .cuenta-pedido__producto,.modal-contenido--cuenta-cliente .cuenta-pedido__pie{grid-template-columns:1fr}.modal-contenido--cuenta-cliente .cuenta-pedido__saldo{text-align:left}.modal-contenido--cuenta-cliente .cuenta-pedido__producto strong{justify-self:start}}
+
+/* Mapa de ruta para delivery */
+.delivery-ruta-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid #dbeafe;border-radius:14px;background:#f8fbff}.delivery-ruta-toolbar span{color:#64748b;font-size:.86rem;font-weight:700}.modal-contenido--mapa-delivery{width:min(1100px,100%);max-height:92vh;overflow:auto}.mapa-delivery-layout{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(300px,.75fr);gap:14px;min-height:0}.mapa-delivery-panel{display:grid;gap:10px;min-width:0}.mapa-delivery{height:min(58vh,520px);min-height:360px;border:1px solid #dbeafe;border-radius:16px;overflow:hidden;background:#eef4ff}.mapa-delivery-acciones{display:grid;grid-template-columns:1fr 1fr;gap:10px}.delivery-map-marker{display:grid;place-items:center;width:34px!important;height:34px!important;border-radius:999px;background:#2563eb;color:#fff;border:3px solid #fff;box-shadow:0 10px 24px rgba(37,99,235,.3);font-weight:900}.delivery-map-marker span{display:grid;place-items:center;width:100%;height:100%;line-height:1}.ruta-delivery-lista{display:grid;align-content:start;gap:10px;max-height:calc(58vh + 54px);overflow:auto;padding-right:4px}.ruta-delivery-resumen{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:12px;border:1px solid #dbeafe;border-radius:14px;background:#eff6ff;color:#173668}.ruta-delivery-resumen span{color:#b45309;font-weight:800}.ruta-delivery-item{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px;border:1px solid #e2e8f0;border-radius:14px;background:#fff;box-shadow:0 8px 18px rgba(15,23,42,.04)}.ruta-delivery-item__orden{display:grid;place-items:center;width:34px;height:34px;border-radius:999px;background:#1d4ed8;color:#fff;font-weight:900}.ruta-delivery-item__contenido{display:grid;gap:3px;min-width:0}.ruta-delivery-item__contenido strong{color:#0f172a}.ruta-delivery-item__contenido span,.ruta-delivery-item__contenido small{color:#64748b;line-height:1.25;overflow-wrap:anywhere}.ruta-delivery-sin-ubicacion{display:grid;gap:6px;padding:12px;border:1px dashed #f59e0b;border-radius:14px;background:#fffbeb;color:#92400e}.ruta-delivery-sin-ubicacion span{font-size:.84rem}
+
+@media (max-width:820px){.delivery-ruta-toolbar{align-items:stretch;flex-direction:column}.delivery-ruta-toolbar .boton{width:100%}.mapa-delivery-layout{grid-template-columns:1fr}.mapa-delivery{height:52vh;min-height:320px}.mapa-delivery-acciones{grid-template-columns:1fr}.ruta-delivery-lista{max-height:none}.ruta-delivery-item{grid-template-columns:auto minmax(0,1fr)}.ruta-delivery-item .boton{grid-column:1/-1;width:100%}}
+
+.modal-fondo--lightbox{background:rgba(15,23,42,.78)!important}.modal-contenido--foto-frontis{width:min(880px,100%);max-height:92vh;overflow:auto;gap:14px}.foto-frontis-lightbox{margin:0;display:grid;place-items:center;min-height:220px;border:1px solid #dbeafe;border-radius:16px;background:#0f172a;overflow:hidden}.foto-frontis-lightbox img{width:100%;max-height:68vh;object-fit:contain;background:#0f172a}.foto-frontis-acciones{display:flex;justify-content:flex-end}@media(max-width:760px){.modal-contenido--foto-frontis{width:100%;padding:12px;border-radius:16px}.foto-frontis-lightbox{min-height:260px}.foto-frontis-lightbox img{max-height:62vh}.foto-frontis-acciones,.foto-frontis-acciones .boton{width:100%}}

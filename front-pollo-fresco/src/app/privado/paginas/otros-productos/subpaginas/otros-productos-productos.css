@@ -306,8 +306,9 @@ tbody tr:last-child td {
     grid-column: 1 / -1;
     width: 100%;
     display: grid;
-    grid-template-columns: 54px 1fr 1fr;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr);
     gap: 8px;
+    align-items: stretch;
   }
 
   .seccion__tabla {
@@ -330,6 +331,32 @@ tbody tr:last-child td {
   .tabla__acciones-contenido .boton {
     width: 100%;
     min-width: 0;
+    min-height: 42px;
+    border-radius: 10px;
+    padding: 9px 12px;
+  }
+
+  :host .tabla-productos .toggle {
+    width: 100%;
+    min-width: 0;
+    height: 42px;
+    justify-content: flex-start;
+    padding: 4px;
+    border-radius: 12px;
+    grid-column: 1 / 2;
+  }
+
+  :host .tabla-productos .toggle__circulo {
+    width: 30px;
+    height: 30px;
+  }
+
+  :host .tabla-productos .toggle--activo .toggle__circulo {
+    transform: translateX(calc(100% + 10px));
+  }
+
+  .tabla__acciones-contenido .boton--peligro {
+    grid-column: 1 / -1;
   }
 }
 

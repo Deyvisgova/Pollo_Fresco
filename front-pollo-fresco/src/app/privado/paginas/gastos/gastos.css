@@ -448,6 +448,10 @@ textarea {
 }
 
 @media (max-width: 720px) {
+  .gastos-page {
+    gap: 14px;
+  }
+
   .gastos-header,
   .panel__titulo,
   .movimiento,
@@ -455,6 +459,22 @@ textarea {
   .cierre-item {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .gastos-header {
+    gap: 12px;
+  }
+
+  .gastos-header > div {
+    flex: 0 1 auto;
+    width: 100%;
+  }
+
+  .acciones-header {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    width: 100%;
   }
 
   .gastos-header .btn,
@@ -465,6 +485,35 @@ textarea {
   .categoria-form input,
   .categoria-form .btn {
     width: 100%;
+  }
+
+  .filtros {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .fondos-tabs,
+  .subtabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: 8px;
+    padding-bottom: 8px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .fondos-tabs button {
+    flex: 0 0 210px;
+    min-width: 210px;
+  }
+
+  .subtabs button {
+    flex: 0 0 auto;
+    min-height: 46px;
+    max-width: none;
+    white-space: nowrap;
   }
 
   .resumen-grid {
@@ -498,5 +547,10 @@ textarea {
 @media (max-width: 430px) {
   .resumen-grid {
     grid-template-columns: 1fr;
+  }
+
+  .fondos-tabs button {
+    flex-basis: 180px;
+    min-width: 180px;
   }
 }

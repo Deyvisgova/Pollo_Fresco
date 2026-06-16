@@ -809,6 +809,27 @@
 }
 
 @media (max-width:760px) {
+  .tabs-vista {
+    justify-content:flex-start;
+    overflow-x:auto;
+    overflow-y:hidden;
+    gap:8px;
+    width:100%;
+    padding:2px 2px 8px;
+    scroll-padding-left:2px;
+    -webkit-overflow-scrolling:touch
+  }
+  .tabs-vista button {
+    flex:0 0 auto;
+    min-width:132px;
+    max-width:150px;
+    min-height:54px;
+    padding:10px 12px;
+    white-space:normal;
+    line-height:1.2;
+    text-align:center;
+    touch-action:manipulation
+  }
   .detalle-pedido__comprobante {
     align-items:stretch;
     flex-direction:column
@@ -838,6 +859,10 @@
   }
   .boton--compacto {
     justify-self:stretch
+  }
+  .foto-frontis-acciones,
+  .foto-frontis-acciones .boton {
+    width:100%
   }
 }
 .cliente-buscador__control input,.tarjeta__titulo input,.tabla-detalle__fila input,.tabla-detalle__fila select,.formulario-grid input,.formulario-grid select,.formulario input,.consulta input,.campo input,.campo select {

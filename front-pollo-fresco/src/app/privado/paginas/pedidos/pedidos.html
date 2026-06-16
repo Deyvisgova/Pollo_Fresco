@@ -375,6 +375,18 @@
         </button>
       </div>
 
+      <div class="delivery-ruta-toolbar" *ngIf="vistaDeliveryActiva === 'hoy'">
+        <button
+          type="button"
+          class="boton boton--primario"
+          [disabled]="!pedidosRutaDelivery().length"
+          (click)="abrirMapaDelivery()"
+        >
+          Mapa de ruta
+        </button>
+        <span>{{ pedidosRutaDelivery().length }} pedido(s) pendientes o en ruta</span>
+      </div>
+
       <section class="delivery-bloque delivery-bloque--cobros" *ngIf="vistaDeliveryActiva === 'cobros' && cobrosAtrasadosFiltrados().length">
         <p class="delivery-bloque__ayuda">Clientes que pagan de dias anteriores. Se muestra el detalle exacto de lo entregado.</p>
         <div class="delivery-grid delivery-grid--movil">
@@ -494,6 +506,57 @@
   </div>
 </section>
 
+<div class="modal-fondo" *ngIf="mostrarMapaDelivery" (click)="cerrarMapaDelivery()">
+  <article class="modal-contenido modal-contenido--mapa-delivery" (click)="$event.stopPropagation()">
+    <header class="tarjeta__encabezado tarjeta__encabezado--acciones">
+      <div>
+        <h4>Mapa de ruta delivery</h4>
+        <p>Pedidos pendientes y en ruta ordenados por cercania.</p>
+      </div>
+      <button type="button" class="boton boton--secundario" (click)="cerrarMapaDelivery()">Cerrar</button>
+    </header>
+
+    <section class="mapa-delivery-layout">
+      <div class="mapa-delivery-panel">
+        <div #mapaDeliveryContenedor class="mapa-delivery"></div>
+        <div class="mapa-delivery-acciones">
+          <button type="button" class="boton boton--secundario" [disabled]="cargandoUbicacionRuta" (click)="usarMiUbicacionRuta()">
+            {{ cargandoUbicacionRuta ? 'Ubicando...' : 'Usar mi ubicacion' }}
+          </button>
+          <button type="button" class="boton boton--primario" (click)="abrirRutaCompletaGoogleMaps()">
+            Abrir ruta completa
+          </button>
+        </div>
+      </div>
+
+      <aside class="ruta-delivery-lista">
+        <div class="ruta-delivery-resumen">
+          <strong>{{ puntosRutaDelivery.length }} punto(s) en mapa</strong>
+          <span *ngIf="pedidosSinUbicacionRuta.length">{{ pedidosSinUbicacionRuta.length }} sin coordenadas</span>
+        </div>
+
+        <article class="ruta-delivery-item" *ngFor="let punto of puntosRutaDelivery">
+          <div class="ruta-delivery-item__orden">{{ punto.orden }}</div>
+          <div class="ruta-delivery-item__contenido">
+            <strong>Pedido {{ obtenerNumeroVisualPedido(punto.pedido) }}</strong>
+            <span>{{ obtenerNombreCliente(punto.pedido.cliente) }}</span>
+            <small>{{ punto.pedido.cliente.direccion || punto.pedido.cliente.direccion_fiscal || 'Sin direccion' }}</small>
+            <small *ngIf="punto.distanciaKm !== null">Aprox. {{ punto.distanciaKm | number: '1.1-2' }} km del punto anterior</small>
+          </div>
+          <button type="button" class="boton boton--secundario" (click)="abrirUbicacionPedido(punto.pedido)">Ir</button>
+        </article>
+
+        <div class="ruta-delivery-sin-ubicacion" *ngIf="pedidosSinUbicacionRuta.length">
+          <strong>Pedidos sin ubicacion</strong>
+          <span *ngFor="let pedido of pedidosSinUbicacionRuta">
+            Pedido {{ obtenerNumeroVisualPedido(pedido) }} - {{ obtenerNombreCliente(pedido.cliente) }}
+          </span>
+        </div>
+      </aside>
+    </section>
+  </article>
+</div>
+
 <ng-template #accesosDirectosDelivery let-pedido="pedido">
   <div class="delivery-card__acciones delivery-card__acciones--movil">
     <button type="button" title="Abrir ruta en Google Maps" aria-label="Abrir ruta en Google Maps" (click)="$event.stopPropagation(); abrirUbicacionPedido(pedido)">
@@ -514,6 +577,26 @@
     </button>
   </div>
 </ng-template>
+
+<div class="modal-fondo modal-fondo--lightbox" *ngIf="fotoFrontisLightboxUrl" (click)="cerrarFotoFrontisLightbox()">
+  <article class="modal-contenido modal-contenido--foto-frontis" (click)="$event.stopPropagation()">
+    <header class="tarjeta__encabezado tarjeta__encabezado--acciones">
+      <div>
+        <h4>Foto del frontis</h4>
+        <p>Imagen registrada para llegar al domicilio del cliente.</p>
+      </div>
+      <button type="button" class="boton boton--secundario" (click)="cerrarFotoFrontisLightbox()">Cerrar</button>
+    </header>
+
+    <figure class="foto-frontis-lightbox">
+      <img [src]="fotoFrontisLightboxUrl" alt="Foto del frontis de la casa" />
+    </figure>
+
+    <div class="foto-frontis-acciones">
+      <button type="button" class="boton boton--secundario" (click)="abrirFotoFrontisEnPestana()">Abrir en pestana</button>
+    </div>
+  </article>
+</div>
 
 <div class="modal-fondo" *ngIf="pedidoDetalleModal" (click)="cerrarModalDetallePedido()">
   <article class="modal-contenido modal-contenido--detalle-pedido" (click)="$event.stopPropagation()">
@@ -768,15 +851,16 @@
         <div class="campo campo--doble">
           <label>URL foto frontis</label>
           <input type="text" [(ngModel)]="fotoFrontisUrl" />
-          <small *ngIf="fotoFrontisArchivo">Foto lista para subir: {{ fotoFrontisArchivo.name }}</small>
+          <small *ngIf="comprimiendoFotoFrontis">Optimizando foto para ahorrar espacio...</small>
+          <small *ngIf="!comprimiendoFotoFrontis && fotoFrontisArchivo">Foto lista para subir: {{ fotoFrontisInfo }}</small>
         </div>
         <div class="campo campo--doble">
           <label>Referencia del domicilio</label>
           <input type="text" [(ngModel)]="referenciasUbicacion" />
         </div>
       </div>
-      <button type="button" class="boton boton--primario" [disabled]="guardandoUbicacion" (click)="guardarUbicacionEvidencia()">
-        {{ guardandoUbicacion ? 'Guardando...' : 'Guardar ficha de domicilio' }}
+      <button type="button" class="boton boton--primario" [disabled]="guardandoUbicacion || comprimiendoFotoFrontis" (click)="guardarUbicacionEvidencia()">
+        {{ comprimiendoFotoFrontis ? 'Optimizando foto...' : (guardandoUbicacion ? 'Guardando...' : 'Guardar ficha de domicilio') }}
       </button>
     </section>
   </article>

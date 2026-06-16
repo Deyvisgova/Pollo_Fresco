@@ -47,3 +47,27 @@
   flex-direction: column;
   gap: 16px;
 }
+
+@media (max-width: 760px) {
+  .seccion {
+    gap: 14px;
+  }
+
+  .seccion__tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: 8px;
+    padding: 0 2px 8px;
+    scroll-padding-left: 2px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tab {
+    flex: 0 0 auto;
+    min-height: 42px;
+    padding: 10px 16px;
+    white-space: nowrap;
+    touch-action: manipulation;
+  }
+}

@@ -5,9 +5,17 @@ import {
   HttpHeaders,
   HttpParams,
 } from '@angular/common/http';
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import {
+  AfterViewChecked,
+  Component,
+  ElementRef,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import type * as Leaflet from 'leaflet';
 import { SesionServicio } from '../../../servicios/sesion.servicio';
 
 interface PedidoCliente {
@@ -68,6 +76,14 @@ interface PedidoDelivery {
     numero: string;
     estado_sunat: string;
   } | null;
+}
+
+interface PuntoRutaDelivery {
+  pedido: PedidoDelivery;
+  latitud: number;
+  longitud: number;
+  orden: number;
+  distanciaKm: number | null;
 }
 
 interface CuentaPagoHistorial {
@@ -157,7 +173,7 @@ interface EstadoVentaDiariaPedidoApi {
   templateUrl: './pedidos.html',
   styleUrl: './pedidos.css',
 })
-export class PrivadoPedidos implements OnInit, OnDestroy {
+export class PrivadoPedidos implements OnInit, OnDestroy, AfterViewChecked {
   private token =
     'f3ba6fa1f3a2b2d1a6390dc06d831ebad2f218a9d3ba43e7f1f42b425dd03e26';
 
@@ -206,6 +222,9 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
   fotoFrontisUrl = '';
   referenciasUbicacion = '';
   fotoFrontisArchivo: File | null = null;
+  fotoFrontisInfo = '';
+  comprimiendoFotoFrontis = false;
+  fotoFrontisLightboxUrl = '';
 
   cargando = false;
   guardandoPedido = false;
@@ -240,6 +259,17 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
   private vueltosPagados = new Set<number>();
   private reinicioVistaDeliveryTimer: ReturnType<typeof setTimeout> | null =
     null;
+  @ViewChild('mapaDeliveryContenedor')
+  private mapaDeliveryContenedor?: ElementRef<HTMLDivElement>;
+  mostrarMapaDelivery = false;
+  puntosRutaDelivery: PuntoRutaDelivery[] = [];
+  pedidosSinUbicacionRuta: PedidoDelivery[] = [];
+  ubicacionActualDelivery: { latitud: number; longitud: number } | null = null;
+  cargandoUbicacionRuta = false;
+  private leafletLib: typeof Leaflet | null = null;
+  private mapaDelivery: Leaflet.Map | null = null;
+  private capaMarcadoresDelivery: Leaflet.LayerGroup | null = null;
+  private necesitaRenderMapaDelivery = false;
 
   constructor(
     private readonly http: HttpClient,
@@ -268,6 +298,14 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     if (this.reinicioVistaDeliveryTimer !== null) {
       clearTimeout(this.reinicioVistaDeliveryTimer);
       this.reinicioVistaDeliveryTimer = null;
+    }
+    this.destruirMapaDelivery();
+  }
+
+  ngAfterViewChecked(): void {
+    if (this.necesitaRenderMapaDelivery && this.mapaDeliveryContenedor) {
+      this.necesitaRenderMapaDelivery = false;
+      this.renderizarMapaDelivery();
     }
   }
 
@@ -924,6 +962,263 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
     );
   }
 
+  pedidosRutaDelivery(): PedidoDelivery[] {
+    return this.pedidosFiltrados.filter(
+      (pedido) => pedido.estado_id === 1 || pedido.estado_id === 4,
+    );
+  }
+
+  abrirMapaDelivery(): void {
+    const pedidosRuta = this.pedidosRutaDelivery();
+    const pedidosConUbicacion = pedidosRuta
+      .map((pedido) => this.crearPuntoRuta(pedido))
+      .filter((punto): punto is PuntoRutaDelivery => !!punto);
+
+    this.pedidosSinUbicacionRuta = pedidosRuta.filter(
+      (pedido) => !this.crearPuntoRuta(pedido),
+    );
+
+    if (!pedidosConUbicacion.length) {
+      this.mensajeError =
+        'No hay pedidos pendientes o en ruta con coordenadas guardadas.';
+      return;
+    }
+
+    this.mostrarMapaDelivery = true;
+    this.puntosRutaDelivery = this.ordenarPuntosRuta(pedidosConUbicacion);
+    this.necesitaRenderMapaDelivery = true;
+  }
+
+  cerrarMapaDelivery(): void {
+    this.mostrarMapaDelivery = false;
+    this.puntosRutaDelivery = [];
+    this.pedidosSinUbicacionRuta = [];
+    this.destruirMapaDelivery();
+  }
+
+  usarMiUbicacionRuta(): void {
+    if (!navigator.geolocation) {
+      this.mensajeError = 'Este dispositivo no permite capturar ubicacion.';
+      return;
+    }
+
+    this.cargandoUbicacionRuta = true;
+    navigator.geolocation.getCurrentPosition(
+      (posicion) => {
+        this.ubicacionActualDelivery = {
+          latitud: Number(posicion.coords.latitude.toFixed(7)),
+          longitud: Number(posicion.coords.longitude.toFixed(7)),
+        };
+        this.puntosRutaDelivery = this.ordenarPuntosRuta(
+          this.puntosRutaDelivery.map((punto) => ({ ...punto })),
+        );
+        this.cargandoUbicacionRuta = false;
+        this.necesitaRenderMapaDelivery = true;
+      },
+      () => {
+        this.cargandoUbicacionRuta = false;
+        this.mensajeError = 'No se pudo capturar tu ubicacion actual.';
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 },
+    );
+  }
+
+  abrirRutaCompletaGoogleMaps(): void {
+    if (!this.puntosRutaDelivery.length) {
+      return;
+    }
+
+    const destino = this.puntosRutaDelivery[this.puntosRutaDelivery.length - 1];
+    const intermedios = this.puntosRutaDelivery.slice(0, -1);
+    const origen = this.ubicacionActualDelivery
+      ? `&origin=${this.ubicacionActualDelivery.latitud},${this.ubicacionActualDelivery.longitud}`
+      : '';
+    const waypoints = intermedios.length
+      ? `&waypoints=${encodeURIComponent(
+          intermedios
+            .map((punto) => `${punto.latitud},${punto.longitud}`)
+            .join('|'),
+        )}`
+      : '';
+
+    window.open(
+      `https://www.google.com/maps/dir/?api=1${origen}&destination=${destino.latitud},${destino.longitud}${waypoints}&travelmode=driving`,
+      '_blank',
+    );
+  }
+
+  private crearPuntoRuta(pedido: PedidoDelivery): PuntoRutaDelivery | null {
+    const latitud = Number(pedido.latitud ?? pedido.cliente?.latitud ?? 0);
+    const longitud = Number(pedido.longitud ?? pedido.cliente?.longitud ?? 0);
+
+    if (
+      !Number.isFinite(latitud) ||
+      !Number.isFinite(longitud) ||
+      (latitud === 0 && longitud === 0)
+    ) {
+      return null;
+    }
+
+    return {
+      pedido,
+      latitud,
+      longitud,
+      orden: 0,
+      distanciaKm: null,
+    };
+  }
+
+  private ordenarPuntosRuta(puntos: PuntoRutaDelivery[]): PuntoRutaDelivery[] {
+    const pendientes = [...puntos];
+    const ordenados: PuntoRutaDelivery[] = [];
+    let origen = this.ubicacionActualDelivery
+      ? {
+          latitud: this.ubicacionActualDelivery.latitud,
+          longitud: this.ubicacionActualDelivery.longitud,
+        }
+      : { latitud: pendientes[0].latitud, longitud: pendientes[0].longitud };
+
+    while (pendientes.length) {
+      let mejorIndice = 0;
+      let mejorDistancia = Number.POSITIVE_INFINITY;
+
+      pendientes.forEach((punto, indice) => {
+        const distancia = this.calcularDistanciaKm(
+          origen.latitud,
+          origen.longitud,
+          punto.latitud,
+          punto.longitud,
+        );
+        if (distancia < mejorDistancia) {
+          mejorDistancia = distancia;
+          mejorIndice = indice;
+        }
+      });
+
+      const [siguiente] = pendientes.splice(mejorIndice, 1);
+      ordenados.push({
+        ...siguiente,
+        orden: ordenados.length + 1,
+        distanciaKm: Number.isFinite(mejorDistancia)
+          ? Number(mejorDistancia.toFixed(2))
+          : null,
+      });
+      origen = { latitud: siguiente.latitud, longitud: siguiente.longitud };
+    }
+
+    return ordenados;
+  }
+
+  private calcularDistanciaKm(
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number,
+  ): number {
+    const radioTierraKm = 6371;
+    const dLat = this.gradosARadianes(lat2 - lat1);
+    const dLon = this.gradosARadianes(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(this.gradosARadianes(lat1)) *
+        Math.cos(this.gradosARadianes(lat2)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    return radioTierraKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  private gradosARadianes(valor: number): number {
+    return (valor * Math.PI) / 180;
+  }
+
+  private async renderizarMapaDelivery(): Promise<void> {
+    const contenedor = this.mapaDeliveryContenedor?.nativeElement;
+    if (!contenedor || !this.puntosRutaDelivery.length) {
+      return;
+    }
+
+    const L = await this.obtenerLeaflet();
+    this.destruirMapaDelivery();
+
+    this.mapaDelivery = L.map(contenedor, {
+      zoomControl: true,
+      attributionControl: true,
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap',
+    }).addTo(this.mapaDelivery);
+
+    this.capaMarcadoresDelivery = L.layerGroup().addTo(this.mapaDelivery);
+    const coordenadas: Leaflet.LatLngExpression[] = [];
+
+    if (this.ubicacionActualDelivery) {
+      const ubicacion: Leaflet.LatLngExpression = [
+        this.ubicacionActualDelivery.latitud,
+        this.ubicacionActualDelivery.longitud,
+      ];
+      coordenadas.push(ubicacion);
+      L.circleMarker(ubicacion, {
+        radius: 8,
+        color: '#0ea5e9',
+        fillColor: '#38bdf8',
+        fillOpacity: 0.9,
+      })
+        .bindPopup('Tu ubicacion actual')
+        .addTo(this.capaMarcadoresDelivery);
+    }
+
+    this.puntosRutaDelivery.forEach((punto) => {
+      const posicion: Leaflet.LatLngExpression = [punto.latitud, punto.longitud];
+      coordenadas.push(posicion);
+      L.marker(posicion, {
+        icon: L.divIcon({
+          className: 'delivery-map-marker',
+          html: `<span>${punto.orden}</span>`,
+          iconSize: [34, 34],
+          iconAnchor: [17, 17],
+        }),
+      })
+        .bindPopup(
+          `<strong>Pedido ${this.obtenerNumeroVisualPedido(punto.pedido)}</strong><br>${this.obtenerNombreCliente(
+            punto.pedido.cliente,
+          )}<br>Debe S/ ${this.obtenerSaldoPendiente(punto.pedido).toFixed(2)}`,
+        )
+        .addTo(this.capaMarcadoresDelivery!);
+    });
+
+    if (this.puntosRutaDelivery.length > 1) {
+      L.polyline(
+        this.puntosRutaDelivery.map((punto) => [punto.latitud, punto.longitud]),
+        { color: '#2563eb', weight: 4, opacity: 0.75 },
+      ).addTo(this.capaMarcadoresDelivery);
+    }
+
+    this.mapaDelivery.fitBounds(L.latLngBounds(coordenadas), {
+      padding: [28, 28],
+      maxZoom: 16,
+    });
+
+    window.setTimeout(() => this.mapaDelivery?.invalidateSize(), 120);
+  }
+
+  private async obtenerLeaflet(): Promise<typeof Leaflet> {
+    if (!this.leafletLib) {
+      this.leafletLib = await import('leaflet');
+    }
+
+    return this.leafletLib;
+  }
+
+  private destruirMapaDelivery(): void {
+    if (this.mapaDelivery) {
+      this.mapaDelivery.remove();
+      this.mapaDelivery = null;
+      this.capaMarcadoresDelivery = null;
+    }
+  }
+
   cobrosAtrasadosFiltrados(): CuentaCliente[] {
     const termino = this.filtroCobrosAtrasados.trim().toLowerCase();
     if (!termino) {
@@ -1196,6 +1491,11 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       return;
     }
 
+    if (this.comprimiendoFotoFrontis) {
+      this.mensajeError = 'Espera a que termine de optimizar la foto.';
+      return;
+    }
+
     this.guardandoUbicacion = true;
     const formData = new FormData();
 
@@ -1207,7 +1507,18 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       formData.append('longitud', String(this.longitud));
     }
 
-    if (this.fotoFrontisUrl) {
+    if (
+      this.fotoFrontisUrl &&
+      !this.fotoFrontisArchivo &&
+      !this.esUrlFotoFrontisValida(this.fotoFrontisUrl)
+    ) {
+      this.guardandoUbicacion = false;
+      this.mensajeError =
+        'La URL de la foto no es valida. Toma una nueva foto o usa una URL completa.';
+      return;
+    }
+
+    if (this.fotoFrontisUrl && !this.fotoFrontisArchivo) {
       formData.append('foto_frontis_url', this.fotoFrontisUrl);
     }
 
@@ -1264,11 +1575,37 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
   manejarFotoFrontis(evento: Event): void {
     const input = evento.target as HTMLInputElement;
     const archivo = input.files?.[0] ?? null;
-    this.fotoFrontisArchivo = archivo;
+    this.fotoFrontisArchivo = null;
+    this.fotoFrontisInfo = '';
 
-    if (archivo) {
-      this.fotoFrontisUrl = archivo.name;
+    if (!archivo) {
+      return;
     }
+
+    if (!archivo.type.startsWith('image/')) {
+      this.mensajeError = 'Selecciona una imagen valida para el frontis.';
+      input.value = '';
+      return;
+    }
+
+    this.comprimiendoFotoFrontis = true;
+    this.mensajeError = '';
+
+    this.comprimirFotoFrontis(archivo)
+      .then((fotoOptimizada) => {
+        this.fotoFrontisArchivo = fotoOptimizada;
+        this.fotoFrontisInfo = `${fotoOptimizada.name} - ${this.formatearPesoArchivo(fotoOptimizada.size)}`;
+      })
+      .catch(() => {
+        this.fotoFrontisArchivo = null;
+        this.fotoFrontisInfo = '';
+        this.mensajeError =
+          'No se pudo optimizar la foto. Toma otra foto o selecciona una imagen mas liviana.';
+      })
+      .finally(() => {
+        this.comprimiendoFotoFrontis = false;
+        input.value = '';
+      });
   }
 
   abrirWhatsapp(pedido: PedidoDelivery): void {
@@ -1359,7 +1696,113 @@ export class PrivadoPedidos implements OnInit, OnDestroy {
       return;
     }
 
-    window.open(foto, '_blank');
+    this.fotoFrontisLightboxUrl = this.normalizarUrlFotoFrontis(foto);
+  }
+
+  cerrarFotoFrontisLightbox(): void {
+    this.fotoFrontisLightboxUrl = '';
+  }
+
+  abrirFotoFrontisEnPestana(): void {
+    if (this.fotoFrontisLightboxUrl) {
+      window.open(this.fotoFrontisLightboxUrl, '_blank');
+    }
+  }
+
+  private comprimirFotoFrontis(archivo: File): Promise<File> {
+    const maxDimension = 1280;
+    const pesoMaximoBytes = 900 * 1024;
+    const pesoLimiteSinComprimir = 1400 * 1024;
+
+    return new Promise((resolve, reject) => {
+      const urlTemporal = URL.createObjectURL(archivo);
+      const imagen = new Image();
+
+      imagen.onload = () => {
+        URL.revokeObjectURL(urlTemporal);
+
+        const escala = Math.min(
+          1,
+          maxDimension / Math.max(imagen.width, imagen.height),
+        );
+        const ancho = Math.max(1, Math.round(imagen.width * escala));
+        const alto = Math.max(1, Math.round(imagen.height * escala));
+        const canvas = document.createElement('canvas');
+        canvas.width = ancho;
+        canvas.height = alto;
+
+        const contexto = canvas.getContext('2d');
+        if (!contexto) {
+          reject();
+          return;
+        }
+
+        contexto.drawImage(imagen, 0, 0, ancho, alto);
+        const calidades = [0.72, 0.62, 0.52, 0.42];
+
+        const intentarCalidad = (indice: number): void => {
+          const calidad = calidades[indice] ?? calidades[calidades.length - 1];
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                reject();
+                return;
+              }
+
+              if (blob.size <= pesoMaximoBytes || indice >= calidades.length - 1) {
+                const nombre = `frontis-${Date.now()}.jpg`;
+                resolve(new File([blob], nombre, { type: 'image/jpeg' }));
+                return;
+              }
+
+              intentarCalidad(indice + 1);
+            },
+            'image/jpeg',
+            calidad,
+          );
+        };
+
+        intentarCalidad(0);
+      };
+
+      imagen.onerror = () => {
+        URL.revokeObjectURL(urlTemporal);
+        if (archivo.size <= pesoLimiteSinComprimir) {
+          resolve(archivo);
+          return;
+        }
+        reject();
+      };
+
+      imagen.src = urlTemporal;
+    });
+  }
+
+  private formatearPesoArchivo(bytes: number): string {
+    if (bytes < 1024 * 1024) {
+      return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+    }
+
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  private esUrlFotoFrontisValida(url: string): boolean {
+    const valor = url.trim();
+    return /^https?:\/\//i.test(valor) || valor.startsWith('/assets/') || valor.startsWith('assets/');
+  }
+
+  private normalizarUrlFotoFrontis(url: string): string {
+    const valor = url.trim();
+    if (/^https?:\/\//i.test(valor)) {
+      return valor;
+    }
+    if (valor.startsWith('/assets/')) {
+      return valor;
+    }
+    if (valor.startsWith('assets/')) {
+      return `/${valor}`;
+    }
+    return valor;
   }
   obtenerEtiquetaEstado(estadoId: number): string {
     if (estadoId === 2) {
