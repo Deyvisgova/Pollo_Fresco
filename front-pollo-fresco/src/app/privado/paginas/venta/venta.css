@@ -721,29 +721,29 @@
   font-size: 18px;
 }
 
-:host-context([data-theme='dark']) .estado-emision {
+:host-context(.panel--tema-oscuro) .estado-emision {
   color: #fef3c7;
   background: #78350f;
   border-color: #b45309;
 }
 
-:host-context([data-theme='dark']) .cliente-identificado {
+:host-context(.panel--tema-oscuro) .cliente-identificado {
   color: #dcfce7;
   background: #14532d;
   border-color: #15803d;
 }
 
-:host-context([data-theme='dark']) .detalle-vacio {
+:host-context(.panel--tema-oscuro) .detalle-vacio {
   color: #cbd5e1;
   background: #172033;
   border-color: #475569;
 }
 
-:host-context([data-theme='dark']) .detalle-vacio strong {
+:host-context(.panel--tema-oscuro) .detalle-vacio strong {
   color: #f8fafc;
 }
 
-:host-context([data-theme='dark']) .pedido-origen {
+:host-context(.panel--tema-oscuro) .pedido-origen {
   color: #dcfce7;
   background: #14532d;
   border-color: #22c55e;

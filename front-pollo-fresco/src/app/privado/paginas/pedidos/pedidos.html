@@ -29,10 +29,6 @@
           </select>
         </label>
 
-        <label class="campo" *ngIf="tipoPedidoFormulario === 'MESA'">
-          <span>Mesa o referencia</span>
-          <input type="text" [(ngModel)]="mesaFormulario" placeholder="Ej. Mesa 3" />
-        </label>
       </div>
 
       <div class="cliente-top">
@@ -836,7 +832,9 @@
       <h5>Ficha de domicilio</h5>
       <div class="acciones-ubicacion">
         <button type="button" class="boton boton--secundario" (click)="capturarUbicacionActual()">Y Capturar GPS</button>
-        <button type="button" class="boton boton--secundario" (click)="frontisInput.click()">Y Tomar frontis</button>
+        <button type="button" class="boton boton--secundario" [disabled]="comprimiendoFotoFrontis || guardandoUbicacion" (click)="frontisInput.click()">
+          {{ comprimiendoFotoFrontis || guardandoUbicacion ? 'Guardando frontis...' : 'Tomar y guardar frontis' }}
+        </button>
         <input #frontisInput type="file" accept="image/*" capture="environment" hidden (change)="manejarFotoFrontis($event)" />
       </div>
       <div class="formulario-grid formulario-grid--comprobante">

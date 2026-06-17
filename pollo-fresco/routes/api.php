@@ -70,6 +70,8 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::get('pagina-publica', [PaginaPublicaController::class, 'mostrar']);
 Route::get('pagina-publica/imagenes/{archivo}', [PaginaPublicaController::class, 'mostrarImagen'])
     ->where('archivo', '[A-Za-z0-9._-]+');
+Route::get('frontis/{archivo}', [PedidoDeliveryController::class, 'mostrarFotoFrontis'])
+    ->where('archivo', '[A-Za-z0-9._-]+');
 
 
 /*

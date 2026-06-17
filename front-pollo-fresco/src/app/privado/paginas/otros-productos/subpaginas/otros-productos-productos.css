@@ -265,6 +265,10 @@ tbody tr:last-child td {
   transition: transform 0.2s ease;
 }
 
+:host .tabla-productos .toggle__texto {
+  display: none;
+}
+
 :host .tabla-productos .toggle--activo {
   background: linear-gradient(180deg, #34d399 0%, #16a34a 100%);
   border-color: #15803d;
@@ -306,9 +310,9 @@ tbody tr:last-child td {
     grid-column: 1 / -1;
     width: 100%;
     display: grid;
-    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr);
+    grid-template-columns: 58px minmax(0, 1fr) minmax(0, 1fr);
     gap: 8px;
-    align-items: stretch;
+    align-items: center;
   }
 
   .seccion__tabla {
@@ -337,26 +341,35 @@ tbody tr:last-child td {
   }
 
   :host .tabla-productos .toggle {
-    width: 100%;
-    min-width: 0;
-    height: 42px;
-    justify-content: flex-start;
-    padding: 4px;
-    border-radius: 12px;
+    width: 54px !important;
+    min-width: 54px !important;
+    max-width: 54px;
+    height: 30px;
+    justify-content: flex-start !important;
+    padding: 3px;
+    border-radius: 999px;
     grid-column: 1 / 2;
+    justify-self: start;
+    overflow: hidden;
   }
 
   :host .tabla-productos .toggle__circulo {
-    width: 30px;
-    height: 30px;
+    width: 22px;
+    height: 22px;
+    flex: 0 0 22px;
+    transform: translateX(0) !important;
+  }
+
+  :host .tabla-productos .toggle__texto {
+    display: none;
   }
 
   :host .tabla-productos .toggle--activo .toggle__circulo {
-    transform: translateX(calc(100% + 10px));
+    transform: translateX(24px) !important;
   }
 
   .tabla__acciones-contenido .boton--peligro {
-    grid-column: 1 / -1;
+    grid-column: 3 / 4;
   }
 }
 

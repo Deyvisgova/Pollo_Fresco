@@ -4,7 +4,7 @@ type Tema = 'light' | 'dark';
 
 @Injectable({ providedIn: 'root' })
 export class TemaServicio {
-  private readonly storageKey = 'pollo-fresco-theme';
+  private readonly storageKey = 'pollo-fresco-private-theme';
   private readonly tema = signal<Tema>('light');
 
   constructor() {
@@ -28,13 +28,11 @@ export class TemaServicio {
       return;
     }
 
-    const prefiereOscuro = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    this.establecerTema(prefiereOscuro ? 'dark' : 'light');
+    this.establecerTema('light');
   }
 
   private establecerTema(tema: Tema): void {
     this.tema.set(tema);
-    document.documentElement.setAttribute('data-theme', tema);
     localStorage.setItem(this.storageKey, tema);
   }
 }

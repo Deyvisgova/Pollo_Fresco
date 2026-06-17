@@ -64,7 +64,7 @@
           "builder": "@angular/build:dev-server",
           "options": {
             "proxyConfig": "proxy.conf.json",
-            "allowedHosts": ["morgan-fustiest-alfreda.ngrok-free.dev"]
+            "allowedHosts": ["nonhectically-frosty-meg.ngrok-free.dev"]
           },
           "configurations": {
             "production": {

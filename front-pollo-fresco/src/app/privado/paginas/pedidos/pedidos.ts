@@ -880,10 +880,7 @@ export class PrivadoPedidos implements OnInit, OnDestroy, AfterViewChecked {
     const payload = {
       cliente_id: this.clienteSeleccionado.cliente_id,
       tipo_pedido: this.tipoPedidoFormulario,
-      mesa:
-        this.tipoPedidoFormulario === 'MESA'
-          ? this.mesaFormulario.trim() || null
-          : null,
+      mesa: null,
       fecha_hora_creacion: this.fechaHoraCreacion,
       detalles: detallesValidos.map((item) => ({
         cantidad: this.cantidadBaseDetalle(item),
@@ -926,8 +923,9 @@ export class PrivadoPedidos implements OnInit, OnDestroy, AfterViewChecked {
     this.montoRecibido = null;
     this.latitud = pedido.latitud ?? pedido.cliente?.latitud ?? null;
     this.longitud = pedido.longitud ?? pedido.cliente?.longitud ?? null;
-    this.fotoFrontisUrl =
-      pedido.foto_frontis_url ?? pedido.cliente?.foto_frontis_url ?? '';
+    this.fotoFrontisUrl = this.normalizarUrlFotoFrontis(
+      pedido.foto_frontis_url ?? pedido.cliente?.foto_frontis_url ?? '',
+    );
     this.referenciasUbicacion = pedido.cliente?.referencias ?? '';
     this.fotoFrontisArchivo = null;
   }
@@ -1519,7 +1517,10 @@ export class PrivadoPedidos implements OnInit, OnDestroy, AfterViewChecked {
     }
 
     if (this.fotoFrontisUrl && !this.fotoFrontisArchivo) {
-      formData.append('foto_frontis_url', this.fotoFrontisUrl);
+      formData.append(
+        'foto_frontis_url',
+        this.normalizarUrlFotoFrontis(this.fotoFrontisUrl),
+      );
     }
 
     if (this.referenciasUbicacion) {
@@ -1538,9 +1539,14 @@ export class PrivadoPedidos implements OnInit, OnDestroy, AfterViewChecked {
       )
       .subscribe({
         next: (pedidoActualizado) => {
+          const pedido = pedidoActualizado as PedidoDelivery;
           this.guardandoUbicacion = false;
           this.fotoFrontisArchivo = null;
-          this.pedidoSeleccionado = pedidoActualizado as PedidoDelivery;
+          this.pedidoSeleccionado = pedido;
+          this.fotoFrontisUrl = this.normalizarUrlFotoFrontis(
+            pedido.foto_frontis_url ?? pedido.cliente?.foto_frontis_url ?? '',
+          );
+          this.fotoFrontisInfo = '';
           this.recargarVistaActual();
         },
         error: (error) => {
@@ -1582,7 +1588,14 @@ export class PrivadoPedidos implements OnInit, OnDestroy, AfterViewChecked {
       return;
     }
 
-    if (!archivo.type.startsWith('image/')) {
+    const tipoArchivo = archivo.type || '';
+    const nombreArchivo = archivo.name.toLowerCase();
+    const pareceImagen =
+      tipoArchivo.startsWith('image/') ||
+      /\.(jpg|jpeg|png|webp|heic|heif)$/i.test(nombreArchivo) ||
+      tipoArchivo === '';
+
+    if (!pareceImagen) {
       this.mensajeError = 'Selecciona una imagen valida para el frontis.';
       input.value = '';
       return;
@@ -1590,11 +1603,12 @@ export class PrivadoPedidos implements OnInit, OnDestroy, AfterViewChecked {
 
     this.comprimiendoFotoFrontis = true;
     this.mensajeError = '';
+    this.fotoFrontisInfo = 'Preparando foto...';
 
     this.comprimirFotoFrontis(archivo)
       .then((fotoOptimizada) => {
         this.fotoFrontisArchivo = fotoOptimizada;
-        this.fotoFrontisInfo = `${fotoOptimizada.name} - ${this.formatearPesoArchivo(fotoOptimizada.size)}`;
+        this.fotoFrontisInfo = `Subiendo foto: ${this.formatearPesoArchivo(fotoOptimizada.size)}`;
       })
       .catch(() => {
         this.fotoFrontisArchivo = null;
@@ -1605,6 +1619,9 @@ export class PrivadoPedidos implements OnInit, OnDestroy, AfterViewChecked {
       .finally(() => {
         this.comprimiendoFotoFrontis = false;
         input.value = '';
+        if (this.fotoFrontisArchivo) {
+          this.guardarUbicacionEvidencia();
+        }
       });
   }
 
@@ -1712,7 +1729,7 @@ export class PrivadoPedidos implements OnInit, OnDestroy, AfterViewChecked {
   private comprimirFotoFrontis(archivo: File): Promise<File> {
     const maxDimension = 1280;
     const pesoMaximoBytes = 900 * 1024;
-    const pesoLimiteSinComprimir = 1400 * 1024;
+    const pesoLimiteSinComprimir = 1900 * 1024;
 
     return new Promise((resolve, reject) => {
       const urlTemporal = URL.createObjectURL(archivo);
@@ -1745,6 +1762,10 @@ export class PrivadoPedidos implements OnInit, OnDestroy, AfterViewChecked {
           canvas.toBlob(
             (blob) => {
               if (!blob) {
+                if (archivo.size <= pesoLimiteSinComprimir) {
+                  resolve(archivo);
+                  return;
+                }
                 reject();
                 return;
               }
@@ -1788,20 +1809,60 @@ export class PrivadoPedidos implements OnInit, OnDestroy, AfterViewChecked {
 
   private esUrlFotoFrontisValida(url: string): boolean {
     const valor = url.trim();
-    return /^https?:\/\//i.test(valor) || valor.startsWith('/assets/') || valor.startsWith('assets/');
+    return (
+      /^https?:\/\//i.test(valor) ||
+      valor.startsWith('/api/frontis/') ||
+      valor.startsWith('api/frontis/') ||
+      valor.startsWith('/assets/images/frontis/') ||
+      valor.startsWith('assets/images/frontis/') ||
+      valor.startsWith('/assets/images/img-frontis/') ||
+      valor.startsWith('assets/images/img-frontis/')
+    );
   }
 
   private normalizarUrlFotoFrontis(url: string): string {
     const valor = url.trim();
+    if (!valor) {
+      return '';
+    }
+
+    const convertirRutaInterna = (ruta: string): string | null => {
+      if (ruta.startsWith('/api/frontis/')) {
+        return ruta;
+      }
+      if (ruta.startsWith('api/frontis/')) {
+        return `/${ruta}`;
+      }
+      if (
+        ruta.startsWith('/assets/images/frontis/') ||
+        ruta.startsWith('/assets/images/img-frontis/')
+      ) {
+        return `/api/frontis/${ruta.split('/').pop() ?? ''}`;
+      }
+      if (
+        ruta.startsWith('assets/images/frontis/') ||
+        ruta.startsWith('assets/images/img-frontis/')
+      ) {
+        return `/api/frontis/${ruta.split('/').pop() ?? ''}`;
+      }
+      return null;
+    };
+
+    const rutaConvertida = convertirRutaInterna(valor);
+    if (rutaConvertida) {
+      return rutaConvertida;
+    }
+
     if (/^https?:\/\//i.test(valor)) {
-      return valor;
+      try {
+        const urlAbsoluta = new URL(valor);
+        const rutaAbsolutaConvertida = convertirRutaInterna(urlAbsoluta.pathname);
+        return rutaAbsolutaConvertida ?? valor;
+      } catch {
+        return valor;
+      }
     }
-    if (valor.startsWith('/assets/')) {
-      return valor;
-    }
-    if (valor.startsWith('assets/')) {
-      return `/${valor}`;
-    }
+
     return valor;
   }
   obtenerEtiquetaEstado(estadoId: number): string {

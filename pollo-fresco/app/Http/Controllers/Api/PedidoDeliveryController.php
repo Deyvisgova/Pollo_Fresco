@@ -466,7 +466,7 @@ class PedidoDeliveryController extends Controller
             }
 
             $archivo->move($rutaPublica, $nombreArchivo);
-            $payload['foto_frontis_url'] = $request->getSchemeAndHttpHost() . '/assets/images/frontis/' . $nombreArchivo;
+            $payload['foto_frontis_url'] = '/api/frontis/' . $nombreArchivo;
         }
 
         DB::transaction(function () use ($pedido, $payload, $request) {
@@ -477,6 +477,7 @@ class PedidoDeliveryController extends Controller
             $fotoFrontisUrl = array_key_exists('foto_frontis_url', $payload) && trim((string) ($payload['foto_frontis_url'] ?? '')) !== ''
                 ? trim((string) $payload['foto_frontis_url'])
                 : ($pedido->foto_frontis_url ?? $pedido->cliente?->foto_frontis_url);
+            $fotoFrontisUrl = $this->normalizarUrlFrontis($fotoFrontisUrl);
 
             $pedido->fill([
                 'latitud' => $payload['latitud'] ?? $pedido->latitud,
@@ -500,6 +501,58 @@ class PedidoDeliveryController extends Controller
         });
 
         return response()->json($this->anexarResumenPago($pedido->fresh(['cliente', 'detalles', 'pagos'])));
+    }
+
+    /**
+     * Sirve fotos del frontis desde el backend para que funcionen tambien por ngrok.
+     */
+    public function mostrarFotoFrontis(string $archivo)
+    {
+        abort_unless($archivo === basename($archivo) && preg_match('/^[A-Za-z0-9._-]+$/', $archivo), 404);
+
+        $rutas = [
+            public_path('assets/images/frontis/' . $archivo),
+            public_path('assets/images/img-frontis/' . $archivo),
+        ];
+
+        foreach ($rutas as $ruta) {
+            if (File::exists($ruta)) {
+                return response()->file($ruta, [
+                    'Cache-Control' => 'public, max-age=604800',
+                ]);
+            }
+        }
+
+        abort(404);
+    }
+
+    private function normalizarUrlFrontis(?string $url): ?string
+    {
+        $valor = trim((string) $url);
+        if ($valor === '') {
+            return null;
+        }
+
+        $path = parse_url($valor, PHP_URL_PATH);
+        $ruta = is_string($path) && $path !== '' ? $path : $valor;
+
+        if (str_starts_with($ruta, '/api/frontis/')) {
+            return $ruta;
+        }
+
+        if (str_starts_with($ruta, 'api/frontis/')) {
+            return '/' . $ruta;
+        }
+
+        if (str_starts_with($ruta, '/assets/images/frontis/') || str_starts_with($ruta, '/assets/images/img-frontis/')) {
+            return '/api/frontis/' . basename($ruta);
+        }
+
+        if (str_starts_with($ruta, 'assets/images/frontis/') || str_starts_with($ruta, 'assets/images/img-frontis/')) {
+            return '/api/frontis/' . basename($ruta);
+        }
+
+        return $valor;
     }
 
     private function anexarResumenPago(Pedido $pedido): Pedido
