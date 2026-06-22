@@ -289,7 +289,9 @@ export class PrivadoPedidos implements OnInit, OnDestroy, AfterViewChecked {
       return;
     }
 
-    this.cargarPedidos('vendedor');
+    if (!this.usuarioEsVendedor()) {
+      this.cargarPedidos('vendedor');
+    }
     this.cargarProductos();
     this.cargarStockDisponible();
   }
@@ -316,6 +318,11 @@ export class PrivadoPedidos implements OnInit, OnDestroy, AfterViewChecked {
       this.subpaginaActiva = 'delivery';
       this.cargarPedidos('delivery');
       this.cargarCobrosAtrasadosDelivery();
+      return;
+    }
+
+    if (this.usuarioEsVendedor()) {
+      this.subpaginaActiva = 'registrar';
       return;
     }
 
@@ -2789,7 +2796,11 @@ export class PrivadoPedidos implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   usuarioEsDelivery(): boolean {
-    return this.sesionServicio.obtenerUsuario()?.role === 'delivery';
+    return this.sesionServicio.usuarioEsRol('delivery');
+  }
+
+  usuarioEsVendedor(): boolean {
+    return this.sesionServicio.usuarioEsRol('vendedor');
   }
 
   pedidoTomadoPorMi(pedido: PedidoDelivery): boolean {

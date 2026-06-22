@@ -189,28 +189,50 @@ app-root {
 }
 
 .panel--tema-oscuro .panel__rutas .metodos-pago h5,
-.panel--tema-oscuro .panel__rutas .metodos-pago__texto,
 .panel--tema-oscuro .panel__rutas .metodos-pago__efectivo label,
 .panel--tema-oscuro .panel__rutas .metodos-pago__efectivo span {
   color: #f1f5f9 !important;
 }
 
 .panel--tema-oscuro .panel__rutas .metodos-pago__opcion {
-  background: #2b3b52 !important;
-  border-color: #526885 !important;
-  color: #dbeafe !important;
+  background: #253247 !important;
+  border-color: #52637c !important;
+  color: #f8fafc !important;
+  opacity: 1 !important;
 }
 
 .panel--tema-oscuro .panel__rutas .metodos-pago__opcion--activa {
   border-color: #4ade80 !important;
-  background: linear-gradient(155deg, rgba(34, 197, 94, 0.24), rgba(34, 197, 94, 0.14)) !important;
-  color: #bbf7d0 !important;
+  background: #14532d !important;
+  color: #ffffff !important;
   box-shadow: 0 8px 18px rgba(34, 197, 94, 0.24);
 }
 
 .panel--tema-oscuro .panel__rutas .metodos-pago__icono {
-  background: #1e293b !important;
+  background: #0f172a !important;
   color: #f8fafc !important;
+}
+
+.panel--tema-oscuro .panel__rutas .metodos-pago__opcion .metodos-pago__texto,
+.panel--tema-oscuro .panel__rutas .metodos-pago__opcion .metodos-pago__icono,
+.panel--tema-oscuro .panel__rutas .metodos-pago__opcion .metodos-pago__icono svg {
+  color: #f8fafc !important;
+  stroke: currentColor !important;
+  opacity: 1 !important;
+}
+
+.panel--tema-oscuro .panel__rutas .metodos-pago__opcion--activa .metodos-pago__texto,
+.panel--tema-oscuro .panel__rutas .metodos-pago__opcion--activa .metodos-pago__icono svg {
+  color: #ffffff !important;
+  stroke: currentColor !important;
+  opacity: 1 !important;
+}
+
+.panel--tema-oscuro .panel__rutas .metodos-pago__opcion--activa .metodos-pago__icono {
+  background: #dcfce7 !important;
+  color: #14532d !important;
+  stroke: currentColor !important;
+  opacity: 1 !important;
 }
 
 .panel--tema-oscuro .panel__rutas .metodos-pago__efectivo input[disabled] {
@@ -1651,3 +1673,639 @@ app-root {
 @media (max-width:820px){.delivery-ruta-toolbar{align-items:stretch;flex-direction:column}.delivery-ruta-toolbar .boton{width:100%}.mapa-delivery-layout{grid-template-columns:1fr}.mapa-delivery{height:52vh;min-height:320px}.mapa-delivery-acciones{grid-template-columns:1fr}.ruta-delivery-lista{max-height:none}.ruta-delivery-item{grid-template-columns:auto minmax(0,1fr)}.ruta-delivery-item .boton{grid-column:1/-1;width:100%}}
 
 .modal-fondo--lightbox{background:rgba(15,23,42,.78)!important}.modal-contenido--foto-frontis{width:min(880px,100%);max-height:92vh;overflow:auto;gap:14px}.foto-frontis-lightbox{margin:0;display:grid;place-items:center;min-height:220px;border:1px solid #dbeafe;border-radius:16px;background:#0f172a;overflow:hidden}.foto-frontis-lightbox img{width:100%;max-height:68vh;object-fit:contain;background:#0f172a}.foto-frontis-acciones{display:flex;justify-content:flex-end}@media(max-width:760px){.modal-contenido--foto-frontis{width:100%;padding:12px;border-radius:16px}.foto-frontis-lightbox{min-height:260px}.foto-frontis-lightbox img{max-height:62vh}.foto-frontis-acciones,.foto-frontis-acciones .boton{width:100%}}
+
+/* Refuerzo global del modo oscuro interno. No aplica a la pagina publica. */
+.panel.panel--tema-oscuro .panel__rutas,
+.panel.panel--tema-oscuro .panel__contenido {
+  background: #0f172a !important;
+  color: #f8fafc !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas :is(
+  .seccion,
+  .tarjeta,
+  .card,
+  .panel-card,
+  .dashboard-card,
+  .metric-card,
+  .kpi-card,
+  .stat-card,
+  .resumen-card,
+  .filtro-card,
+  .filtros,
+  .filtros-avanzados,
+  .filtros-registros--panel,
+  .operacion-sunat,
+  .metodos-pago,
+  .resumen,
+  .cuenta-card,
+  .cuenta-pedido,
+  .cuenta-pago,
+  .cuenta-modal-panel,
+  .modal__contenido,
+  .modal__contenedor,
+  .modal-contenido,
+  .modal-nota__contenido,
+  .formulario-card,
+  .configuracion-card,
+  [class*='tarjeta'],
+  [class*='card'],
+  [class*='kpi'],
+  [class*='metric'],
+  [class*='resumen'],
+  [class*='filtro']
+) {
+  background: #1e293b !important;
+  border-color: #52637c !important;
+  color: #f8fafc !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas :is(
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  label,
+  p,
+  small,
+  span,
+  strong,
+  li,
+  td,
+  th
+) {
+  color: inherit;
+}
+
+.panel.panel--tema-oscuro .panel__rutas :is(
+  p,
+  small,
+  .texto-secundario,
+  .ayuda,
+  [class*='descripcion'],
+  [class*='subtitulo'],
+  [class*='nota']
+) {
+  color: #cbd5e1 !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas :is(input, select, textarea) {
+  background: #253247 !important;
+  border-color: #52637c !important;
+  color: #f8fafc !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas :is(input, textarea)::placeholder {
+  color: #94a3b8 !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas :is(input:focus, select:focus, textarea:focus) {
+  border-color: #93c5fd !important;
+  box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.18) !important;
+  outline: none !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas :is(table, .tabla-ventas, .tabla-contenedor, .tabla__contenedor, .seccion__tabla) {
+  background: #1e293b !important;
+  border-color: #52637c !important;
+  color: #f8fafc !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas :is(thead th, table th, .tabla-detalle__encabezado, .tabla__encabezado) {
+  background: #2a3a52 !important;
+  border-color: #52637c !important;
+  color: #f8fafc !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas :is(tbody tr, tbody td, table td) {
+  background-color: #1e293b !important;
+  border-color: #3f5068 !important;
+  color: #f8fafc !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas tbody tr:nth-child(even) td {
+  background-color: #223047 !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas tbody tr:hover td {
+  background-color: #283750 !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas :is(.boton, button, .btn) {
+  border-color: #52637c;
+}
+
+.panel.panel--tema-oscuro .panel__rutas :is(.boton--suave, .boton--secundario, .btn-secondary, button:not(.boton--primario):not(.boton--peligro):not(.boton--peligro-solido):not(.boton--sunat):not(.activo):not(.metodos-pago__opcion)) {
+  background: #e8eef7 !important;
+  border-color: #cbd5e1 !important;
+  color: #0f2d5c !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas :is(.boton--primario, .btn-primary, .activo, button.activo) {
+  background: #2f5be8 !important;
+  border-color: #2f5be8 !important;
+  color: #fff !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas :is(.boton--peligro, .boton--peligro-solido, .btn-danger, .icono--baja) {
+  background: #dc2626 !important;
+  border-color: #dc2626 !important;
+  color: #fff !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas :is(.boton--editar, .btn-warning, .icono--nota) {
+  background: #f97316 !important;
+  border-color: #f97316 !important;
+  color: #fff !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas :is(.boton--sunat, .icono--sunat) {
+  background: #0f766e !important;
+  border-color: #0f766e !important;
+  color: #fff !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas :is(.estado-sunat, .estado--activo, .badge--activo, .etiqueta--activo) {
+  background: #dcfce7 !important;
+  color: #14532d !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas :is(.estado--inactivo, .badge--inactivo, .etiqueta--inactivo) {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas .estado-sunat[data-estado='NO_ENVIADO'] {
+  background: #e8eef7 !important;
+  color: #334155 !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas .estado-sunat[data-estado='RECHAZADO'],
+.panel.panel--tema-oscuro .panel__rutas .estado-sunat[data-estado='ERROR_ENVIO'] {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas .estado-sunat[data-estado='ACEPTADO'],
+.panel.panel--tema-oscuro .panel__rutas .estado-sunat[data-estado='ACEPTADO_CON_OBSERVACIONES'] {
+  background: #dcfce7 !important;
+  color: #166534 !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas :is(.cuenta-modal-resumen span, .cuenta-pedido__total, .ruta-delivery-resumen, .delivery-ruta-toolbar) {
+  background: #253247 !important;
+  border-color: #52637c !important;
+  color: #f8fafc !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas :is(.cuenta-pedido__saldo) {
+  background: #3a2d1e !important;
+  border-color: #f59e0b !important;
+  color: #fde68a !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas :is(.cuenta-pedido__saldo small, .cuenta-pedido__saldo strong) {
+  color: #fde68a !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas :is(.cuenta-modal-footer, .modal__footer, .modal-footer) {
+  background: #1e293b !important;
+  border-color: #52637c !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas :is(.alerta, .mensaje, .estado-vacio, .vacio) {
+  background: #253247 !important;
+  border-color: #52637c !important;
+  color: #e2e8f0 !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas input[type='file']::file-selector-button {
+  background: #e8eef7 !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  color: #0f2d5c !important;
+  font-weight: 800 !important;
+  padding: 10px 12px !important;
+  margin-right: 10px !important;
+}
+
+@media (max-width: 600px) {
+  .panel.panel--tema-oscuro .panel__rutas table:has(td[data-label]) tbody tr {
+    background: #1e293b !important;
+    border-color: #52637c !important;
+  }
+
+  .panel.panel--tema-oscuro .panel__rutas table:has(td[data-label]) tbody td {
+    background: transparent !important;
+    border-color: #3f5068 !important;
+  }
+}
+
+/* Cobros atrasados en modo oscuro: evita texto claro sobre tarjetas claras. */
+.panel.panel--tema-oscuro .panel__rutas .delivery-bloque--cobros {
+  background: #111827 !important;
+  border-color: #4b5563 !important;
+  color: #f8fafc !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas .delivery-bloque--cobros .delivery-bloque__ayuda {
+  color: #dbeafe !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas .delivery-bloque--cobros .delivery-card--cobro,
+.panel.panel--tema-oscuro .panel__rutas .delivery-bloque--cobros .cobro-pedido {
+  background: #1e293b !important;
+  border-color: #475569 !important;
+  color: #f8fafc !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas .delivery-bloque--cobros .cobro-pedido {
+  background: #0f172a !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas .delivery-bloque--cobros :is(h5, strong) {
+  color: #f8fafc !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas .delivery-bloque--cobros :is(span, small, p) {
+  color: #cbd5e1 !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas .delivery-bloque--cobros .badge--warning {
+  background: #fef3c7 !important;
+  border-color: #facc15 !important;
+  color: #92400e !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas .delivery-bloque--cobros :is(.cobro-detalle, .cobro-pedido__total, .delivery-card__acciones) {
+  border-color: #334155 !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas .delivery-bloque--cobros .delivery-card__acciones button {
+  background: #eaf2ff !important;
+  border-color: #bfdbfe !important;
+  color: #0f2d5c !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas .delivery-bloque--cobros .delivery-card__acciones button:last-child {
+  background: #2455df !important;
+  border-color: #2455df !important;
+  color: #ffffff !important;
+}
+
+/* Facturacion: metodos de pago legibles en modo oscuro. */
+.panel.panel--tema-oscuro .panel__rutas .metodos-pago .metodos-pago__opcion {
+  background: #253247 !important;
+  border-color: #52637c !important;
+  color: #f8fafc !important;
+  opacity: 1 !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas .metodos-pago .metodos-pago__opcion .metodos-pago__icono {
+  background: #0f172a !important;
+  color: #f8fafc !important;
+  opacity: 1 !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas .metodos-pago .metodos-pago__opcion .metodos-pago__texto {
+  color: #f8fafc !important;
+  opacity: 1 !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas .metodos-pago .metodos-pago__opcion--activa {
+  background: #14532d !important;
+  border-color: #22c55e !important;
+  color: #ffffff !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas .metodos-pago .metodos-pago__opcion--activa .metodos-pago__texto {
+  color: #ffffff !important;
+}
+
+.panel.panel--tema-oscuro .panel__rutas .metodos-pago .metodos-pago__opcion--activa .metodos-pago__icono {
+  background: #dcfce7 !important;
+  color: #14532d !important;
+}
+
+.confirmacion-sistema {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+}
+
+.confirmacion-sistema__fondo {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(15, 23, 42, 0.48);
+  backdrop-filter: blur(3px);
+  cursor: default;
+}
+
+.confirmacion-sistema__panel {
+  position: relative;
+  width: min(440px, 100%);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid #dbeafe;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.24);
+  color: #0f172a;
+}
+
+.confirmacion-sistema__icono {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 900;
+  font-size: 1.1rem;
+}
+
+.confirmacion-sistema__panel--peligro .confirmacion-sistema__icono {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.confirmacion-sistema__contenido {
+  display: grid;
+  gap: 6px;
+}
+
+.confirmacion-sistema__contenido h3,
+.confirmacion-sistema__contenido p {
+  margin: 0;
+}
+
+.confirmacion-sistema__contenido h3 {
+  font-size: 1.05rem;
+}
+
+.confirmacion-sistema__contenido p {
+  color: #334155;
+  line-height: 1.45;
+}
+
+.confirmacion-sistema__contenido small {
+  color: #64748b;
+}
+
+.confirmacion-sistema__acciones {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.confirmacion-sistema__acciones .boton {
+  min-width: 118px;
+  min-height: 42px;
+  border: 0;
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.confirmacion-sistema__acciones .boton:hover {
+  transform: translateY(-1px);
+}
+
+.confirmacion-sistema__acciones .boton--suave {
+  background: #e8eef7;
+  color: #0f2d5c;
+}
+
+.confirmacion-sistema__acciones .boton--peligro-solido {
+  background: #dc2626;
+  color: #ffffff;
+  box-shadow: 0 10px 22px rgba(220, 38, 38, 0.2);
+}
+
+.panel--tema-oscuro .confirmacion-sistema__panel {
+  background: #1e293b;
+  border-color: #52637c;
+  color: #f8fafc;
+}
+
+.panel--tema-oscuro .confirmacion-sistema__contenido p,
+.panel--tema-oscuro .confirmacion-sistema__contenido small {
+  color: #cbd5e1;
+}
+
+.panel--tema-oscuro .confirmacion-sistema__acciones .boton--suave {
+  background: #334155;
+  color: #f8fafc;
+}
+
+@media (max-width: 600px) {
+  .confirmacion-sistema {
+    align-items: end;
+  }
+
+  .confirmacion-sistema__panel {
+    border-radius: 18px 18px 12px 12px;
+  }
+
+  .confirmacion-sistema__acciones {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .confirmacion-sistema__acciones .boton {
+    width: 100%;
+  }
+}
+
+/* Ajustes exclusivos para tablet: no afectan celular ni escritorio amplio. */
+@media (min-width: 701px) and (max-width: 1024px) {
+  .panel__contenido {
+    padding: 20px !important;
+  }
+
+  .panel__rutas > * {
+    max-width: 100% !important;
+  }
+
+  .panel-vendedor__texto {
+    display: grid;
+    gap: 4px;
+  }
+
+  .panel-vendedor__grid,
+  .kpis,
+  .kpi-grid,
+  .resumen-grid,
+  .metricas-grid,
+  .fondos-resumen,
+  .cuentas-grid,
+  .delivery-lista,
+  .reportes-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .panel__rutas :is(.tabs-vista, .seccion__tabs, .fondos-tabs, .subtabs, .reportes-tabs) {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    justify-content: flex-start !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    gap: 10px !important;
+    padding-bottom: 6px !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .panel__rutas :is(.tabs-vista button, .seccion__tabs button, .seccion__tabs a, .fondos-tabs button, .subtabs button, .reportes-tabs button) {
+    flex: 0 0 auto !important;
+    min-height: 44px !important;
+    white-space: nowrap !important;
+  }
+
+  .panel__rutas :is(.filtros, .filtros-avanzados, .filtros-registros--panel, .toolbar, .acciones-superiores, .busqueda-linea) {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    align-items: end !important;
+    gap: 12px !important;
+  }
+
+  .panel__rutas :is(.filtros, .filtros-avanzados, .filtros-registros--panel, .toolbar, .acciones-superiores, .busqueda-linea) :is(input, select, button, a) {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .panel__rutas :is(.form-grid, .formulario-grid, .grid, .campos-grid, .detalle-grid, .configuracion-grid) {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .panel__rutas :is(.tabla-contenedor, .tabla__contenedor, .tabla-scroll, .tabla-ventas, .tabla-pedidos__contenedor, .seccion__tabla, .modal__tabla, [class*='tabla-contenedor'], [class*='tabla__contenedor']) {
+    max-width: 100% !important;
+    overflow: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .panel__rutas :is(table, table.tabla, table.tabla-sistema, .seccion__tabla table) {
+    min-width: 820px !important;
+  }
+
+  .panel__rutas :is(.tabla__acciones, .tabla-acciones, .acciones-tabla, .seccion__acciones-fila) {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  .modal-contenido,
+  .modal__contenido,
+  .modal__contenedor {
+    width: min(92vw, 980px) !important;
+    max-height: 90vh !important;
+    overflow: auto !important;
+  }
+}
+
+/* Usuarios en tablet: tarjetas legibles sin afectar celular ni escritorio. */
+@media (min-width: 761px) and (max-width: 1100px) {
+  app-privado-usuarios .tabla__contenedor {
+    max-height: none !important;
+    overflow: visible !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  app-privado-usuarios table,
+  app-privado-usuarios thead,
+  app-privado-usuarios tbody,
+  app-privado-usuarios tr,
+  app-privado-usuarios th,
+  app-privado-usuarios td {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  app-privado-usuarios thead {
+    display: none !important;
+  }
+
+  app-privado-usuarios tbody {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 14px !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  app-privado-usuarios tbody tr {
+    display: grid !important;
+    gap: 0 !important;
+    padding: 14px !important;
+    border: 1px solid #d7e1f2 !important;
+    border-radius: 16px !important;
+    background: #ffffff !important;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08) !important;
+  }
+
+  app-privado-usuarios tbody td {
+    display: grid !important;
+    grid-template-columns: 112px minmax(0, 1fr) !important;
+    gap: 10px !important;
+    align-items: start !important;
+    padding: 9px 0 !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    background: transparent !important;
+    white-space: normal !important;
+  }
+
+  app-privado-usuarios tbody td::before {
+    content: attr(data-label) ":" !important;
+    color: #64748b !important;
+    font-weight: 800 !important;
+  }
+
+  app-privado-usuarios tbody td:last-child {
+    border-bottom: 0 !important;
+  }
+
+  app-privado-usuarios .roles-tabla {
+    max-width: none !important;
+  }
+
+  app-privado-usuarios .tabla__acciones-contenido {
+    display: grid !important;
+    grid-template-columns: 62px 1fr 1fr !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  app-privado-usuarios .tabla__acciones-contenido .boton {
+    width: 100% !important;
+  }
+
+  .panel.panel--tema-oscuro app-privado-usuarios tbody tr {
+    background: #1e293b !important;
+    border-color: #52637c !important;
+  }
+
+  .panel.panel--tema-oscuro app-privado-usuarios tbody td {
+    border-color: #3f5068 !important;
+    color: #f8fafc !important;
+  }
+
+  .panel.panel--tema-oscuro app-privado-usuarios tbody td::before {
+    color: #cbd5e1 !important;
+  }
+}

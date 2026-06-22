@@ -6,6 +6,8 @@ import { SesionServicio } from './sesion.servicio';
 export interface UsuarioApi {
   usuario_id: number;
   rol_id: number;
+  roles_permitidos?: number[] | null;
+  roles_disponibles?: Array<{ id: number; nombre: string; role: string }>;
   nombres: string;
   apellidos: string;
   usuario: string;
@@ -18,6 +20,7 @@ export interface UsuarioApi {
 
 export interface UsuarioPayload {
   rol_id: number;
+  roles_permitidos: number[];
   nombres: string;
   apellidos: string;
   usuario: string;

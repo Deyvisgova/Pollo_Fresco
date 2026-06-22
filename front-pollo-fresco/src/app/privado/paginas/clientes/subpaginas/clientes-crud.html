@@ -33,7 +33,7 @@
           <th>Direccion</th>
           <th>Referencia</th>
           <th>Registro</th>
-          <th>Acciones</th>
+          <th *ngIf="!esVendedor">Acciones</th>
         </tr>
       </thead>
       <tbody>
@@ -57,7 +57,7 @@
             <div>Creado: {{ cliente.creado_en | date: 'short' }}</div>
             <div class="nota">Actualizado: {{ cliente.actualizado_en | date: 'short' }}</div>
           </td>
-          <td data-label="Acciones" class="acciones-tabla">
+          <td data-label="Acciones" class="acciones-tabla" *ngIf="!esVendedor">
             <button class="boton boton--secundario" type="button" (click)="editarCliente(cliente)">Editar</button>
             <button class="boton boton--peligro-solido" type="button" (click)="eliminarCliente(cliente)">
               Eliminar
@@ -65,7 +65,7 @@
           </td>
         </tr>
         <tr *ngIf="clientes.length === 0">
-          <td colspan="8">Todavia no hay clientes registrados.</td>
+          <td [attr.colspan]="esVendedor ? 7 : 8">Todavia no hay clientes registrados.</td>
         </tr>
       </tbody>
     </table>

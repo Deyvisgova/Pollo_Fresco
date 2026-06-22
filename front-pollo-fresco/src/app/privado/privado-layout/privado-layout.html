@@ -1,6 +1,7 @@
 <section class="panel" [class.panel--tema-oscuro]="temaActual() === 'dark'">
-  <header class="panel__topbar">
+  <header class="panel__topbar" [class.panel__topbar--vendedor]="esVendedor">
     <button
+      *ngIf="!esVendedor"
       type="button"
       class="panel__toggle"
       (click)="toggleSidebar()"
@@ -51,8 +52,13 @@
     </div>
   </header>
 
-  <div class="panel__cuerpo" [class.panel__cuerpo--compacto]="sidebarColapsadoDesktop">
+  <div
+    class="panel__cuerpo"
+    [class.panel__cuerpo--compacto]="sidebarColapsadoDesktop"
+    [class.panel__cuerpo--vendedor]="esVendedor"
+  >
     <aside
+      *ngIf="!esVendedor"
       class="panel__sidebar"
       id="panel-sidebar"
       [class.panel__sidebar--abierto]="sidebarMovilAbierto"
@@ -109,6 +115,7 @@
               Emitir comprobante
             </a>
             <a
+              *ngIf="!esVendedor"
               [routerLink]="'venta-registros'"
               routerLinkActive="panel__sublink--activo"
               class="panel__sublink"
@@ -138,10 +145,55 @@
       </button>
     </aside>
 
-    <main class="panel__contenido">
+    <main class="panel__contenido" [class.panel__contenido--vendedor]="esVendedor">
+      <section class="panel-vendedor" *ngIf="esVendedor" aria-label="Accesos rapidos del vendedor">
+        <div class="panel-vendedor__encabezado">
+          <p class="panel-vendedor__eyebrow">Accesos de venta</p>
+          <h2>Panel rapido</h2>
+          <span>Todo lo permitido para registrar sin entrar a opciones de administracion.</span>
+        </div>
+
+        <nav class="panel-vendedor__grid">
+          <a
+            *ngFor="let acceso of accesosVendedor"
+            class="panel-vendedor__card"
+            [routerLink]="acceso.ruta"
+            routerLinkActive="panel-vendedor__card--activo"
+          >
+            <span class="panel__link-icono panel-vendedor__icono" [attr.data-icon]="acceso.icono" aria-hidden="true"></span>
+            <span class="panel-vendedor__texto">
+              <strong>{{ acceso.etiqueta }}</strong>
+              <small>{{ acceso.descripcion }}</small>
+            </span>
+          </a>
+        </nav>
+      </section>
+
       <section class="panel__rutas">
         <router-outlet></router-outlet>
       </section>
     </main>
+  </div>
+
+  <div class="confirmacion-sistema" *ngIf="confirmacionActiva() as confirmacion" role="dialog" aria-modal="true">
+    <button class="confirmacion-sistema__fondo" type="button" aria-label="Cancelar" (click)="cancelarConfirmacion()"></button>
+    <section class="confirmacion-sistema__panel" [class.confirmacion-sistema__panel--peligro]="confirmacion.tipo === 'peligro'">
+      <div class="confirmacion-sistema__icono" aria-hidden="true">
+        {{ confirmacion.tipo === 'peligro' ? '!' : '?' }}
+      </div>
+      <div class="confirmacion-sistema__contenido">
+        <h3>{{ confirmacion.titulo }}</h3>
+        <p>{{ confirmacion.mensaje }}</p>
+        <small *ngIf="confirmacion.detalle">{{ confirmacion.detalle }}</small>
+      </div>
+      <div class="confirmacion-sistema__acciones">
+        <button class="boton boton--suave" type="button" (click)="cancelarConfirmacion()">
+          {{ confirmacion.textoCancelar }}
+        </button>
+        <button class="boton boton--peligro-solido" type="button" (click)="aceptarConfirmacion()">
+          {{ confirmacion.textoConfirmar }}
+        </button>
+      </div>
+    </section>
   </div>
 </section>

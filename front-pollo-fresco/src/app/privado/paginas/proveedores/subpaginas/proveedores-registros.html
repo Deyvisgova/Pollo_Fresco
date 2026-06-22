@@ -45,10 +45,24 @@
     <p class="tarjeta-proveedor__nombre">Proveedor: {{ tarjeta.proveedor.nombres }} {{ tarjeta.proveedor.apellidos }}</p>
 
     <div class="tarjeta-proveedor__iconos">
-      <button class="icono-btn" type="button" (click)="alternarTarjeta(tarjeta.proveedor.proveedor_id)">
-        {{ tarjeta.expandida ? '' : '' }}
+      <button
+        class="icono-btn"
+        type="button"
+        (click)="alternarTarjeta(tarjeta.proveedor.proveedor_id)"
+        [attr.aria-label]="tarjeta.expandida ? 'Contraer tarjeta' : 'Expandir tarjeta'"
+        [title]="tarjeta.expandida ? 'Contraer' : 'Expandir'"
+      >
+        <span aria-hidden="true">{{ tarjeta.expandida ? '−' : '+' }}</span>
       </button>
-      <button class="icono-btn icono-btn--cerrar" type="button" (click)="cerrarTarjeta(tarjeta.proveedor.proveedor_id)"></button>
+      <button
+        class="icono-btn icono-btn--cerrar"
+        type="button"
+        (click)="cerrarTarjeta(tarjeta.proveedor.proveedor_id)"
+        aria-label="Quitar proveedor"
+        title="Quitar proveedor"
+      >
+        <span aria-hidden="true">×</span>
+      </button>
     </div>
   </header>
 
@@ -56,7 +70,7 @@
     <p class="tarjeta-proveedor__documento">{{ tarjeta.proveedor.ruc || tarjeta.proveedor.dni }}</p>
 
     <div class="lineas">
-      <label class="campo campo--estado">
+      <label class="campo campo--estado" *ngIf="!esVendedor">
         <span>Estado de pago</span>
         <select [(ngModel)]="tarjeta.estadoPago" (ngModelChange)="persistirTarjetas()" name="estadoPago{{ tarjeta.proveedor.proveedor_id }}">
           <option value="PENDIENTE">Pendiente</option>
@@ -92,7 +106,7 @@
             step="0.01"
           />
         </label>
-        <label class="campo">
+        <label class="campo" *ngIf="!esVendedor">
           <span>Merma</span>
           <input
             [(ngModel)]="linea.mermaKg"
@@ -103,7 +117,7 @@
             step="0.01"
           />
         </label>
-        <label class="campo">
+        <label class="campo" *ngIf="!esVendedor">
           <span>Precio por kg (S/)</span>
           <input
             [(ngModel)]="linea.precioKg"
@@ -132,7 +146,7 @@
     <p class="mensaje mensaje--error" *ngIf="tarjeta.error">{{ tarjeta.error }}</p>
 
 
-    <p class="mensaje mensaje--error" *ngIf="entregasParaPagarIds.length === 0">No hay entregas pendientes para pagar con el filtro actual.</p>
+    <p class="mensaje mensaje--error" *ngIf="!esVendedor && entregasParaPagarIds.length === 0">No hay entregas pendientes para pagar con el filtro actual.</p>
     <div class="acciones">
       <button class="boton boton--secundario boton--compacto" type="button" (click)="agregarLinea(tarjeta.proveedor.proveedor_id)">
         Agregar linea
@@ -152,7 +166,7 @@
   </ng-container>
 </section>
 
-<section class="tarjeta">
+<section class="tarjeta" *ngIf="!esVendedor">
   <header class="tarjeta__encabezado">
     <h3>Historial de entregas</h3>
     <p>Filtra, edita o elimina filas para encontrar y gestionar la informacion rapidamente.</p>

@@ -14,7 +14,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
-import { AutenticacionServicio } from '../../../servicios/autenticacion.servicio';
+import { AutenticacionServicio, RolDisponibleLogin } from '../../../servicios/autenticacion.servicio';
 import { SesionServicio } from '../../../servicios/sesion.servicio';
 
 @Component({
@@ -38,6 +38,8 @@ export class Ingresar {
   hidePassword = true;
   mensajeError = '';
   estaCargando = false;
+  rolesDisponibles: RolDisponibleLogin[] = [];
+  esperandoSeleccionRol = false;
   formulario!: FormGroup;
 
   constructor(
@@ -65,17 +67,43 @@ export class Ingresar {
     this.mensajeError = '';
     this.estaCargando = true;
 
+    this.enviarCredenciales();
+  }
+
+  seleccionarRol(rol: RolDisponibleLogin): void {
+    this.mensajeError = '';
+    this.estaCargando = true;
+    this.enviarCredenciales(rol.role);
+  }
+
+  volverACredenciales(): void {
+    this.esperandoSeleccionRol = false;
+    this.rolesDisponibles = [];
+  }
+
+  private enviarCredenciales(role?: string): void {
     this.autenticacionServicio
-      .iniciarSesion(this.formulario.getRawValue())
+      .iniciarSesion({ ...this.formulario.getRawValue(), role })
       .pipe(finalize(() => (this.estaCargando = false)))
       .subscribe({
-        next: (usuario) => {
-          if (usuario.role === 'delivery') {
+        next: (respuesta) => {
+          if (respuesta.requires_role_selection && respuesta.roles?.length) {
+            this.rolesDisponibles = respuesta.roles;
+            this.esperandoSeleccionRol = true;
+            return;
+          }
+
+          if (this.sesionServicio.usuarioEsRol('delivery')) {
             void this.router.navigate(['/privado/pedidos']);
             return;
           }
 
-          if (usuario.role !== 'admin') {
+          if (this.sesionServicio.usuarioEsRol('vendedor')) {
+            void this.router.navigate(['/privado/pedidos']);
+            return;
+          }
+
+          if (!this.sesionServicio.usuarioEsRol('admin')) {
             this.sesionServicio.limpiarSesion();
             this.mensajeError =
               'Tu cuenta no tiene permisos para ingresar al panel.';

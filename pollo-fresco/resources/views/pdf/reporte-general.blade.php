@@ -29,13 +29,17 @@
         <table class="kpis">
             <tr>
                 <td><span>Resultado neto</span><strong>S/ {{ number_format($r['resultado_neto'], 2) }}</strong></td>
+                <td><span>Ventas generadas</span><strong>S/ {{ number_format($r['ventas_generadas'] ?? 0, 2) }}</strong></td>
+                <td><span>Dinero cobrado</span><strong>S/ {{ number_format($r['dinero_cobrado'] ?? ($r['cobrado_periodo'] ?? 0), 2) }}</strong></td>
                 <td><span>Ganancia bruta</span><strong>S/ {{ number_format($r['ganancia_bruta'], 2) }}</strong></td>
-                <td><span>Gastos</span><strong>S/ {{ number_format($r['gastos'], 2) }}</strong></td>
-                <td><span>Cuentas por cobrar</span><strong>S/ {{ number_format($r['cuentas_por_cobrar'], 2) }}</strong></td>
             </tr>
             <tr>
+                <td><span>Gastos</span><strong>S/ {{ number_format($r['gastos'], 2) }}</strong></td>
+                <td><span>Cuentas por cobrar</span><strong>S/ {{ number_format($r['cuentas_por_cobrar'], 2) }}</strong></td>
                 <td><span>Deuda proveedores</span><strong>S/ {{ number_format($r['deuda_proveedores'], 2) }}</strong></td>
                 <td><span>Valor stock</span><strong>S/ {{ number_format($r['valor_stock'], 2) }}</strong></td>
+            </tr>
+            <tr>
                 <td><span>Venta pollo + gallina</span><strong>S/ {{ number_format($r['ventas_pollo_gallina'], 2) }}</strong></td>
                 <td><span>Venta otros productos</span><strong>S/ {{ number_format($r['ventas_otros_productos'], 2) }}</strong></td>
             </tr>

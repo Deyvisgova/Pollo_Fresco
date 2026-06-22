@@ -235,6 +235,10 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
     };
   }
 
+  get esVendedor(): boolean {
+    return this.sesionServicio.usuarioEsRol('vendedor');
+  }
+
   agregarFila(): void {
     const fechaHoraFila = this.obtenerFechaHoraLocalInput();
     this.ventas = [...this.ventas, this.crearFilaVacia(fechaHoraFila)];
@@ -478,6 +482,10 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
   }
 
   cerrarDia(): void {
+    if (this.esVendedor) {
+      return;
+    }
+
     if (this.cerrado) {
       window.alert('El dia ya esta cerrado. Debes reabrir el dia para editar.');
       return;
@@ -499,6 +507,10 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
   }
 
   reabrirDia(fecha: string): void {
+    if (this.esVendedor) {
+      return;
+    }
+
     const headers = this.obtenerHeaders();
     this.http.post('/api/otros-productos/ventas-diarias/reabrir', { fecha }, { headers }).subscribe({
       next: () => {
@@ -513,6 +525,10 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
   }
 
   abrirDetalle(cierre: CierreHistorico): void {
+    if (this.esVendedor) {
+      return;
+    }
+
     this.cierreDetalle = cierre;
     this.modalDetalleAbierto = true;
   }
@@ -985,7 +1001,7 @@ export class PrivadoOtrosProductosVentasDiarias implements OnInit, OnDestroy {
   }
 
   puedeReabrirDia(cierre: CierreHistorico): boolean {
-    return cierre.fecha === this.fechaHoy;
+    return !this.esVendedor && cierre.fecha === this.fechaHoy;
   }
 
   private formatearFechaHoraInput(valor: string | null | undefined): string {

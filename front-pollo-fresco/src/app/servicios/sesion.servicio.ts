@@ -34,6 +34,21 @@ export class SesionServicio {
     return data ? (JSON.parse(data) as UsuarioSesion) : null;
   }
 
+  obtenerRol(): string {
+    return (this.obtenerUsuario()?.role ?? '').toLowerCase();
+  }
+
+  usuarioEsRol(rol: string): boolean {
+    const rolNormalizado = rol.toLowerCase();
+    const rolActual = this.obtenerRol();
+
+    if (rolNormalizado === 'vendedor') {
+      return ['vendedor', 'vendor', 'cashier'].includes(rolActual);
+    }
+
+    return rolActual === rolNormalizado;
+  }
+
   /**
    * Obtiene el token actual para llamadas autenticadas.
    */

@@ -6,9 +6,9 @@
 
   <div class="tabs-vista" *ngIf="!usuarioEsDelivery()">
     <button type="button" [class.activo]="subpaginaActiva === 'registrar'" (click)="cambiarSubpagina('registrar')">Registrar pedido</button>
-    <button type="button" [class.activo]="subpaginaActiva === 'registros'" (click)="cambiarSubpagina('registros')">Pedidos registrados</button>
-    <button type="button" [class.activo]="subpaginaActiva === 'cuentas'" (click)="cambiarSubpagina('cuentas')">Cuentas por cobrar</button>
-    <button type="button" [class.activo]="subpaginaActiva === 'delivery'" (click)="cambiarSubpagina('delivery')">Vista delivery</button>
+    <button *ngIf="!usuarioEsVendedor()" type="button" [class.activo]="subpaginaActiva === 'registros'" (click)="cambiarSubpagina('registros')">Pedidos registrados</button>
+    <button *ngIf="!usuarioEsVendedor()" type="button" [class.activo]="subpaginaActiva === 'cuentas'" (click)="cambiarSubpagina('cuentas')">Cuentas por cobrar</button>
+    <button *ngIf="!usuarioEsVendedor()" type="button" [class.activo]="subpaginaActiva === 'delivery'" (click)="cambiarSubpagina('delivery')">Vista delivery</button>
   </div>
 
   <p class="mensaje-error" *ngIf="mensajeError">{{ mensajeError }}</p>

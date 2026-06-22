@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
-import { RouterModule } from '@angular/router';
+import { Component, OnInit } from '@angular/core';
+import { Router, RouterModule } from '@angular/router';
+import { SesionServicio } from '../../../servicios/sesion.servicio';
 
 @Component({
   selector: 'app-privado-otros-productos',
@@ -10,4 +11,19 @@ import { RouterModule } from '@angular/router';
   templateUrl: './otros-productos.html',
   styleUrl: './otros-productos.css'
 })
-export class PrivadoOtrosProductos {}
+export class PrivadoOtrosProductos implements OnInit {
+  constructor(
+    private readonly router: Router,
+    private readonly sesionServicio: SesionServicio
+  ) {}
+
+  ngOnInit(): void {
+    if (this.esVendedor && !this.router.url.includes('/privado/otros-productos/ventas-diarias')) {
+      void this.router.navigate(['/privado/otros-productos/ventas-diarias']);
+    }
+  }
+
+  get esVendedor(): boolean {
+    return this.sesionServicio.usuarioEsRol('vendedor');
+  }
+}

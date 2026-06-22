@@ -24,21 +24,27 @@ class ReporteController extends Controller
         $pedidosActivos = (int) DB::table('pedidos')->whereIn('estado_id', [1, 4])->count();
         $pedidosEnRuta = (int) DB::table('pedidos')->where('estado_id', 4)->count();
         $clientesNuevos = (int) DB::table('clientes')->whereBetween(DB::raw('DATE(creado_en)'), [$desde, $hasta])->count();
-        $totalFacturado = (float) $resumen['ventas_pedidos'] + (float) $resumen['ventas_otros_productos'];
-        $margen = $totalFacturado > 0 ? round(((float) $resumen['ganancia_bruta'] / $totalFacturado) * 100, 1) : 0;
-        $ventasPeriodo = collect($datos['ventas']);
-        $cobrado = round((float) $ventasPeriodo->sum('pagado'), 2);
-        $pendientePeriodo = round(max(0, $totalFacturado - $cobrado), 2);
-        $porcentajeCobrado = $totalFacturado > 0 ? round(($cobrado / $totalFacturado) * 100, 1) : 0;
+        $ventasGeneradas = round(
+            (float) $resumen['ventas_pedidos']
+            + (float) $resumen['ventas_otros_productos']
+            + (float) $resumen['ventas_pollo_gallina'],
+            2
+        );
+        $margen = $ventasGeneradas > 0 ? round(((float) $resumen['ganancia_bruta'] / $ventasGeneradas) * 100, 1) : 0;
+        $dineroCobrado = round((float) ($resumen['dinero_cobrado'] ?? 0), 2);
+        $pendientePeriodo = round((float) ($resumen['cuentas_por_cobrar'] ?? 0), 2);
+        $porcentajeCobrado = $ventasGeneradas > 0 ? round((min($dineroCobrado, $ventasGeneradas) / $ventasGeneradas) * 100, 1) : 0;
 
         return response()->json([
             'fecha_desde' => $desde,
             'fecha_hasta' => $hasta,
             'indicadores' => array_merge($resumen, [
-                'total_facturado' => round($totalFacturado, 2),
+                'ventas_generadas' => $ventasGeneradas,
+                'total_facturado' => $ventasGeneradas,
                 'margen_porcentaje' => $margen,
                 'porcentaje_cobrado' => max(0, min(100, $porcentajeCobrado)),
-                'cobrado_periodo' => $cobrado,
+                'cobrado_periodo' => $dineroCobrado,
+                'dinero_cobrado' => $dineroCobrado,
                 'pendiente_periodo' => $pendientePeriodo,
                 'pedidos_activos' => $pedidosActivos,
                 'pedidos_en_ruta' => $pedidosEnRuta,
@@ -76,11 +82,15 @@ class ReporteController extends Controller
         $costoOtros = round((float) $ventasOtros->sum('costo'), 2);
         $totalGastos = round((float) $gastos->where('estado', 'ACTIVO')->sum('monto'), 2);
         $gananciaBruta = round($polloGallina['ganancia'] + $totalOtros - $costoOtros, 2);
+        $dineroCobradoPedidos = $this->pagosPedidosEnPeriodo($desde, $hasta);
+        $dineroCobrado = round($dineroCobradoPedidos + $totalOtros + $polloGallina['ventas'], 2);
+        $ventasGeneradas = round($totalPedidos + $totalOtros + $polloGallina['ventas'], 2);
 
         return response()->json([
             'fecha_desde' => $desde,
             'fecha_hasta' => $hasta,
             'resumen' => [
+                'ventas_generadas' => $ventasGeneradas,
                 'ventas_pedidos' => $totalPedidos,
                 'ventas_otros_productos' => $totalOtros,
                 'ventas_pollo_gallina' => $polloGallina['ventas'],
@@ -89,6 +99,11 @@ class ReporteController extends Controller
                 'ganancia_bruta' => $gananciaBruta,
                 'gastos' => $totalGastos,
                 'resultado_neto' => round($gananciaBruta - $totalGastos, 2),
+                'dinero_cobrado' => $dineroCobrado,
+                'cobrado_periodo' => $dineroCobrado,
+                'cobrado_pedidos' => $dineroCobradoPedidos,
+                'cobrado_otros_productos' => $totalOtros,
+                'cobrado_pollo_gallina' => $polloGallina['ventas'],
                 'cuentas_por_cobrar' => round((float) $cuentas->sum('saldo'), 2),
                 'deuda_proveedores' => round((float) $proveedores->sum('pendiente'), 2),
                 'valor_stock' => round((float) $stock->sum('valor_stock'), 2),
@@ -250,6 +265,13 @@ class ReporteController extends Controller
                     'usuario' => trim((string) ($item->nombres . ' ' . $item->apellidos)),
                 ];
             });
+    }
+
+    private function pagosPedidosEnPeriodo(string $desde, string $hasta): float
+    {
+        return round((float) DB::table('pedido_pagos')
+            ->whereBetween(DB::raw('DATE(fecha_hora)'), [$desde, $hasta])
+            ->sum('pago_parcial'), 2);
     }
 
     private function combinarVentas(Collection $pedidos, Collection $otros): Collection

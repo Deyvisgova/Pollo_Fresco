@@ -3,12 +3,20 @@ import { AfterViewInit, Component, HostListener, OnDestroy, computed } from '@an
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { AutenticacionServicio } from '../../servicios/autenticacion.servicio';
+import { ConfirmacionServicio } from '../../servicios/confirmacion.servicio';
 import { ConfiguracionEmpresaServicio } from '../../servicios/configuracion-empresa.servicio';
 import { SesionServicio } from '../../servicios/sesion.servicio';
 import { TemaServicio } from '../../servicios/tema.servicio';
 
 interface ItemMenu {
   etiqueta: string;
+  ruta: string;
+  icono: string;
+}
+
+interface AccesoVendedor {
+  etiqueta: string;
+  descripcion: string;
   ruta: string;
   icono: string;
 }
@@ -41,6 +49,32 @@ export class PrivadoLayout implements AfterViewInit, OnDestroy {
   sidebarMovilAbierto = false;
   sidebarColapsadoDesktop = false;
   menuUsuarioAbierto = false;
+  readonly accesosVendedor: AccesoVendedor[] = [
+    {
+      etiqueta: 'Pollos',
+      descripcion: 'Entregas del proveedor',
+      ruta: '/privado/proveedores/registros',
+      icono: 'proveedores'
+    },
+    {
+      etiqueta: 'Comprobante',
+      descripcion: 'Boleta o factura',
+      ruta: '/privado/venta',
+      icono: 'venta'
+    },
+    {
+      etiqueta: 'Pedido',
+      descripcion: 'Mesa o delivery',
+      ruta: '/privado/pedidos',
+      icono: 'pedidos'
+    },
+    {
+      etiqueta: 'Ventas diarias',
+      descripcion: 'Congelados y huevos',
+      ruta: '/privado/otros-productos/ventas-diarias',
+      icono: 'productos'
+    }
+  ];
   private observadorTablas: MutationObserver | null = null;
   private actualizacionTablasTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -48,10 +82,12 @@ export class PrivadoLayout implements AfterViewInit, OnDestroy {
   readonly mostrarLogo;
   readonly nombreUsuario;
   readonly temaActual;
+  readonly confirmacionActiva;
 
   constructor(
     private readonly autenticacionServicio: AutenticacionServicio,
     private readonly configuracionEmpresaServicio: ConfiguracionEmpresaServicio,
+    private readonly confirmacionServicio: ConfirmacionServicio,
     private readonly sesionServicio: SesionServicio,
     private readonly temaServicio: TemaServicio,
     private readonly router: Router
@@ -63,6 +99,16 @@ export class PrivadoLayout implements AfterViewInit, OnDestroy {
       ];
     }
 
+    if (this.usuarioEsVendedor()) {
+      this.menuPrincipal = [
+        { etiqueta: 'Proveedores', ruta: 'proveedores', icono: 'proveedores' }
+      ];
+      this.menuPosterior = [
+        { etiqueta: 'Pedidos', ruta: 'pedidos', icono: 'pedidos' },
+        { etiqueta: 'Otros productos', ruta: 'otros-productos', icono: 'productos' }
+      ];
+    }
+
     this.configuracionEmpresa = this.configuracionEmpresaServicio.configuracion;
     this.mostrarLogo = computed(() => Boolean(this.configuracionEmpresa().logoUrl));
     this.nombreUsuario = computed(() => {
@@ -70,15 +116,18 @@ export class PrivadoLayout implements AfterViewInit, OnDestroy {
       return usuario?.name || usuario?.usuario || 'Usuario';
     });
     this.temaActual = this.temaServicio.temaActual();
+    this.confirmacionActiva = this.confirmacionServicio.dialogo;
 
     this.sincronizarMenuVenta(this.router.url);
     this.redirigirDeliverySiCorresponde(this.router.url);
+    this.redirigirVendedorSiCorresponde(this.router.url);
     this.router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe((event) => {
         const url = (event as NavigationEnd).urlAfterRedirects;
         this.sincronizarMenuVenta(url);
         this.redirigirDeliverySiCorresponde(url);
+        this.redirigirVendedorSiCorresponde(url);
         this.actualizarDataLabelsTablas();
         this.menuUsuarioAbierto = false;
       });
@@ -124,11 +173,19 @@ export class PrivadoLayout implements AfterViewInit, OnDestroy {
     return this.usuarioEsDelivery();
   }
 
+  get esVendedor(): boolean {
+    return this.usuarioEsVendedor();
+  }
+
   toggleVentaMenu(): void {
     this.ventaMenuAbierto = !this.ventaMenuAbierto;
   }
 
   toggleSidebar(): void {
+    if (this.esVendedor) {
+      return;
+    }
+
     if (this.esMovilOTablet) {
       this.sidebarMovilAbierto = !this.sidebarMovilAbierto;
       return;
@@ -175,8 +232,20 @@ export class PrivadoLayout implements AfterViewInit, OnDestroy {
     return url.includes('/privado/venta');
   }
 
+  aceptarConfirmacion(): void {
+    this.confirmacionServicio.aceptar();
+  }
+
+  cancelarConfirmacion(): void {
+    this.confirmacionServicio.cancelar();
+  }
+
   private usuarioEsDelivery(): boolean {
-    return this.sesionServicio.obtenerUsuario()?.role === 'delivery';
+    return this.sesionServicio.usuarioEsRol('delivery');
+  }
+
+  private usuarioEsVendedor(): boolean {
+    return this.sesionServicio.usuarioEsRol('vendedor');
   }
 
   private redirigirDeliverySiCorresponde(url: string): void {
@@ -185,6 +254,23 @@ export class PrivadoLayout implements AfterViewInit, OnDestroy {
     }
 
     if (!url.includes('/privado/pedidos')) {
+      void this.router.navigate(['/privado/pedidos']);
+    }
+  }
+
+  private redirigirVendedorSiCorresponde(url: string): void {
+    if (!this.usuarioEsVendedor()) {
+      return;
+    }
+
+    const rutasPermitidas = [
+      '/privado/proveedores',
+      '/privado/venta',
+      '/privado/pedidos',
+      '/privado/otros-productos'
+    ];
+
+    if (!rutasPermitidas.some((ruta) => url.includes(ruta)) || url.includes('/privado/venta-registros')) {
       void this.router.navigate(['/privado/pedidos']);
     }
   }

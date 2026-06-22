@@ -2,6 +2,8 @@ import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule, HttpHeaders } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { ConfirmacionServicio } from '../../../../servicios/confirmacion.servicio';
 import { SesionServicio } from '../../../../servicios/sesion.servicio';
 
 interface ProveedorApi {
@@ -63,14 +65,29 @@ export class PrivadoProveedoresCrud implements OnInit {
 
   constructor(
     private readonly http: HttpClient,
+    private readonly router: Router,
+    private readonly confirmacionServicio: ConfirmacionServicio,
     private readonly sesionServicio: SesionServicio
   ) {}
 
   ngOnInit(): void {
+    if (this.esVendedor) {
+      void this.router.navigate(['/privado/proveedores/registros']);
+      return;
+    }
+
     this.cargarProveedores();
   }
 
+  get esVendedor(): boolean {
+    return this.sesionServicio.usuarioEsRol('vendedor');
+  }
+
   abrirModalRegistro(): void {
+    if (this.esVendedor) {
+      return;
+    }
+
     this.limpiarFormulario();
     this.mostrarModalRegistro = true;
   }
@@ -122,6 +139,10 @@ export class PrivadoProveedoresCrud implements OnInit {
   }
 
   guardarProveedor(): void {
+    if (this.esVendedor) {
+      return;
+    }
+
     this.guardando = true;
     this.consultaError = '';
 
@@ -170,6 +191,10 @@ export class PrivadoProveedoresCrud implements OnInit {
   }
 
   editarProveedor(proveedor: ProveedorApi): void {
+    if (this.esVendedor) {
+      return;
+    }
+
     this.formulario = {
       proveedor_id: proveedor.proveedor_id,
       dni: proveedor.dni ?? '',
@@ -184,10 +209,21 @@ export class PrivadoProveedoresCrud implements OnInit {
     this.mostrarModalRegistro = true;
   }
 
-  eliminarProveedor(proveedor: ProveedorApi): void {
+  async eliminarProveedor(proveedor: ProveedorApi): Promise<void> {
+    if (this.esVendedor) {
+      return;
+    }
+
     this.consultaError = '';
 
-    const confirmar = window.confirm('Deseas eliminar este proveedor?');
+    const nombre = proveedor.nombre_empresa || `${proveedor.nombres} ${proveedor.apellidos ?? ''}`.trim();
+    const confirmar = await this.confirmacionServicio.confirmar({
+      titulo: 'Eliminar proveedor',
+      mensaje: `Deseas eliminar a ${nombre}?`,
+      detalle: 'Si tiene movimientos asociados, el sistema puede impedir la eliminacion.',
+      textoConfirmar: 'Eliminar',
+      tipo: 'peligro'
+    });
     if (!confirmar) {
       return;
     }

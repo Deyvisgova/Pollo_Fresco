@@ -19,6 +19,7 @@
             </div>
 
             <form
+              *ngIf="!esperandoSeleccionRol"
               class="d-grid gap-3"
               [formGroup]="formulario"
               (ngSubmit)="enviarIngreso()"
@@ -86,6 +87,30 @@
                 </button>
               </div>
             </form>
+
+            <section class="seleccion-rol" *ngIf="esperandoSeleccionRol">
+              <div class="seleccion-rol__encabezado">
+                <h3>Elige como ingresar</h3>
+                <p>Tu usuario tiene mas de un permiso. Selecciona el rol que usaras en esta sesion.</p>
+              </div>
+
+              <div class="seleccion-rol__grid">
+                <button
+                  type="button"
+                  class="seleccion-rol__opcion"
+                  *ngFor="let rol of rolesDisponibles"
+                  (click)="seleccionarRol(rol)"
+                  [disabled]="estaCargando"
+                >
+                  <span class="seleccion-rol__icono" [attr.data-role]="rol.role" aria-hidden="true"></span>
+                  <strong>{{ rol.nombre }}</strong>
+                </button>
+              </div>
+
+              <button type="button" class="seleccion-rol__volver" (click)="volverACredenciales()" [disabled]="estaCargando">
+                Cambiar usuario o contrasena
+              </button>
+            </section>
 
             <mat-divider class="my-4"></mat-divider>
             <div class="text-center">

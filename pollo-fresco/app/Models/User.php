@@ -38,6 +38,7 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'rol_id',
+        'roles_permitidos',
         'nombres',
         'apellidos',
         'usuario',
@@ -54,6 +55,7 @@ class User extends Authenticatable
      */
     protected $hidden = [
         'password_hash',
+        'rol_activo_id',
     ];
 
     /**
@@ -63,6 +65,7 @@ class User extends Authenticatable
      */
     protected $casts = [
         'activo' => 'boolean',
+        'roles_permitidos' => 'array',
     ];
 
     /**
@@ -74,6 +77,7 @@ class User extends Authenticatable
         'id',
         'name',
         'role',
+        'roles_disponibles',
     ];
 
     /**
@@ -96,7 +100,42 @@ class User extends Authenticatable
      */
     public function getRoleAttribute(): string
     {
-        return self::ROLE_ID_MAP[$this->rol_id] ?? self::ROLE_CASHIER;
+        $rolActivoId = $this->attributes['rol_activo_id'] ?? $this->obtenerRolActivoDesdeToken();
+
+        return self::ROLE_ID_MAP[(int) ($rolActivoId ?: $this->rol_id)] ?? self::ROLE_CASHIER;
+    }
+
+    /**
+     * Roles que el administrador habilito para este usuario.
+     *
+     * @return array<int, int>
+     */
+    public function rolesPermitidosIds(): array
+    {
+        $roles = $this->roles_permitidos;
+
+        if (!is_array($roles) || count($roles) === 0) {
+            return [(int) $this->rol_id];
+        }
+
+        $roles = array_map('intval', $roles);
+        $roles[] = (int) $this->rol_id;
+
+        return array_values(array_unique(array_filter($roles, fn (int $rolId) => in_array($rolId, [1, 2, 3], true))));
+    }
+
+    /**
+     * Devolver roles disponibles para la seleccion al iniciar sesion.
+     *
+     * @return array<int, array{id:int,nombre:string,role:string}>
+     */
+    public function getRolesDisponiblesAttribute(): array
+    {
+        return array_map(fn (int $rolId) => [
+            'id' => $rolId,
+            'nombre' => self::roleLabelFromId($rolId),
+            'role' => self::ROLE_ID_MAP[$rolId] ?? self::ROLE_CASHIER,
+        ], $this->rolesPermitidosIds());
     }
 
     /**
@@ -134,5 +173,28 @@ class User extends Authenticatable
             self::ROLE_VENDOR => 2,
             default => 2,
         };
+    }
+
+    public static function roleLabelFromId(int $rolId): string
+    {
+        return match ($rolId) {
+            1 => 'Administrador',
+            3 => 'Delivery',
+            default => 'Vendedor',
+        };
+    }
+
+    private function obtenerRolActivoDesdeToken(): ?int
+    {
+        $token = $this->currentAccessToken();
+        $abilities = $token?->abilities ?? [];
+
+        foreach ($abilities as $ability) {
+            if (str_starts_with((string) $ability, 'role:')) {
+                return self::roleIdFromName(substr((string) $ability, 5));
+            }
+        }
+
+        return null;
     }
 }

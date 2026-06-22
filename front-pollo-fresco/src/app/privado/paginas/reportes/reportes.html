@@ -36,6 +36,8 @@
     </div>
     <div class="kpi-grid">
       <article class="kpi kpi--principal"><span>Resultado neto</span><strong>S/ {{ dinero(resumen['resultado_neto']) | number: '1.2-2' }}</strong></article>
+      <article class="kpi"><span>Ventas generadas</span><strong>S/ {{ dinero(resumen['ventas_generadas']) | number: '1.2-2' }}</strong></article>
+      <article class="kpi"><span>Dinero cobrado</span><strong>S/ {{ dinero(resumen['dinero_cobrado'] || resumen['cobrado_periodo']) | number: '1.2-2' }}</strong></article>
       <article class="kpi"><span>Ganancia bruta</span><strong>S/ {{ dinero(resumen['ganancia_bruta']) | number: '1.2-2' }}</strong></article>
       <article class="kpi"><span>Gastos</span><strong>S/ {{ dinero(resumen['gastos']) | number: '1.2-2' }}</strong></article>
       <article class="kpi"><span>Cuentas por cobrar</span><strong>S/ {{ dinero(resumen['cuentas_por_cobrar']) | number: '1.2-2' }}</strong></article>

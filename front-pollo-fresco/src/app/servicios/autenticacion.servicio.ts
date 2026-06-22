@@ -6,12 +6,21 @@ import { SesionServicio, UsuarioSesion } from './sesion.servicio';
 export interface CredencialesIngreso {
   usuario: string;
   password: string;
+  role?: string;
 }
 
-interface RespuestaLoginApi {
+export interface RolDisponibleLogin {
+  id: number;
+  nombre: string;
+  role: string;
+}
+
+export interface RespuestaLoginApi {
   message: string;
   user: UsuarioSesion;
-  token: string;
+  token?: string;
+  requires_role_selection?: boolean;
+  roles?: RolDisponibleLogin[];
 }
 
 /**
@@ -31,14 +40,15 @@ export class AutenticacionServicio {
   /**
    * Envia las credenciales al backend, guarda la sesion y retorna el usuario autenticado.
    */
-  iniciarSesion(credenciales: CredencialesIngreso): Observable<UsuarioSesion> {
+  iniciarSesion(credenciales: CredencialesIngreso): Observable<RespuestaLoginApi> {
     return this.http
       .post<RespuestaLoginApi>(`${this.apiBase}/auth/login`, credenciales)
       .pipe(
-        tap((respuesta) =>
-          this.sesionServicio.guardarSesion(respuesta.user, respuesta.token)
-        ),
-        map((respuesta) => respuesta.user)
+        tap((respuesta) => {
+          if (respuesta.token) {
+            this.sesionServicio.guardarSesion(respuesta.user, respuesta.token);
+          }
+        })
       );
   }
 

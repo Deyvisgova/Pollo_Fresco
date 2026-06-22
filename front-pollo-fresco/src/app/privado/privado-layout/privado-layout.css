@@ -20,6 +20,10 @@
   margin-bottom: 18px;
 }
 
+.panel__topbar--vendedor {
+  grid-template-columns: 1fr auto;
+}
+
 .panel__toggle {
   width: 44px;
   height: 44px;
@@ -226,6 +230,10 @@
 
 .panel__cuerpo--compacto {
   grid-template-columns: 86px 1fr;
+}
+
+.panel__cuerpo--vendedor {
+  grid-template-columns: 1fr;
 }
 
 .panel__sidebar {
@@ -445,6 +453,76 @@
   box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
 }
 
+.panel-vendedor {
+  border: 1px solid var(--border-soft);
+  border-radius: 18px;
+  padding: 20px;
+  background: var(--surface-card);
+}
+
+.panel-vendedor__eyebrow {
+  margin: 0;
+  color: #1d4ed8;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.panel-vendedor__encabezado h2 {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.panel-vendedor__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+}
+
+.panel-vendedor__card {
+  min-height: 94px;
+  border: 1px solid #cbdaf7;
+  border-radius: 16px;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #0f2f68;
+  text-decoration: none;
+  background: #ffffff;
+}
+
+.panel-vendedor__card--activo {
+  border-color: #1d4ed8;
+  background: linear-gradient(135deg, #1d4ed8, #2563eb);
+  color: #ffffff;
+}
+
+.panel-vendedor__icono {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+}
+
+.panel-vendedor__card--activo .panel-vendedor__icono {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+.panel-vendedor__texto {
+  min-width: 0;
+}
+
+.panel--tema-oscuro .panel-vendedor {
+  border-color: #43546e;
+}
+
+.panel--tema-oscuro .panel-vendedor__card {
+  background: #223149;
+  border-color: #4b5f7c;
+  color: #f8fafc;
+}
+
 .panel__sidebar--compacto .panel__logo {
   padding: 14px 8px;
 }
@@ -555,6 +633,10 @@
     display: none;
   }
 
+  .panel__topbar--vendedor {
+    grid-template-columns: 1fr;
+  }
+
   .panel__toggle,
   .panel__usuario-trigger,
   .theme-toggle {
@@ -619,6 +701,22 @@
     height: calc(100vh - 80px);
     width: min(300px, 88vw);
   }
+
+  .panel-vendedor {
+    padding: 14px;
+  }
+
+  .panel-vendedor__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .panel-vendedor__card {
+    min-height: 116px;
+    flex-direction: column;
+    text-align: center;
+    padding: 12px 10px;
+  }
+
 }
 
 .panel__link-icono[data-icon='inicio'] {

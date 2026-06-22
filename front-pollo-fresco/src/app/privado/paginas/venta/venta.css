@@ -542,6 +542,64 @@
   color: inherit;
 }
 
+:host-context(.panel--tema-oscuro) .metodos-pago {
+  background: #17243a;
+  border-color: #43546e;
+}
+
+:host-context(.panel--tema-oscuro) .metodos-pago h5 {
+  color: #f8fafc;
+}
+
+:host-context(.panel--tema-oscuro) .metodos-pago__opcion {
+  background: #253247;
+  border-color: #52637c;
+  color: #f8fafc;
+  opacity: 1;
+}
+
+:host-context(.panel--tema-oscuro) .metodos-pago__opcion:hover {
+  border-color: #93c5fd;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.25);
+}
+
+:host-context(.panel--tema-oscuro) .metodos-pago__opcion--activa {
+  background: #14532d;
+  border-color: #22c55e;
+  color: #ffffff;
+}
+
+:host-context(.panel--tema-oscuro) .metodos-pago__icono {
+  background: #0f172a;
+  color: #f8fafc;
+}
+
+:host-context(.panel--tema-oscuro) .metodos-pago__opcion--activa .metodos-pago__icono {
+  background: #dcfce7;
+  color: #14532d;
+}
+
+:host-context(.panel--tema-oscuro) .metodos-pago__opcion .metodos-pago__texto,
+:host-context(.panel--tema-oscuro) .metodos-pago__opcion .metodos-pago__icono,
+:host-context(.panel--tema-oscuro) .metodos-pago__opcion .metodos-pago__icono svg {
+  color: #f8fafc !important;
+  stroke: currentColor !important;
+  opacity: 1 !important;
+}
+
+:host-context(.panel--tema-oscuro) .metodos-pago__opcion--activa .metodos-pago__texto,
+:host-context(.panel--tema-oscuro) .metodos-pago__opcion--activa .metodos-pago__icono svg {
+  color: #ffffff !important;
+  stroke: currentColor !important;
+  opacity: 1 !important;
+}
+
+:host-context(.panel--tema-oscuro) .metodos-pago__opcion--activa .metodos-pago__icono {
+  color: #14532d !important;
+  stroke: currentColor !important;
+  opacity: 1 !important;
+}
+
 .metodos-pago__efectivo {
   display: grid;
   grid-template-columns: repeat(2, minmax(160px, 240px));

@@ -1,4 +1,4 @@
-<section class="seccion">
+﻿<section class="seccion">
   <div class="seccion__encabezado">
     <h2>Usuarios</h2>
     <p>Administracion integral de usuarios con busqueda rapida y edicion segura.</p>
@@ -31,10 +31,9 @@
         <table>
           <thead>
             <tr>
-              <th>N°</th>
-              <th>Rol</th>
+              <th>Nro</th>
               <th>Usuario</th>
-              <th>Nombre</th>
+              <th>Rol y permisos</th>
               <th>Contacto</th>
               <th>Estado</th>
               <th>Registro</th>
@@ -43,16 +42,27 @@
           </thead>
           <tbody>
             <tr *ngIf="!cargando && usuariosFiltrados.length === 0">
-              <td colspan="8" class="tabla__vacia">
+              <td colspan="7" class="tabla__vacia">
                 No hay usuarios que coincidan con tu busqueda.
               </td>
             </tr>
             <tr *ngFor="let usuario of usuariosFiltrados; let i = index">
-              <td data-label="N°">{{ i + 1 }}</td>
-              <td data-label="Rol">{{ obtenerNombreRol(usuario.rol_id) }}</td>
-              <td data-label="Usuario">{{ usuario.usuario }}</td>
-              <td data-label="Nombre">
+              <td data-label="Nro">{{ i + 1 }}</td>
+              <td data-label="Usuario" class="usuario-identidad">
                 <strong>{{ usuario.nombres }} {{ usuario.apellidos }}</strong>
+                <span>{{ usuario.usuario }}</span>
+              </td>
+              <td data-label="Rol y permisos">
+                <strong class="rol-principal">{{ obtenerNombreRol(usuario.rol_id) }}</strong>
+                <div class="roles-tabla">
+                  <span
+                    class="roles-tabla__item"
+                    *ngFor="let rolId of obtenerRolesPermitidos(usuario)"
+                    [class.roles-tabla__item--principal]="rolId === usuario.rol_id"
+                  >
+                    {{ obtenerNombreRol(rolId) }}
+                  </span>
+                </div>
               </td>
               <td data-label="Contacto">
                 <div>{{ usuario.email }}</div>
@@ -152,12 +162,32 @@
 
       <div class="formulario__grid">
         <div class="campo">
-          <label for="rol">Rol</label>
-          <select id="rol" name="rol" [(ngModel)]="formulario.rol_id" required>
+          <label for="rol">Rol principal</label>
+          <select id="rol" name="rol" [(ngModel)]="formulario.rol_id" (ngModelChange)="sincronizarRolPrincipal()" required>
             <option *ngFor="let rol of roles" [ngValue]="rol.id">
               {{ rol.nombre }}
             </option>
           </select>
+          <small>Se usa como rol por defecto si solo tiene un permiso.</small>
+        </div>
+        <div class="campo campo--roles">
+          <label>Roles permitidos</label>
+          <div class="roles-permitidos">
+            <label
+              class="roles-permitidos__opcion"
+              *ngFor="let rol of roles"
+              [class.roles-permitidos__opcion--activo]="rolPermitido(rol.id)"
+            >
+              <input
+                type="checkbox"
+                [checked]="rolPermitido(rol.id)"
+                [disabled]="rol.id === formulario.rol_id"
+                (change)="alternarRolPermitido(rol.id)"
+              />
+              <span>{{ rol.nombre }}</span>
+            </label>
+          </div>
+          <small>Si tiene mas de un rol, al iniciar sesion podra elegir con cual entrar.</small>
         </div>
         <div class="campo">
           <label for="usuario">Usuario</label>
@@ -379,3 +409,4 @@
     </form>
   </div>
 </div>
+

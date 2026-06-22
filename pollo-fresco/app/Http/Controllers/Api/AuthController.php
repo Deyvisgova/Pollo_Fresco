@@ -47,12 +47,13 @@ class AuthController extends Controller
             'email' => $validated['email'],
             'password_hash' => Hash::make($validated['password']),
             'rol_id' => User::roleIdFromName($validated['role']),
+            'roles_permitidos' => [User::roleIdFromName($validated['role'])],
         ]);
 
         $this->ensurePersonalAccessTokensTableExists();
 
         // Emitir un token de Sanctum para autenticación API.
-        $token = $user->createToken('api-token')->plainTextToken;
+        $token = $user->createToken('api-token', ["role:{$user->role}"])->plainTextToken;
 
         return response()->json([
             'message' => 'Usuario registrado correctamente.',
@@ -70,6 +71,7 @@ class AuthController extends Controller
         $validated = $request->validate([
             'usuario' => ['required', 'string'],
             'password' => ['required', 'string'],
+            'role' => ['nullable', Rule::in(User::allowedRoles())],
         ]);
 
         // Buscar el usuario y verificar la contraseña.
@@ -103,7 +105,32 @@ class AuthController extends Controller
         $this->ensurePersonalAccessTokensTableExists();
 
         // Emitir un nuevo token para la sesión.
-        $token = $user->createToken('api-token')->plainTextToken;
+        $rolesPermitidos = $user->roles_disponibles;
+        $rolSolicitadoId = !empty($validated['role'])
+            ? User::roleIdFromName($validated['role'])
+            : null;
+
+        if ($rolSolicitadoId && !in_array($rolSolicitadoId, $user->rolesPermitidosIds(), true)) {
+            return response()->json([
+                'message' => 'Este usuario no tiene permiso para ingresar con ese rol.',
+            ], 403);
+        }
+
+        if (!$rolSolicitadoId && count($rolesPermitidos) > 1) {
+            return response()->json([
+                'message' => 'Selecciona el rol con el que deseas ingresar.',
+                'requires_role_selection' => true,
+                'user' => $user,
+                'roles' => $rolesPermitidos,
+            ]);
+        }
+
+        $rolActivoId = $rolSolicitadoId ?: (int) ($rolesPermitidos[0]['id'] ?? $user->rol_id);
+        $rolesPorId = array_column($user->roles_disponibles, 'role', 'id');
+        $rolActivo = $rolesPorId[$rolActivoId] ?? $user->role;
+        $user->setAttribute('rol_activo_id', $rolActivoId);
+
+        $token = $user->createToken('api-token', ["role:{$rolActivo}"])->plainTextToken;
 
         return response()->json([
             'message' => 'Inicio de sesión exitoso.',

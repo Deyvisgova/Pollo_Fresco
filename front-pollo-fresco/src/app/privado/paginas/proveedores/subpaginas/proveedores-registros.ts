@@ -144,6 +144,10 @@ export class PrivadoProveedoresRegistros implements OnInit, OnDestroy {
     this.cargarRegistros();
   }
 
+  get esVendedor(): boolean {
+    return this.sesionServicio.usuarioEsRol('vendedor');
+  }
+
   ngOnDestroy(): void {
     if (this.temporizadorBusquedaProveedor) {
       clearTimeout(this.temporizadorBusquedaProveedor);
@@ -277,8 +281,8 @@ export class PrivadoProveedoresRegistros implements OnInit, OnDestroy {
     const requests = lineasValidas.map((linea) => {
       const cantidad = linea.cantidadPollos ?? 0;
       const peso = linea.pesoTotalKg ?? 0;
-      const mermaPorPollo = linea.mermaKg ?? 0;
-      const precio = linea.precioKg ?? 0;
+      const mermaPorPollo = this.esVendedor ? 0 : linea.mermaKg ?? 0;
+      const precio = this.esVendedor ? 0 : linea.precioKg ?? 0;
       const mermaTotal = cantidad * mermaPorPollo;
 
       const payload = {
@@ -290,7 +294,7 @@ export class PrivadoProveedoresRegistros implements OnInit, OnDestroy {
         merma_kg: mermaTotal,
         costo_total: (peso + mermaTotal) * precio,
         tipo: linea.tipoAve
-        ,estado_pago: tarjeta.estadoPago
+        ,estado_pago: this.esVendedor ? 'PENDIENTE' : tarjeta.estadoPago
       };
 
       return this.http.post<RegistroEntrega>('/api/entregas-proveedor', payload, { headers });
@@ -366,6 +370,10 @@ export class PrivadoProveedoresRegistros implements OnInit, OnDestroy {
   }
 
   alternarEstadoRegistro(registro: RegistroEntrega): void {
+    if (this.esVendedor) {
+      return;
+    }
+
     const headers = this.obtenerHeaders();
     const nuevoEstado = registro.estado_pago === 'PAGADO' ? 'PENDIENTE' : 'PAGADO';
 
@@ -388,6 +396,10 @@ export class PrivadoProveedoresRegistros implements OnInit, OnDestroy {
   }
 
   abrirModalPago(registro?: RegistroEntrega, evento?: Event): void {
+    if (this.esVendedor) {
+      return;
+    }
+
     evento?.preventDefault();
     evento?.stopPropagation();
 
@@ -561,6 +573,10 @@ export class PrivadoProveedoresRegistros implements OnInit, OnDestroy {
   }
 
   iniciarEdicion(registro: RegistroEntrega): void {
+    if (this.esVendedor) {
+      return;
+    }
+
     this.editandoEntregaId = registro.entrega_id;
     this.formularioEdicion = {
       tipo: registro.tipo || 'POLLO',
@@ -610,6 +626,10 @@ export class PrivadoProveedoresRegistros implements OnInit, OnDestroy {
   }
 
   eliminarRegistro(entregaId: number): void {
+    if (this.esVendedor) {
+      return;
+    }
+
     const headers = this.obtenerHeaders();
 
     this.http.delete(`/api/entregas-proveedor/${entregaId}`, { headers }).subscribe({

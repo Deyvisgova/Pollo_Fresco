@@ -46,11 +46,13 @@ interface ComunicacionBaja {
 })
 export class PrivadoVentaRegistros implements OnInit {
   ventasRegistradas: VentaGuardada[] = [];
+  ventasRegistradasBase: VentaGuardada[] = [];
   cargando = false;
   error = '';
   buscando = '';
   fechaDesde = '';
   fechaHasta = '';
+  tipoFiltro = '';
   formatoVoucher: 'a4' | 'ticket-80' | 'ticket-57' = 'a4';
   fechaResumen = new Date().toISOString().slice(0, 10);
   resumenes: ResumenSunat[] = [];
@@ -92,14 +94,19 @@ export class PrivadoVentaRegistros implements OnInit {
     if (this.fechaHasta) {
       params = params.set('fecha_hasta', this.fechaHasta);
     }
+    if (this.tipoFiltro) {
+      params = params.set('tipo_comprobante', this.tipoFiltro);
+    }
 
     this.http.get<VentaGuardada[]>('/api/ventas', { headers: this.obtenerHeaders(), params }).subscribe({
       next: (ventas) => {
-        this.ventasRegistradas = ventas;
+        this.ventasRegistradasBase = ventas;
+        this.aplicarFiltroTipo();
         this.cargando = false;
       },
       error: (err) => {
         this.ventasRegistradas = [];
+        this.ventasRegistradasBase = [];
         this.error = err?.error?.message ?? 'No se pudieron cargar las ventas.';
         this.cargando = false;
       }
@@ -110,7 +117,14 @@ export class PrivadoVentaRegistros implements OnInit {
     this.buscando = '';
     this.fechaDesde = '';
     this.fechaHasta = '';
+    this.tipoFiltro = '';
     this.cargarVentas();
+  }
+
+  aplicarFiltroTipo(): void {
+    this.ventasRegistradas = this.tipoFiltro
+      ? this.ventasRegistradasBase.filter(venta => venta.tipo_comprobante === this.tipoFiltro)
+      : [...this.ventasRegistradasBase];
   }
 
   imprimir(venta: VentaGuardada): void {

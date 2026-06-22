@@ -24,6 +24,7 @@ class UsuariosController extends Controller
     public function store(Request $request)
     {
         $data = $this->validarDatos($request);
+        $data['roles_permitidos'] = $this->normalizarRolesPermitidos($data['rol_id'], $data['roles_permitidos'] ?? null);
         $data['password_hash'] = Hash::make($data['password']);
         unset($data['password']);
 
@@ -46,6 +47,7 @@ class UsuariosController extends Controller
     public function update(Request $request, User $usuario)
     {
         $data = $this->validarDatos($request, $usuario->usuario_id);
+        $data['roles_permitidos'] = $this->normalizarRolesPermitidos($data['rol_id'], $data['roles_permitidos'] ?? null);
         if (!empty($data['password'])) {
             $usuario->password_hash = Hash::make($data['password']);
         }
@@ -74,6 +76,8 @@ class UsuariosController extends Controller
     {
         $reglas = [
             'rol_id' => ['required', 'integer', Rule::in([1, 2, 3])],
+            'roles_permitidos' => ['nullable', 'array'],
+            'roles_permitidos.*' => ['integer', Rule::in([1, 2, 3])],
             'nombres' => ['required', 'string', 'max:80'],
             'apellidos' => ['required', 'string', 'max:80'],
             'usuario' => [
@@ -100,5 +104,19 @@ class UsuariosController extends Controller
         ];
 
         return $request->validate($reglas);
+    }
+
+    /**
+     * Garantizar que el rol principal siempre este entre los roles habilitados.
+     *
+     * @param  array<int, int>|null  $rolesPermitidos
+     * @return array<int, int>
+     */
+    private function normalizarRolesPermitidos(int $rolPrincipal, ?array $rolesPermitidos): array
+    {
+        $roles = array_map('intval', $rolesPermitidos ?? []);
+        $roles[] = (int) $rolPrincipal;
+
+        return array_values(array_unique(array_filter($roles, fn (int $rolId) => in_array($rolId, [1, 2, 3], true))));
     }
 }

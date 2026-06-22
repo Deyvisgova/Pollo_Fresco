@@ -78,21 +78,21 @@
 .tabla__contenedor {
   width: 100%;
   max-height: min(64vh, 620px);
-  overflow: auto;
+  overflow-x: auto;
+  overflow-y: auto;
+  max-width: 100%;
   position: relative;
   border: 1px solid #d7e1f2;
   border-radius: 12px;
   background: #ffffff;
   scrollbar-gutter: stable;
 }
-
 .tabla {
   width: 100%;
 }
-
 table {
-  width: 100%;
-  min-width: 1040px;
+  width: max-content;
+  min-width: 1184px;
   border-collapse: separate;
   border-spacing: 0;
   font-size: 0.92rem;
@@ -129,37 +129,32 @@ td:nth-child(1) {
 
 th:nth-child(2),
 td:nth-child(2) {
-  width: 130px;
+  width: 230px;
 }
 
 th:nth-child(3),
 td:nth-child(3) {
-  width: 150px;
+  width: 170px;
 }
 
 th:nth-child(4),
 td:nth-child(4) {
-  width: 230px;
+  width: 210px;
 }
 
 th:nth-child(5),
 td:nth-child(5) {
-  width: 240px;
+  width: 110px;
 }
 
 th:nth-child(6),
 td:nth-child(6) {
-  width: 120px;
+  width: 180px;
 }
 
 th:nth-child(7),
 td:nth-child(7) {
-  width: 180px;
-}
-
-th:nth-child(8),
-td:nth-child(8) {
-  width: 210px;
+  width: 220px;
 }
 
 .tabla__vacia {
@@ -179,10 +174,31 @@ td:nth-child(8) {
 
 .tabla__acciones-contenido {
   display: grid;
-  grid-template-columns: 54px 72px 86px;
+  grid-template-columns: 54px 82px 96px;
   align-items: center;
   gap: 8px;
   width: max-content;
+}
+
+.usuario-identidad {
+  display: grid;
+  gap: 4px;
+}
+
+.usuario-identidad strong {
+  color: #0f172a;
+  line-height: 1.25;
+}
+
+.usuario-identidad span,
+.rol-principal {
+  color: #475569;
+  font-size: 0.84rem;
+}
+
+.rol-principal {
+  display: block;
+  margin-bottom: 6px;
 }
 
 .nota {
@@ -283,6 +299,63 @@ td:nth-child(8) {
 
 .campo small {
   color: #94a3b8;
+}
+
+.campo--roles {
+  grid-column: span 2;
+}
+
+.roles-permitidos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.roles-permitidos__opcion {
+  min-height: 46px;
+  padding: 10px 12px;
+  border: 1px solid #cbd5f5;
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.roles-permitidos__opcion--activo {
+  border-color: #1d4ed8;
+  background: #dbeafe;
+  color: #1e3a8a;
+}
+
+.roles-permitidos__opcion input {
+  width: 18px;
+  height: 18px;
+  accent-color: #1d4ed8;
+}
+
+.roles-tabla {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: 170px;
+}
+
+.roles-tabla__item {
+  border-radius: 999px;
+  background: #eef4ff;
+  color: #1e3a8a;
+  padding: 4px 8px;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.roles-tabla__item--principal {
+  background: #dcfce7;
+  color: #166534;
 }
 
 .mensaje-error {

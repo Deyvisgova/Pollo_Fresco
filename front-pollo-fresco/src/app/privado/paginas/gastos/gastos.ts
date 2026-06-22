@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ConfirmacionServicio } from '../../../servicios/confirmacion.servicio';
 import { SesionServicio } from '../../../servicios/sesion.servicio';
 
 type FondoCodigo = 'POLLO_GALLINA' | 'CONGELADOS_HUEVOS';
@@ -138,6 +139,7 @@ export class PrivadoGastos implements OnInit {
 
   constructor(
     private readonly http: HttpClient,
+    private readonly confirmacionServicio: ConfirmacionServicio,
     private readonly sesionServicio: SesionServicio
   ) {}
 
@@ -309,8 +311,14 @@ export class PrivadoGastos implements OnInit {
     });
   }
 
-  cerrarMes(): void {
-    const confirmar = window.confirm(`Cerrar el mes ${this.cierreForm.periodo}?`);
+  async cerrarMes(): Promise<void> {
+    const confirmar = await this.confirmacionServicio.confirmar({
+      titulo: 'Cerrar mes',
+      mensaje: `Deseas cerrar el mes ${this.cierreForm.periodo}?`,
+      detalle: 'Revisa ventas, gastos y capital antes de confirmar el cierre.',
+      textoConfirmar: 'Cerrar mes',
+      tipo: 'advertencia'
+    });
     if (!confirmar) {
       return;
     }

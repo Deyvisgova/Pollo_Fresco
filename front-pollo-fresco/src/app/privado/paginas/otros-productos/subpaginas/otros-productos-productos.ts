@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule, HttpHeaders } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ConfirmacionServicio } from '../../../../servicios/confirmacion.servicio';
 import { SesionServicio } from '../../../../servicios/sesion.servicio';
 
 interface ProductoRegistro {
@@ -43,6 +44,7 @@ export class PrivadoOtrosProductosProductos implements OnInit {
 
   constructor(
     private readonly http: HttpClient,
+    private readonly confirmacionServicio: ConfirmacionServicio,
     private readonly sesionServicio: SesionServicio
   ) {}
 
@@ -99,10 +101,14 @@ export class PrivadoOtrosProductosProductos implements OnInit {
     }
   }
 
-  eliminarProducto(producto: ProductoRegistro): void {
-    const confirmacion = confirm(
-      `Seguro que deseas eliminar el producto ${producto.nombre}?`
-    );
+  async eliminarProducto(producto: ProductoRegistro): Promise<void> {
+    const confirmacion = await this.confirmacionServicio.confirmar({
+      titulo: 'Eliminar producto',
+      mensaje: `Deseas eliminar el producto ${producto.nombre}?`,
+      detalle: 'Solo confirma si ya no debe estar disponible en el sistema.',
+      textoConfirmar: 'Eliminar',
+      tipo: 'peligro'
+    });
     if (!confirmacion) {
       return;
     }
@@ -128,12 +134,15 @@ export class PrivadoOtrosProductosProductos implements OnInit {
     return producto.activo ? 'ACTIVO' : 'INACTIVO';
   }
 
-  toggleActivo(producto: ProductoRegistro): void {
+  async toggleActivo(producto: ProductoRegistro): Promise<void> {
     const nuevoEstado = !producto.activo;
     const accion = nuevoEstado ? 'activar' : 'inactivar';
-    const confirmacion = confirm(
-      `Seguro que deseas ${accion} el producto ${producto.nombre}?`
-    );
+    const confirmacion = await this.confirmacionServicio.confirmar({
+      titulo: nuevoEstado ? 'Activar producto' : 'Inactivar producto',
+      mensaje: `Deseas ${accion} el producto ${producto.nombre}?`,
+      textoConfirmar: nuevoEstado ? 'Activar' : 'Inactivar',
+      tipo: nuevoEstado ? 'normal' : 'advertencia'
+    });
     if (!confirmacion) {
       return;
     }

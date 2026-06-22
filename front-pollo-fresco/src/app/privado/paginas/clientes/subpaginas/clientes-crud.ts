@@ -75,6 +75,10 @@ export class PrivadoClientesCrud implements OnInit {
     this.cargarClientes();
   }
 
+  get esVendedor(): boolean {
+    return this.sesionServicio.usuarioEsRol('vendedor');
+  }
+
   abrirModalRegistro(): void {
     this.limpiarFormulario();
     this.mostrarModalRegistro = true;
@@ -172,6 +176,10 @@ export class PrivadoClientesCrud implements OnInit {
   }
 
   editarCliente(cliente: ClienteApi): void {
+    if (this.esVendedor) {
+      return;
+    }
+
     this.formulario = {
       cliente_id: cliente.cliente_id,
       dni: cliente.dni ?? '',
@@ -189,6 +197,10 @@ export class PrivadoClientesCrud implements OnInit {
   }
 
   eliminarCliente(cliente: ClienteApi): void {
+    if (this.esVendedor) {
+      return;
+    }
+
     const headers = this.obtenerHeaders();
     this.http.delete(`/api/clientes/${cliente.cliente_id}`, { headers }).subscribe({
       next: () => this.cargarClientes(this.filtro),

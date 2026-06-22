@@ -2,10 +2,12 @@ import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ConfirmacionServicio } from '../../../servicios/confirmacion.servicio';
 import { UsuariosServicio, UsuarioApi } from '../../../servicios/usuarios.servicio';
 
 interface UsuarioFormulario {
   rol_id: number;
+  roles_permitidos: number[];
   nombres: string;
   apellidos: string;
   usuario: string;
@@ -46,6 +48,7 @@ export class PrivadoUsuarios implements OnInit {
 
   constructor(
     private readonly usuariosServicio: UsuariosServicio,
+    private readonly confirmacionServicio: ConfirmacionServicio,
     private readonly http: HttpClient
   ) {}
 
@@ -68,6 +71,7 @@ export class PrivadoUsuarios implements OnInit {
         usuario.email,
         usuario.telefono ?? '',
         this.obtenerNombreRol(usuario.rol_id),
+        ...this.obtenerRolesPermitidos(usuario).map((rolId) => this.obtenerNombreRol(rolId)),
         usuario.activo ? 'activo' : 'inactivo'
       ]
         .join(' ')
@@ -107,6 +111,7 @@ export class PrivadoUsuarios implements OnInit {
     this.usuarioSeleccionado = usuario;
     this.formulario = {
       rol_id: Number(usuario.rol_id),
+      roles_permitidos: this.obtenerRolesPermitidos(usuario),
       nombres: usuario.nombres,
       apellidos: usuario.apellidos,
       usuario: usuario.usuario,
@@ -215,10 +220,14 @@ export class PrivadoUsuarios implements OnInit {
       });
   }
 
-  eliminarUsuario(usuario: UsuarioApi): void {
-    const confirmacion = confirm(
-      `Seguro que deseas eliminar al usuario ${usuario.nombres} ${usuario.apellidos}?`
-    );
+  async eliminarUsuario(usuario: UsuarioApi): Promise<void> {
+    const confirmacion = await this.confirmacionServicio.confirmar({
+      titulo: 'Eliminar usuario',
+      mensaje: `Deseas eliminar a ${usuario.nombres} ${usuario.apellidos}?`,
+      detalle: 'Esta accion no se puede deshacer.',
+      textoConfirmar: 'Eliminar',
+      tipo: 'peligro'
+    });
     if (!confirmacion) {
       return;
     }
@@ -269,6 +278,40 @@ export class PrivadoUsuarios implements OnInit {
     return this.roles.find((rol) => rol.id === rolId)?.nombre ?? 'Sin rol';
   }
 
+  obtenerRolesPermitidos(usuario: UsuarioApi): number[] {
+    const roles = usuario.roles_permitidos?.length
+      ? usuario.roles_permitidos
+      : usuario.roles_disponibles?.map((rol) => rol.id) ?? [usuario.rol_id];
+
+    return Array.from(new Set([...roles, usuario.rol_id].map(Number))).filter((rolId) =>
+      this.roles.some((rol) => rol.id === rolId)
+    );
+  }
+
+  rolPermitido(rolId: number): boolean {
+    return this.formulario.roles_permitidos.includes(rolId);
+  }
+
+  alternarRolPermitido(rolId: number): void {
+    if (this.rolPermitido(rolId)) {
+      if (rolId === Number(this.formulario.rol_id)) {
+        return;
+      }
+
+      this.formulario.roles_permitidos = this.formulario.roles_permitidos.filter((id) => id !== rolId);
+      return;
+    }
+
+    this.formulario.roles_permitidos = [...this.formulario.roles_permitidos, rolId];
+  }
+
+  sincronizarRolPrincipal(): void {
+    const rolPrincipal = Number(this.formulario.rol_id);
+    if (!this.formulario.roles_permitidos.includes(rolPrincipal)) {
+      this.formulario.roles_permitidos = [...this.formulario.roles_permitidos, rolPrincipal];
+    }
+  }
+
   get passwordsCoinciden(): boolean {
     return this.formulario.password === this.formulario.password_confirmation;
   }
@@ -301,6 +344,7 @@ export class PrivadoUsuarios implements OnInit {
   private crearFormularioVacio(): UsuarioFormulario {
     return {
       rol_id: 2,
+      roles_permitidos: [2],
       nombres: '',
       apellidos: '',
       usuario: '',
@@ -346,13 +390,15 @@ export class PrivadoUsuarios implements OnInit {
       ...this.formulario,
       password: password ? password : null,
       password_confirmation: password ? confirmacion : null,
-      rol_id: Number(this.formulario.rol_id)
+      rol_id: Number(this.formulario.rol_id),
+      roles_permitidos: Array.from(new Set([...this.formulario.roles_permitidos, Number(this.formulario.rol_id)]))
     };
   }
 
   private crearPayloadDesdeUsuario(usuario: UsuarioApi) {
     return {
       rol_id: Number(usuario.rol_id),
+      roles_permitidos: this.obtenerRolesPermitidos(usuario),
       nombres: usuario.nombres,
       apellidos: usuario.apellidos,
       usuario: usuario.usuario,

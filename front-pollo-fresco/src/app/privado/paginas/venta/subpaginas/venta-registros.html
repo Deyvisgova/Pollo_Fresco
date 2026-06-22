@@ -6,13 +6,21 @@
 
   <article class="tarjeta">
     <section class="operacion-sunat">
-      <div>
-        <h3>Resumen diario de boletas</h3>
-        <p>Envia las boletas pendientes de una fecha y consulta el ticket hasta recibir el CDR.</p>
+      <div class="operacion-sunat__cabecera">
+        <div>
+          <h3>Resumen SUNAT de boletas</h3>
+          <p>Selecciona el dia de boletas pendientes y envia el resumen diario para recibir el CDR.</p>
+        </div>
+        <span class="operacion-sunat__etiqueta">Solo boletas</span>
       </div>
       <div class="operacion-sunat__acciones">
-        <input type="date" [(ngModel)]="fechaResumen" />
-        <button type="button" class="boton boton--sunat" (click)="enviarResumen()" [disabled]="operandoSunat">Enviar boletas</button>
+        <label>
+          Fecha de boletas
+          <input type="date" [(ngModel)]="fechaResumen" />
+        </label>
+        <button type="button" class="boton boton--sunat" (click)="enviarResumen()" [disabled]="operandoSunat">
+          {{ operandoSunat ? 'Procesando...' : 'Enviar resumen' }}
+        </button>
       </div>
       <div class="resumenes" *ngIf="resumenes.length">
         <div class="resumen-item" *ngFor="let resumen of resumenes">
@@ -33,18 +41,51 @@
       </div>
     </section>
 
-    <div class="filtros">
-      <input type="text" [(ngModel)]="buscando" placeholder="Buscar por cliente, serie, numero o documento" />
-      <input type="date" [(ngModel)]="fechaDesde" />
-      <input type="date" [(ngModel)]="fechaHasta" />
-      <select [(ngModel)]="formatoVoucher">
-        <option value="a4">A4</option>
-        <option value="ticket-80">Tiquetera laser 8 cm</option>
-        <option value="ticket-57">Tiquetera laser 5.7 cm</option>
-      </select>
-      <button type="button" class="boton" (click)="cargarVentas()">Buscar</button>
-      <button type="button" class="boton boton--suave" (click)="limpiarFiltros()">Limpiar</button>
-    </div>
+    <section class="historial-panel">
+      <header class="historial-panel__cabecera">
+        <div>
+          <h3>Historial de comprobantes</h3>
+          <p>Filtra por tipo, cliente, documento, fecha y formato para imprimir o descargar.</p>
+        </div>
+        <strong>{{ ventasRegistradas.length }} resultado(s)</strong>
+      </header>
+
+      <div class="filtros">
+        <label class="filtro-busqueda">
+          Buscar
+          <input type="text" [(ngModel)]="buscando" placeholder="Cliente, serie, numero o documento" />
+        </label>
+        <label>
+          Tipo
+          <select [(ngModel)]="tipoFiltro" (ngModelChange)="aplicarFiltroTipo()">
+            <option value="">Todos</option>
+            <option value="factura">Factura</option>
+            <option value="boleta">Boleta</option>
+            <option value="nota-venta">Nota de venta</option>
+            <option value="nota-credito">Nota de credito</option>
+            <option value="nota-debito">Nota de debito</option>
+          </select>
+        </label>
+        <label>
+          Desde
+          <input type="date" [(ngModel)]="fechaDesde" />
+        </label>
+        <label>
+          Hasta
+          <input type="date" [(ngModel)]="fechaHasta" />
+        </label>
+        <label>
+          Formato
+          <select [(ngModel)]="formatoVoucher">
+            <option value="a4">A4</option>
+            <option value="ticket-80">Tiquetera laser 8 cm</option>
+            <option value="ticket-57">Tiquetera laser 5.7 cm</option>
+          </select>
+        </label>
+        <button type="button" class="boton" (click)="cargarVentas()">Buscar</button>
+        <button type="button" class="boton boton--suave" (click)="limpiarFiltros()">Limpiar</button>
+      </div>
+    </section>
 
     <p *ngIf="cargando" class="estado">Cargando ventas...</p>
     <p *ngIf="error" class="error">{{ error }}</p>
@@ -74,9 +115,9 @@
             </td>
             <td data-label="Acciones">
               <div class="acciones-fila">
-                <button type="button" class="icono" (click)="imprimir(venta)" title="Imprimir">Imp.</button>
+                <button type="button" class="icono" (click)="imprimir(venta)" title="Imprimir">Imprimir</button>
                 <button type="button" class="icono" (click)="descargar(venta)" title="Descargar PDF">PDF</button>
-                <button type="button" class="icono" (click)="compartir(venta)" title="Compartir">Env.</button>
+                <button type="button" class="icono" (click)="compartir(venta)" title="Compartir">Enviar</button>
                 <button type="button" class="icono" (click)="descargarXml(venta)" title="Descargar XML">XML</button>
                 <button *ngIf="tieneCdr(venta)" type="button" class="icono" (click)="descargarCdr(venta)" title="Descargar CDR">CDR</button>
                 <button *ngIf="puedeEnviarSunat(venta)" type="button" class="icono icono--sunat" (click)="enviarSunat(venta)" title="Enviar o reintentar SUNAT">SUNAT</button>

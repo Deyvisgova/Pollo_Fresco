@@ -95,18 +95,49 @@
 .tarjeta-proveedor__iconos {
   display: flex;
   gap: 8px;
+  align-items: center;
+  flex: 0 0 auto;
 }
 
 .icono-btn {
-  border: 1px solid #cbd5f5;
-  background: #f8fafc;
-  border-radius: 10px;
-  padding: 5px 8px;
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-radius: 999px;
+  padding: 0;
+  font-size: 1.25rem;
+  line-height: 1;
+  font-weight: 900;
   cursor: pointer;
+  box-shadow: 0 6px 14px rgba(37, 99, 235, 0.12);
+  transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.icono-btn:hover {
+  background: #1d4ed8;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.icono-btn span {
+  display: block;
+  transform: translateY(-1px);
 }
 
 .icono-btn--cerrar {
+  border-color: #fecaca;
+  background: #fee2e2;
   color: #dc2626;
+}
+
+.icono-btn--cerrar:hover {
+  background: #dc2626;
+  color: #ffffff;
 }
 
 .lineas {
